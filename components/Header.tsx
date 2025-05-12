@@ -1,13 +1,12 @@
-"use client" // Add this at the top
+"use client"
 
-import Link from "next/link";
-import { Button } from "./ui/button";
-import { UserButton, useUser } from "@clerk/nextjs"; // Changed from currentUser to useUser
-import { ModeToggle } from "./mode-toggle";
-import { Skeleton } from "./ui/skeleton"; // For loading state
+import Link from "next/link"
+import { Button } from "./ui/button"
+import { UserButton, useUser } from "@clerk/nextjs"
+import { ModeToggle } from "./mode-toggle"
 
-export function Header() { // Removed async
-  const { isLoaded, isSignedIn } = useUser(); // Client-side hook
+export function Header() {
+  const { isLoaded, isSignedIn } = useUser()
 
   return (
     <header className="border-b">
@@ -18,18 +17,20 @@ export function Header() { // Removed async
         
         <nav className="flex items-center gap-4">
           <Link href="/events">Events</Link>
-          {isSignedIn && <Link href="/create-event">Create Event</Link>}
           
           <div className="flex items-center gap-4">
             <ModeToggle />
             {!isLoaded ? (
-              // Loading state
               <div className="flex gap-2">
-                <Skeleton className="h-10 w-24 rounded-md" />
-                <Skeleton className="h-10 w-24 rounded-md" />
+                <Button variant="outline" disabled>Loading...</Button>
               </div>
             ) : isSignedIn ? (
-              <UserButton afterSignOutUrl="/" />
+              <>
+                <Button asChild variant="ghost">
+                  <Link href="/dashboard">Dashboard</Link>
+                </Button>
+                <UserButton afterSignOutUrl="/" />
+              </>
             ) : (
               <div className="flex gap-2">
                 <Button asChild variant="outline">
