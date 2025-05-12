@@ -1,35 +1,39 @@
-import Link from "next/link"
-import { Button } from "./ui/button"
+import Link from "next/link";
+import { Button } from "./ui/button";
+import { UserButton } from "@clerk/nextjs";
+import { currentUser } from "@clerk/nextjs/server";
 import { ModeToggle } from "./mode-toggle"
 
-export function Header() {
+export async function Header() {
+  const user = await currentUser()
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
-        <div className="mr-4 flex">
-          <Link href="/" className="mr-6 flex items-center space-x-2">
-            <span className="font-bold inline-block">Carolinian Events</span>
-          </Link>
-          <nav className="flex items-center space-x-6 text-sm font-medium">
-            <Link href="/events" className="transition-colors hover:text-foreground/80 text-foreground/60">
-              Browse Events
-            </Link>
-            <Link href="/create-event" className="transition-colors hover:text-foreground/80 text-foreground/60">
-              Create Event
-            </Link>
-          </nav>
-        </div>
-        <div className="flex flex-1 items-center justify-end space-x-4">
-          <nav className="flex items-center space-x-2">
-            <Button variant="ghost" asChild>
-              <Link href="/sign-in">Sign In</Link>
-            </Button>
-            <Button asChild>
-              <Link href="/sign-up">Sign Up</Link>
-            </Button>
+    <header className="border-b">
+      <div className="container flex h-16 items-center justify-between">
+        <Link href="/" className="font-bold">
+          Carolinian Events
+        </Link>
+        
+        <nav className="flex items-center gap-4">
+          <Link href="/events">Events</Link>
+          {user && <Link href="/create-event">Create Event</Link>}
+          
+          <div className="flex items-center gap-4">
             <ModeToggle />
-          </nav>
-        </div>
+            {user ? (
+              <UserButton afterSignOutUrl="/" />
+            ) : (
+              <div className="flex gap-2">
+                <Button asChild variant="outline">
+                  <Link href="/sign-in">Sign In</Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/sign-up">Sign Up</Link>
+                </Button>
+              </div>
+            )}
+          </div>
+        </nav>
       </div>
     </header>
   )
