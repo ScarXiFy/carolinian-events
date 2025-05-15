@@ -1,6 +1,5 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { HomeButtons } from "@/components/HomeButtons"
 
 export default function Home() {
   return (
@@ -12,14 +11,7 @@ export default function Home() {
         <p className="max-w-[750px] text-center text-lg text-muted-foreground sm:text-xl">
           Carolinian Events helps you find, manage, and create events in your community. Join us today!
         </p>
-        <div className="flex w-full items-center justify-center space-x-4 py-4 md:pb-10">
-          <Button asChild>
-            <Link href="/sign-in">Get Started</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/events">Browse Events</Link>
-          </Button>
-        </div>
+        <HomeButtons />
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
