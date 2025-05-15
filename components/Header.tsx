@@ -15,34 +15,31 @@ export function Header() {
           Carolinian Events
         </Link>
         
-        <nav className="flex items-center gap-4">
-          <Link href="/events">Events</Link>
-          
-          <div className="flex items-center gap-4">
-            <ModeToggle />
-            {!isLoaded ? (
-              <div className="flex gap-2">
-                <Button variant="outline" disabled>Loading...</Button>
-              </div>
-            ) : isSignedIn ? (
-              <>
-                <Button asChild variant="ghost">
-                  <Link href="/dashboard">Dashboard</Link>
-                </Button>
-                <UserButton afterSignOutUrl="/" />
-              </>
-            ) : (
-              <div className="flex gap-2">
-                <Button asChild variant="outline">
-                  <Link href="/sign-in">Sign In</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/sign-up">Sign Up</Link>
-                </Button>
-              </div>
-            )}
-          </div>
-        </nav>
+        <div className="flex items-center gap-4">
+          {!isLoaded ? (
+            <div className="flex gap-2">
+              <Button variant="outline" disabled>Loading...</Button>
+            </div>
+          ) : isSignedIn ? (
+            <>
+              <ModeToggle /> {/* Moved before Create Event button */}
+              <Button asChild variant="ghost">
+                <Link href="/create-event">Create Event</Link>
+              </Button>
+              <UserButton afterSignOutUrl="/" />
+            </>
+          ) : (
+            <div className="flex gap-2">
+              <ModeToggle /> {/* Moved before auth buttons */}
+              <Button asChild variant="outline">
+                <Link href="/sign-in">Sign In</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/sign-up">Sign Up</Link>
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   )
