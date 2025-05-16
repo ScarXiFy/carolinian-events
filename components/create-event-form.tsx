@@ -131,7 +131,7 @@ export function CreateEventForm() {
 
   const { fields: tagFields, append: appendTag, remove: removeTag } = useFieldArray({
     control: form.control,
-    name: "tags" as const,
+    name: "tags" as never,
   })
 
   // In your form's onSubmit handler
@@ -609,7 +609,7 @@ async function onSubmit(values: z.infer<typeof eventFormSchema>) {
                   if (e.key === "Enter") {
                     e.preventDefault()
                     if (field.value.trim()) {
-                      appendTag("")
+                      appendTag({ name: "" })
                     }
                   }
                 }}
@@ -631,7 +631,7 @@ async function onSubmit(values: z.infer<typeof eventFormSchema>) {
   <Button
     type="button"
     variant="outline"
-    onClick={() => appendTag("")}
+    onClick={() => appendTag({ name: "" })}
   >
     Add Custom Tag
   </Button>

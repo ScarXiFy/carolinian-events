@@ -39,6 +39,15 @@ export interface IEvent {
   createdAt?: Date | string
 }
 
+export interface IUser {
+  clerkId: string
+  firstName: string
+  lastName: string
+  email: string
+  photo: string
+  // Add any additional fields you need
+}
+
 export type CreateEventParams = {
   title: string
   description: string
