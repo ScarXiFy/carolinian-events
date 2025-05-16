@@ -5,11 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { ClerkProvider } from '@clerk/nextjs'
-<<<<<<< HEAD
-import { dark } from '@clerk/themes'
 import '@uploadthing/react/styles.css'
-=======
->>>>>>> origin/jewels
 
 const inter = Inter({ subsets: ['latin'] })
 

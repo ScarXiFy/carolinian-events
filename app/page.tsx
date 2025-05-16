@@ -1,12 +1,8 @@
-<<<<<<< HEAD
-=======
 'use client'
 
 import { Calendar, PlusCircle, Users } from "lucide-react"
 import Link from "next/link"
 import Slider from "react-slick"
-import { Button } from "@/components/ui/button"
->>>>>>> origin/jewels
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { HomeButtons } from "@/components/HomeButtons"
 
@@ -45,9 +41,7 @@ export default function Home() {
         <p className="max-w-[750px] text-center text-lg text-gray-800 sm:text-xl">
           Carolinian Events helps you find, manage, and create events in your community. Join us today!
         </p>
-<<<<<<< HEAD
         <HomeButtons />
-=======
         <div className="flex flex-wrap items-center justify-center gap-4 py-6">
           <Link href="/sign-up">
             <button className="rounded-full bg-yellow-600 px-6 py-3 text-white shadow hover:bg-yellow-700 transition">
@@ -60,7 +54,6 @@ export default function Home() {
             </button>
           </Link>
         </div>
->>>>>>> origin/jewels
       </section>
 
       {/* Carousel Section */}
