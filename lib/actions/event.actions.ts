@@ -77,3 +77,85 @@ export async function getAllEvents(): Promise<IEvent[]> {
     throw new Error("Failed to fetch events")
   }
 }
+
+export async function deleteEvent(eventId: string) {
+  try {
+    await connectToDatabase()
+    const organizer = await getCurrentOrganizer()
+
+    if (!organizer) {
+      throw new Error("Unauthorized: Organizer not found.")
+    }
+
+    const event = await Event.findById(eventId)
+
+    if (!event) {
+      throw new Error("Event not found.")
+    }
+
+    // Check ownership
+    if (event.organizer.toString() !== organizer._id.toString()) {
+      throw new Error("You can only delete events you created.")
+    }
+
+    await Event.findByIdAndDelete(eventId)
+    revalidatePath("/events")
+
+    return { success: true }
+  } catch (err) {
+    console.error("deleteEvent error:", err)
+    return { success: false, message: err instanceof Error ? err.message : "Failed to delete event." }
+  }
+}
+interface UpdateEventParams {
+  eventId: string
+  title: string
+  description: string
+  location: string
+  startDateTime: string
+  endDateTime: string
+  imageUrl: string
+  category: string
+  price?: string
+  isFree?: boolean
+}
+
+export async function updateEvent(data: UpdateEventParams) {
+  try {
+    await connectToDatabase()
+    const organizer = await getCurrentOrganizer()
+    if (!organizer) throw new Error("Unauthorized")
+
+    const event = await Event.findById(data.eventId)
+    if (!event) throw new Error("Event not found")
+
+    if (event.organizer.toString() !== organizer._id.toString()) {
+      throw new Error("You can only edit your own events")
+    }
+
+    const startDateTime = new Date(data.startDateTime)
+    const endDateTime = new Date(data.endDateTime)
+
+    if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+      throw new Error("Invalid date format")
+    }
+
+    Object.assign(event, {
+      ...data,
+      startDateTime,
+      endDateTime,
+    })
+
+    await event.save()
+    revalidatePath("/events")
+
+    return { success: true, event: JSON.parse(JSON.stringify(event)) }
+  } catch (error) {
+    console.error("updateEvent error:", error)
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Update failed",
+    }
+  }
+}
+

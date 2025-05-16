@@ -54,8 +54,8 @@ const EventSchema = new Schema<IEvent>({
       return typeof value === "string" && value.trim().length > 0;
     },
     message: "Image URL must be a non-empty string",
+    },
   },
-},
 category: { 
     type: Schema.Types.ObjectId, 
     ref: "Category" 
