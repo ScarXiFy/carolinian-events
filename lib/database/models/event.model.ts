@@ -1,5 +1,5 @@
+import { IEvent } from "@/lib/types";
 import { Schema, model, models } from "mongoose"
-import { IEvent } from "@/lib/types"
 
 const EventSchema = new Schema<IEvent>({
   title: { 
@@ -58,7 +58,13 @@ const EventSchema = new Schema<IEvent>({
   },
 category: { 
     type: Schema.Types.ObjectId, 
-    ref: "Category" 
+    ref: "Category",
+    index: true 
+  },
+  tags: {
+    type: [String],
+    default: [],
+    index: true
   },
   organizer: { 
     type: Schema.Types.ObjectId, 
@@ -76,7 +82,7 @@ category: {
 })
 
 // Indexes for better query performance
-EventSchema.index({ title: "text", description: "text" })
+EventSchema.index({ title: "text", description: "text", location: "text" })
 EventSchema.index({ startDateTime: 1 })
 EventSchema.index({ organizer: 1 })
 

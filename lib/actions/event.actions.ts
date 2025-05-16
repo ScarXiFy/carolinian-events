@@ -6,6 +6,8 @@ import User from "@/lib/database/models/user.model"
 import { CreateEventParams, IEvent } from "@/lib/types"
 import { revalidatePath } from "next/cache"
 import { getCurrentOrganizer } from "@/lib/auth"
+import Category from "../database/models/category.model"
+import { FilterQuery } from "mongoose"
 
 export async function createEvent(eventData: CreateEventParams) {
   try {
@@ -35,15 +37,64 @@ export async function createEvent(eventData: CreateEventParams) {
   }
 }
 
-export async function getAllEvents(): Promise<IEvent[]> {
+export async function getAllEvents({
+  query = '',
+  category = '',
+  tag = '',
+  filter = 'all'
+}: {
+  query?: string;
+  category?: string;
+  tag?: string;
+  filter?: string;
+} = {}): Promise<IEvent[]> {
   try {
     await connectToDatabase()
-    const events = await Event.find().populate({
-      path: 'organizer',
-      model: User,
-      select: '_id firstName lastName'
-    }).lean()
     
+    const conditions: FilterQuery<IEvent> = {}
+
+    // Text search
+    if (query) {
+      conditions.$text = { $search: query }
+    }
+
+    // Category filter
+    if (category) {
+      const categoryDoc = await Category.findOne({ name: category })
+      if (categoryDoc) {
+        conditions.category = categoryDoc._id
+      }
+    }
+
+    // Tag filter
+    if (tag) {
+      conditions.tags = tag
+    }
+
+    // Date filters
+    const now = new Date()
+    if (filter === 'upcoming') {
+      conditions.startDateTime = { $gte: now }
+    } else if (filter === 'past') {
+      conditions.endDateTime = { $lt: now }
+    } else if (filter === 'free') {
+      conditions.isFree = true
+    }
+
+    const events = await Event.find(conditions)
+      .populate({
+        path: 'organizer',
+        model: User,
+        select: '_id firstName lastName'
+      })
+      .populate({
+        path: 'category',
+        model: Category,
+        select: 'name'
+      })
+      .sort({ startDateTime: 'asc' })
+      .lean()
+
     return JSON.parse(JSON.stringify(events))
   } catch (error) {
     console.error("Error fetching events:", error)
@@ -132,26 +183,55 @@ export async function updateEvent(data: UpdateEventParams) {
   }
 }
 
-export async function getUserEvents(clerkUserId: string): Promise<IEvent[]> {
+export async function getUserEvents(
+  clerkUserId: string,
+  {
+    query = '',
+    filter = 'all'
+  }: {
+    query?: string;
+    filter?: string;
+  } = {}
+): Promise<IEvent[]> {
   try {
-    await connectToDatabase();
+    await connectToDatabase()
     
-    // 1. Find the User document
-    const user = await User.findOne({ clerkId: clerkUserId });
-    if (!user) return [];
-    
-    // 2. Find events with matching organizer reference
-    const events = await Event.find({ organizer: user._id })
+    const user = await User.findOne({ clerkId: clerkUserId })
+    if (!user) return []
+
+    const conditions: FilterQuery<IEvent> = { organizer: user._id }
+
+    // Text search
+    if (query) {
+      conditions.$text = { $search: query }
+    }
+
+    // Status filters
+    const now = new Date()
+    if (filter === 'upcoming') {
+      conditions.startDateTime = { $gte: now }
+    } else if (filter === 'past') {
+      conditions.endDateTime = { $lt: now }
+    } else if (filter === 'draft') {
+      conditions.isPublished = false
+    }
+
+    const events = await Event.find(conditions)
       .populate({
         path: 'organizer',
         select: 'firstName lastName organization'
       })
-      .lean();
-    
-    // 3. Convert to plain objects and ensure proper typing
-    return JSON.parse(JSON.stringify(events));
+      .populate({
+        path: 'category',
+        model: Category,
+        select: 'name'
+      })
+      .sort({ startDateTime: 'asc' })
+      .lean()
+
+    return JSON.parse(JSON.stringify(events))
   } catch (error) {
-    console.error("Error fetching user events:", error);
-    throw error;
+    console.error("Error fetching user events:", error)
+    throw error
   }
 }
