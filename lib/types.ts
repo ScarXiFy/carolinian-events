@@ -1,4 +1,4 @@
-import { Document, Types } from "mongoose"
+import { Document, ObjectId, Types } from "mongoose"
 
 // For Mongoose documents (backend)
 export interface IEventDocument extends Document {
@@ -22,7 +22,7 @@ export interface IEventDocument extends Document {
 
 // For frontend usage
 export interface IEvent {
-  _id: string
+  _id: string | ObjectId
   title: string
   description: string
   location: string

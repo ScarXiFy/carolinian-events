@@ -10,6 +10,7 @@ interface EventCardProps {
     _id: string // Ensure _id is explicitly typed as string
     startDateTime: Date
     endDateTime: Date
+    
   }
 }
 
