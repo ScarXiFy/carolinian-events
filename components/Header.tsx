@@ -1,5 +1,6 @@
 "use client"
 
+<<<<<<< HEAD
 import Link from "next/link"
 import { Button } from "./ui/button"
 import { UserButton, useUser } from "@clerk/nextjs"
@@ -26,13 +27,25 @@ export function Header() {
         return <Sun className="h-4 w-4" />
     }
   }
+=======
+import Link from "next/link";
+import { Button } from "./ui/button";
+import { UserButton, useUser } from "@clerk/nextjs";
+import { Skeleton } from "./ui/skeleton";
+
+export function Header() {
+  const { isLoaded, isSignedIn } = useUser();
+>>>>>>> origin/jewels
 
   return (
-    <header className="border-b">
-      <div className="container flex h-16 items-center justify-between">
-        <Link href="/" className="font-bold">
+    <header className="border-b bg-white dark:bg-black w-full">
+      <div className="w-full flex items-center justify-between px-4 py-3">
+
+        {/* LEFT SIDE: Carolinian Events */}
+        <Link href="/" className="font-bold text-xl hover:opacity-80 transition">
           Carolinian Events
         </Link>
+<<<<<<< HEAD
         
         <nav className="flex items-center gap-4">
           <div className="flex items-center gap-4">
@@ -114,7 +127,20 @@ export function Header() {
             )}
           </div>
         </nav>
+=======
+
+        {/* RIGHT SIDE: Sign In/User */}
+        {!isLoaded ? (
+          <Skeleton className="h-10 w-24 rounded-md" />
+        ) : isSignedIn ? (
+          <UserButton afterSignOutUrl="/" />
+        ) : (
+          <Button asChild variant="outline">
+            <Link href="/sign-in">Sign In</Link>
+          </Button>
+        )}
+>>>>>>> origin/jewels
       </div>
     </header>
-  )
+  );
 }
