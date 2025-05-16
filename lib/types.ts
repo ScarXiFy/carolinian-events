@@ -29,6 +29,7 @@ export interface IEvent {
   imageUrl: string
   startDateTime: Date | string
   endDateTime: Date | string
+  category?: Types.ObjectId
   price: string
   isFree: boolean
   organizer: {
