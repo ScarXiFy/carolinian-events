@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
@@ -21,3 +22,12 @@ export async function POST(req: Request) {
 
   return NextResponse.json(result);
 }
+=======
+import { connectToDatabase } from '@/lib/database/connect';
+import { NextResponse } from 'next/server';
+
+export async function GET() {
+  await connectToDatabase();
+  return NextResponse.json({ message: 'Connected to MongoDB!' });
+}
+>>>>>>> origin/main
