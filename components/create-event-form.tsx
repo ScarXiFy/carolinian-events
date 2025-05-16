@@ -27,6 +27,20 @@ import { useRouter } from "next/navigation"
 import ImageUpload from "@/components/image-upload" // Import your ImageUpload component
 import Image from "next/image"
 
+function formatForDateTimeInput(dateString: string): string {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "";
+  
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
 const organizerSchema = z.object({
   name: z.string().min(1, "Organizer name is required"),
   socialMedia: z.string().optional(),
@@ -42,8 +56,16 @@ const eventFormSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters"),
   location: z.string().min(1, "Location is required"),
   imageUrl: z.string().min(1, "Please upload an event image"),
-  startDateTime: z.string().datetime({ message: "Invalid date format" }),
-  endDateTime: z.string().datetime({ message: "Invalid date format" }),
+  startDateTime: z.string().refine((val) => {
+    return !isNaN(new Date(val).getTime())
+  }, {
+    message: "Invalid start date format",
+  }),
+  endDateTime: z.string().refine((val) => {
+    return !isNaN(new Date(val).getTime())
+  }, {
+    message: "Invalid end date format",
+  }),
   price: z.string(),
   isFree: z.boolean(),
   organizers: z.array(organizerSchema).min(1, "At least one organizer is required"),
@@ -112,23 +134,23 @@ export function CreateEventForm() {
     name: "tags" as const,
   })
 
-  async function onSubmit(values: z.infer<typeof eventFormSchema>) {
+  // In your form's onSubmit handler
+async function onSubmit(values: z.infer<typeof eventFormSchema>) {
     try {
-      if (!user) throw new Error("Please sign in first")
+      if (!user) throw new Error("Please sign in first");
       
       const eventData = {
         ...values,
+        startDateTime: new Date(values.startDateTime).toISOString(),
+        endDateTime: new Date(values.endDateTime).toISOString(),
         organizer: user.id,
-        startDateTime: new Date(values.startDateTime),
-        endDateTime: new Date(values.endDateTime),
-        price: values.price || "0",
-        tags: values.tags?.filter(tag => tag.trim() !== ""),
-      }
+      };
 
-      const newEvent = await createEvent(eventData)
-      router.push(`/events/${newEvent._id}`)
+      const newEvent = await createEvent(eventData);
+      router.push(`/events/${newEvent._id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong")
+      console.error("Error creating event:", err);
+      setError(err instanceof Error ? err.message : "Something went wrong");
     }
   }
 
@@ -275,34 +297,52 @@ export function CreateEventForm() {
 
           {/* Date & Time */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Date & Time</h3>
-            <FormField
-              control={form.control}
-              name="startDateTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Start Date & Time*</FormLabel>
-                  <FormControl>
-                    <Input type="datetime-local" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <h3 className="text-lg font-medium">Date & Time</h3>
+        <FormField
+  control={form.control}
+  name="startDateTime"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Start Date & Time*</FormLabel>
+      <FormControl>
+        <Input
+          type="datetime-local"
+          value={field.value ? formatForDateTimeInput(field.value) : ""}
+          onChange={(e) => {
+            const date = new Date(e.target.value)
+            if (!isNaN(date.getTime())) {
+              field.onChange(date.toISOString())
+            }
+          }}
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
 
-            <FormField
-              control={form.control}
-              name="endDateTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>End Date & Time*</FormLabel>
-                  <FormControl>
-                    <Input type="datetime-local" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+<FormField
+  control={form.control}
+  name="endDateTime"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>End Date & Time*</FormLabel>
+      <FormControl>
+        <Input
+          type="datetime-local"
+          value={field.value ? formatForDateTimeInput(field.value) : ""}
+          onChange={(e) => {
+            const date = new Date(e.target.value)
+            if (!isNaN(date.getTime())) {
+              field.onChange(date.toISOString())
+            }
+          }}
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
 
             <div className="grid grid-cols-2 gap-4">
               <FormField

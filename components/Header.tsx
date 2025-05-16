@@ -35,10 +35,6 @@ export function Header() {
         </Link>
         
         <nav className="flex items-center gap-4">
-          <Link href="/events" className="text-sm font-medium hover:underline">
-            Browse Events
-          </Link>
-          
           <div className="flex items-center gap-4">
             {!isLoaded ? (
               <div className="flex gap-2">
@@ -81,13 +77,6 @@ export function Header() {
               </>
             ) : (
               <div className="flex items-center gap-2">
-                <Button asChild variant="outline">
-                  <Link href="/sign-in">Sign In</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/sign-up">Sign Up</Link>
-                </Button>
-                
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button 
@@ -114,6 +103,13 @@ export function Header() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                
+                <Button asChild variant="outline">
+                  <Link href="/sign-in">Sign In</Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/sign-up">Sign Up</Link>
+                </Button>
               </div>
             )}
           </div>
