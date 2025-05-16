@@ -5,13 +5,14 @@ import Event from "@/lib/database/models/event.model"
 import User from "@/lib/database/models/user.model"
 import { CreateEventParams, IEvent } from "@/lib/types"
 import { revalidatePath } from "next/cache"
+import { getCurrentOrganizer } from "@/lib/auth";
 
 export async function createEvent(event: CreateEventParams): Promise<IEvent> {
   try {
     await connectToDatabase()
 
     // Improved organizer lookup with better error details
-    const organizer = await User.findOne({ clerkId: event.organizer })
+    const organizer = await getCurrentOrganizer();
     
     if (!organizer) {
       console.error(`Organizer not found for clerkId: ${event.organizer}`)
@@ -37,6 +38,7 @@ export async function createEvent(event: CreateEventParams): Promise<IEvent> {
       startDateTime,
       endDateTime,
       organizer: organizer._id,
+      imageUrl: event.imageUrl,
     })
 
     revalidatePath("/events")
