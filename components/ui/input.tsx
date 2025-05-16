@@ -20,7 +20,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             value={isControlled ? value : undefined}
             // Pass defaultValue if uncontrolled
             defaultValue={!isControlled ? props.defaultValue : undefined}
-            {...props} />
+            {...props}>
+              
+            </input>
     );
   }
 )
