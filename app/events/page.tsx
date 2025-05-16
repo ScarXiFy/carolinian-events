@@ -19,7 +19,7 @@ export default async function BrowseEvents() {
         </Button>
       </div>
 
-      {/* Filters will go here */}
+      {/* Filters */}
       <div className="mb-6">
         <div className="flex gap-2">
           <Button variant="outline">All</Button>
@@ -31,17 +31,23 @@ export default async function BrowseEvents() {
 
       {/* Events Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {events.map((event) => (
-          <EventCard 
-            key={event._id.toString()}
-            event={{
-              ...event,
-              _id: event._id.toString(),
-              startDateTime: new Date(event.startDateTime).toISOString(),
-              endDateTime: new Date(event.endDateTime).toISOString(),
-            }} 
-          />
-        ))}
+        {events.length > 0 ? (
+          events.map((event) => (
+            <EventCard
+              key={event._id.toString()}
+              event={{
+                ...event,
+                _id: event._id.toString(),
+                startDateTime: new Date(event.startDateTime),
+                endDateTime: new Date(event.endDateTime),
+              }}
+            />
+          ))
+        ) : (
+          <div className="col-span-full text-center text-muted-foreground py-12">
+            No events found.
+          </div>
+        )}
       </div>
     </div>
   )
