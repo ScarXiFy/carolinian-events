@@ -42,8 +42,7 @@ export interface IEvent {
 
 export interface IUser {
   clerkId: string
-  firstName: string
-  lastName: string
+  organization: string
   email: string
   photo: string
   // Add any additional fields you need
