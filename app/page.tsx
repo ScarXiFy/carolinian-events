@@ -1,7 +1,6 @@
 'use client'
 
 import { Calendar, PlusCircle, Users } from "lucide-react"
-import Link from "next/link"
 import Slider from "react-slick"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { HomeButtons } from "@/components/HomeButtons"
@@ -43,16 +42,6 @@ export default function Home() {
         </p>
         <HomeButtons />
         <div className="flex flex-wrap items-center justify-center gap-4 py-6">
-          <Link href="/sign-up">
-            <button className="rounded-full bg-yellow-600 px-6 py-3 text-white shadow hover:bg-yellow-700 transition">
-              Get Started
-            </button>
-          </Link>
-          <Link href="/events">
-            <button className="rounded-full border-2 border-yellow-600 px-6 py-3 text-yellow-700 hover:bg-yellow-600 hover:text-white transition">
-              Browse Events
-            </button>
-          </Link>
         </div>
       </section>
 

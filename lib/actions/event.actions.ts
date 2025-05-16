@@ -5,7 +5,7 @@ import Event from "@/lib/database/models/event.model"
 import User from "@/lib/database/models/user.model"
 import { CreateEventParams, IEvent } from "@/lib/types"
 import { revalidatePath } from "next/cache"
-import { getCurrentOrganizer } from "@/lib/auth";
+import { getCurrentOrganizer } from "@/lib/auth"
 
 export async function createEvent(event: CreateEventParams): Promise<IEvent> {
   try {
