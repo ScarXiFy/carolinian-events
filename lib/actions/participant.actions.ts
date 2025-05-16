@@ -44,8 +44,8 @@ export async function joinEvent({
     }
 
     // Add user to event.joinedUsers if not already added
-    if (!event.joinedUsers.includes(participant._id)) {
-      event.joinedUsers.push(participant._id)
+    if (!event.participants.includes(participant._id)) {
+      event.participants.push(participant._id)
       await event.save()
     }
 
