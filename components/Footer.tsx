@@ -12,7 +12,7 @@ export function Footer() {
             rel="noreferrer"
             className="font-medium underline underline-offset-4"
           >
-            Carolinian Events Team
+            LaLiMa Team
           </Link>
           . The source code is available on{" "}
           <Link
