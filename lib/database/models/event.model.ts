@@ -65,6 +65,10 @@ const EventSchema = new Schema<IEvent>({
     ref: "User",
     required: true
   },
+  participants: { 
+    type: Schema.Types.ObjectId, 
+    ref: "Participants" 
+  },
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

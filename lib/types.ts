@@ -34,8 +34,13 @@ export interface IEvent {
   isFree: boolean
   organizer: {
     _id: string
+    organization: string
+  }
+  participants: {
+    _id: string
     firstName: string
     lastName: string
+    department: string
   }
   createdAt?: Date | string
 }
@@ -79,7 +84,6 @@ export type EventCardProps = {
   isFree: boolean
   organizer: {
     _id: string
-    firstName: string
-    lastName: string
+    organization: string
   }
 }
