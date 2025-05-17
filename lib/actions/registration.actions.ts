@@ -1,12 +1,12 @@
 "use server";
 
-import dbConnect from "@/lib/db";
+import { connectToDatabase } from "@/lib/database/connect";
 import Registration from "@/lib/database/models/registration.model"; // You'll need to create this model
 import { revalidatePath } from "next/cache";
 
 export async function registerForEvent(eventId: string, userId: string) {
   try {
-    await dbConnect();
+    await connectToDatabase();
 
     // Check if user is already registered
     const existingRegistration = await Registration.findOne({

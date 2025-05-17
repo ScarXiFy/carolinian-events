@@ -1,3 +1,4 @@
+// lib/types.ts
 import { Document, ObjectId, Schema, Types } from "mongoose"
 import { FilterQuery } from "mongoose"
 

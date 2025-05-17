@@ -9,7 +9,6 @@ import { revalidatePath } from "next/cache"
 import { getCurrentOrganizer } from "@/lib/auth"
 import Category from "../database/models/category.model"
 import { FilterQuery } from "mongoose"
-import dbConnect from "@/lib/db"
 
 export async function createEvent(eventData: CreateEventParams) {
   try {
@@ -249,7 +248,7 @@ export async function getUserEvents(
 
 export async function getEventById(eventId: string) {
   try {
-    await dbConnect()
+    await connectToDatabase()
     
     const event = await Event.findById(eventId).populate('category')
 
