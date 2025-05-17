@@ -12,6 +12,7 @@ export async function getCurrentOrganizer() {
 
     // Check if the user already exists in MongoDB
     let user = await User.findOne({ clerkId: userId });
+    
 
     // If not found, create a new one using Clerk data
     if (!user) {

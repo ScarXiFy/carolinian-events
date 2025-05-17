@@ -3,6 +3,7 @@ import Event from "@/lib/database/models/event.model"
 import { deleteEvent } from "@/lib/actions/event.actions"
 import { notFound } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export default async function DeleteEventPage({ params }: { params: { id: string } }) {
   await connectToDatabase()
@@ -28,9 +29,8 @@ export default async function DeleteEventPage({ params }: { params: { id: string
           <Button variant="destructive" type="submit">
             Yes, Delete
           </Button>
-          <Button variant="outline" asChild>
-            <a href="/dashboard">Cancel</a>
-          </Button>
+          <Link href="/dashboard">Cancel</Link>
+          <Link href="/dashboard">Cancel</Link>
         </div>
       </form>
     </main>
