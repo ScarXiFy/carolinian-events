@@ -7,7 +7,7 @@ export function Footer() {
         <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
           Built by{" "}
           <Link
-            href="#"
+            href="https://drive.google.com/file/d/1z4cY8zIcPJeDenqpOwEV4PMF_wb4tl3p/view?usp=sharing"
             target="_blank"
             rel="noreferrer"
             className="font-medium underline underline-offset-4"
@@ -16,7 +16,7 @@ export function Footer() {
           </Link>
           . The source code is available on{" "}
           <Link
-            href="#"
+            href="https://github.com/ScarXiFy/carolinian-events"
             target="_blank"
             rel="noreferrer"
             className="font-medium underline underline-offset-4"

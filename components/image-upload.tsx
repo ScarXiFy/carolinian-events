@@ -3,6 +3,8 @@
 import { UploadDropzone } from "@/utils/uploadthing";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
+import { Button } from "./ui/button";
 
 interface ImageUploadProps {
   onChange: (value: string) => void;
@@ -11,52 +13,89 @@ interface ImageUploadProps {
 
 const ImageUpload = ({ onChange, value }: ImageUploadProps) => {
   const [imageUrl, setImageUrl] = useState(value);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     setImageUrl(value);
   }, [value]);
 
-  return (
-    <div>
-      <UploadDropzone
-        appearance={{
-          container: {
-            border: "1px solid white",
-            borderRadius: "0.375rem", // rounded-md equivalent
-            padding: "1rem" // p-4 equivalent
-          },
-          button: {
-            backgroundColor: "#3b82f6", // bg-blue-500
-            color: "white",
-            padding: "0.5rem 1rem" // py-2 px-4
-          }
-        }}
-        endpoint='imageUploader' 
-        onClientUploadComplete={(res) => {
-          if (res && res[0]?.url) {
-            setImageUrl(res[0].url);
-            onChange(res[0].url);
-          }
-        }}
-        onUploadError={(error: Error) => {
-          console.error("Upload error:", error);
-        }} 
-      />
+  const handleRemoveImage = () => {
+    setImageUrl("");
+    onChange("");
+  };
 
-      {imageUrl && (
-        <div className="mt-4">
-          <div className="relative aspect-square w-full max-w-xs mx-auto">
-            <Image 
-              src={imageUrl} 
-              alt="Uploaded image" 
+  return (
+    <div className="space-y-4">
+      {!imageUrl ? (
+        <UploadDropzone
+          appearance={{
+            container: {
+              border: "1px dashed #e2e8f0",
+              borderRadius: "0.375rem",
+              padding: "1.5rem",
+              backgroundColor: "#f8fafc",
+              transition: "all 0.2s ease",
+            },
+            button: {
+              backgroundColor: "#3b82f6",
+              color: "white",
+              padding: "0.5rem 1rem",
+              fontSize: "0.875rem",
+            },
+            label: {
+              color: "#64748b",
+              fontSize: "0.875rem",
+            },
+            uploadIcon: {
+              color: "#94a3b8",
+            }
+          }}
+          endpoint="imageUploader"
+          onUploadBegin={() => setIsUploading(true)}
+          onClientUploadComplete={(res) => {
+            setIsUploading(false);
+            if (res?.[0]?.url) {
+              setImageUrl(res[0].url);
+              onChange(res[0].url);
+            }
+          }}
+          onUploadError={(error: Error) => {
+            setIsUploading(false);
+            console.error("Upload error:", error);
+          }}
+        />
+      ) : (
+        <div className="relative group">
+          <div className="relative aspect-square w-full max-w-xs mx-auto rounded-md overflow-hidden border">
+            <Image
+              src={imageUrl}
+              alt="Uploaded image"
               fill
-              className="rounded-md object-cover"
+              className="object-cover"
+              priority
             />
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleRemoveImage}
+                className="opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Remove Image
+              </Button>
+            </div>
           </div>
         </div>
       )}
+
+      {isUploading && (
+        <div className="text-center text-sm text-muted-foreground">
+          Uploading image...
+        </div>
+      )}
     </div>
-  )
-}
+  );
+};
 
 export default ImageUpload;

@@ -196,3 +196,23 @@ export async function deleteEvent(eventId: string) {
     return { success: false, message: err instanceof Error ? err.message : "Failed to delete event." }
   }
 }
+
+export async function getEventById(eventId: string) {
+  try {
+    await connectToDatabase()
+    
+    const event = await Event.findById(eventId).populate('category')
+
+    if (!event) return null
+
+    return {
+      ...event.toObject(),
+      _id: event._id.toString(),
+      startDateTime: new Date(event.startDateTime),
+      endDateTime: new Date(event.endDateTime),
+    }
+  } catch (error) {
+    console.error('Error getting event:', error)
+    return null
+  }
+}
