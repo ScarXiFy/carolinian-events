@@ -1,15 +1,25 @@
+// components/EventCard.tsx
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "./ui/button"
-import { Calendar, MapPin } from "lucide-react"
+import { Calendar, MapPin, Tag } from "lucide-react"
 import { format } from "date-fns"
-import { IEvent } from "@/lib/types"
-
 interface EventCardProps {
-  event: IEvent & {
-    _id: string // Ensure _id is explicitly typed as string
-    startDateTime: Date
-    endDateTime: Date
+  event: {
+    tags?: string[];
+    _id: string;
+    title: string;
+    description: string;
+    location: string;
+    imageUrl: string;
+    startDateTime: Date;
+    endDateTime: Date;
+    price: string;
+    isFree: boolean;
+    category?: {
+      _id: string;
+      name: string;
+    };
   }
 }
 
@@ -41,6 +51,23 @@ export default function EventCard({ event }: EventCardProps) {
             <MapPin className="h-4 w-4 text-muted-foreground" />
             <span>{event.location}</span>
           </div>
+        </div>
+
+        {/* Category and Tags */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {event.category && (
+            <span className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary">
+              {event.category.name}
+            </span>
+          )}
+          {event.tags?.map((tag: string) => (
+            <span 
+              key={tag}
+              className="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground flex items-center"
+            >
+              <Tag className="h-3 w-3 mr-1" /> #{tag}
+            </span>
+          ))}
         </div>
         
         <div className="flex justify-between items-center">

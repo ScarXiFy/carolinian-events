@@ -1,4 +1,5 @@
-import { Document, Types } from "mongoose"
+import { Document, ObjectId, Schema, Types } from "mongoose"
+import { FilterQuery } from "mongoose"
 
 // For Mongoose documents (backend)
 export interface IEventDocument extends Document {
@@ -22,7 +23,7 @@ export interface IEventDocument extends Document {
 
 // For frontend usage
 export interface IEvent {
-  _id: string
+  _id: string | ObjectId
   title: string
   description: string
   location: string
@@ -32,6 +33,7 @@ export interface IEvent {
   category?: Types.ObjectId
   price: string
   isFree: boolean
+  tags: string[]
   organizer: {
     _id: string
     organization: string
@@ -72,7 +74,7 @@ export type GetAllEventsParams = {
   page?: number
 }
 
-export type EventCardProps = {
+export type EventCardProps = IEvent & {
   _id: string
   title: string
   description: string
@@ -86,4 +88,24 @@ export type EventCardProps = {
     _id: string
     organization: string
   }
+}
+
+export interface EventConditions {
+  $text?: { $search: string };
+  category?: Schema.Types.ObjectId;
+  tags?: string | { $in: string[] };
+  startDateTime?: { $gte?: Date; $lt?: Date };
+  endDateTime?: { $lt?: Date };
+  isFree?: boolean;
+  isPublished?: boolean;
+  organizer?: Schema.Types.ObjectId;
+  $or?: Array<{
+    title?: { $regex: string; $options: string };
+    description?: { $regex: string; $options: string };
+    location?: { $regex: string; $options: string };
+  }>;
+}
+
+export type EventFilterQuery = FilterQuery<IEvent> & {
+  $Text?: { $search: string };
 }

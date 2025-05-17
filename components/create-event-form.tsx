@@ -146,8 +146,9 @@ async function onSubmit(values: z.infer<typeof eventFormSchema>) {
         organizer: user.id,
       };
 
-      const newEvent = await createEvent(eventData);
-      router.push(`/events/${newEvent._id}`);
+      await createEvent(eventData);
+      router.push("/my-events");
+      router.refresh();
     } catch (err) {
       console.error("Error creating event:", err);
       setError(err instanceof Error ? err.message : "Something went wrong");
