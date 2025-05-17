@@ -1,27 +1,26 @@
 // app/api/webhooks/clerk/route.ts
-import { Webhook } from 'svix';
-import { headers } from 'next/headers';
-import { WebhookEvent } from '@clerk/nextjs/server';
-import { connectToDatabase } from '@/lib/database/connect';
-import User from '@/lib/database/models/user.model';
+import { Webhook } from "svix";
+import { headers } from "next/headers";
+import { WebhookEvent } from "@clerk/nextjs/server";
+//import { NextResponse } from "next/server";
+
+import { connectToDatabase } from "@/lib/database/connect";
+import User from "@/lib/database/models/user.model";
 
 export async function POST(req: Request) {
-  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
+  const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || process.env.CLERK_WEBHOOK_SECRET;
 
   if (!WEBHOOK_SECRET) {
-    throw new Error('CLERK_WEBHOOK_SECRET is missing');
+    throw new Error("Missing Clerk webhook secret in environment variables.");
   }
 
-  // Await the headers promise
   const headerPayload = await headers();
   const svix_id = headerPayload.get("svix-id");
   const svix_timestamp = headerPayload.get("svix-timestamp");
   const svix_signature = headerPayload.get("svix-signature");
 
   if (!svix_id || !svix_timestamp || !svix_signature) {
-    return new Response('Error occurred -- no svix headers', {
-      status: 400
-    });
+    return new Response("Missing Svix headers", { status: 400 });
   }
 
   const payload = await req.json();
@@ -30,7 +29,6 @@ export async function POST(req: Request) {
   const wh = new Webhook(WEBHOOK_SECRET);
 
   let evt: WebhookEvent;
-
   try {
     evt = wh.verify(body, {
       "svix-id": svix_id,
@@ -38,10 +36,8 @@ export async function POST(req: Request) {
       "svix-signature": svix_signature,
     }) as WebhookEvent;
   } catch (err) {
-    console.error('Error verifying webhook:', err);
-    return new Response('Error occurred', {
-      status: 400
-    });
+    console.error("Webhook verification failed:", err);
+    return new Response("Webhook verification error", { status: 400 });
   }
 
   const eventType = evt.type;
@@ -49,30 +45,33 @@ export async function POST(req: Request) {
   try {
     await connectToDatabase();
 
-    if (eventType === 'user.created') {
+    if (eventType === "user.created") {
       const { id, email_addresses, first_name, last_name, image_url } = evt.data;
 
-      await User.create({
-        clerkId: id,
-        email: email_addresses[0]?.email_address,
-        firstName: first_name,
-        lastName: last_name,
-        photo: image_url,
-        organization: first_name ? `${first_name}'s Organization` : 'New Organizer',
-        role: 'organizer'
-      });
+      const email = email_addresses[0]?.email_address;
+
+      const existing = await User.findOne({ clerkId: id });
+      if (!existing) {
+        await User.create({
+          clerkId: id,
+          email,
+          firstName: first_name,
+          lastName: last_name,
+          photo: image_url,
+          organization: first_name ? `${first_name}'s Organization` : "New Organizer",
+          role: "organizer",
+        });
+      }
     }
 
-    if (eventType === 'user.deleted') {
+    if (eventType === "user.deleted") {
       const { id } = evt.data;
       await User.findOneAndDelete({ clerkId: id });
     }
 
-    return new Response('', { status: 200 });
+    return new Response("Webhook handled", { status: 200 });
   } catch (error) {
-    console.error('Webhook error:', error);
-    return new Response('Error occurred', { status: 500 });
+    console.error("Webhook processing error:", error);
+    return new Response("Internal Server Error", { status: 500 });
   }
-
-  return new NextResponse("Webhook received", { status: 200 })
 }

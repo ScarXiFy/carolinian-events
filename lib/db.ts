@@ -1,4 +1,4 @@
-/*
+
 import mongoose from 'mongoose';
 
 // More complete typing
@@ -32,4 +32,4 @@ async function dbConnect() {
   }
 }
 
-export default dbConnect; */
+export default dbConnect; 

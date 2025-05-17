@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 // connect.ts
 import mongoose from 'mongoose'
-=======
-// lib/database/connect.ts
-import mongoose from 'mongoose';
->>>>>>> origin/enrico
 
 const MONGODB_URI = process.env.MONGODB_URI as string;
 
