@@ -52,12 +52,11 @@ export async function POST(req: Request) {
 
   try {
     if (eventType === 'user.created' || eventType === 'user.updated') {
-      const { id, first_name, last_name, email_addresses, image_url } = evt.data
+      const { id, first_name, email_addresses, image_url } = evt.data
 
       await createOrUpdateUser({
         clerkId: id,
-        firstName: first_name || '',
-        lastName: last_name || '',
+        organization: first_name || '',
         email: email_addresses[0].email_address,
         photo: image_url,
       })

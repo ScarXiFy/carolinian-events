@@ -46,17 +46,17 @@ const EventSchema = new Schema<IEvent>({
     type: Boolean, 
     default: false 
   },
-  imageUrl: { 
-    type: String, 
-    required: [true, "Image URL is required"],
-    validate: {
-      validator: (value: string) => {
-        return /^(https?:\/\/).+\.(jpg|jpeg|png|webp)$/.test(value)
-      },
-      message: "Please provide a valid image URL"
-    }
+  imageUrl: {
+  type: String,
+  required: [true, "Image URL is required"],
+  validate: {
+    validator: function (value: string) {
+      return typeof value === "string" && value.trim().length > 0;
+    },
+    message: "Image URL must be a non-empty string",
+    },
   },
-  category: { 
+category: { 
     type: Schema.Types.ObjectId, 
     ref: "Category" 
   },
@@ -64,6 +64,10 @@ const EventSchema = new Schema<IEvent>({
     type: Schema.Types.ObjectId, 
     ref: "User",
     required: true
+  },
+  participants: { 
+    type: Schema.Types.ObjectId, 
+    ref: "Participants" 
   },
 }, {
   timestamps: true,
