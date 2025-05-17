@@ -3,95 +3,73 @@
 import { connectToDatabase } from "@/lib/database/connect"
 import Event from "@/lib/database/models/event.model"
 import User from "@/lib/database/models/user.model"
+import Category from "@/lib/database/models/category.model"
+import { getCurrentOrganizer } from "@/lib/auth"
 import { CreateEventParams, IEvent } from "@/lib/types"
 import { revalidatePath } from "next/cache"
-import { getCurrentOrganizer } from "@/lib/auth"
-import Category from "../database/models/category.model"
 import { FilterQuery } from "mongoose"
 
+// Create Event
 export async function createEvent(eventData: CreateEventParams) {
   try {
-    await connectToDatabase();
-    
-    // 1. Find the User document in your database
-    const user = await User.findOne({ clerkId: eventData.organizer });
-    if (!user) throw new Error("User not found");
-    
-    // 2. Create event with the User's ObjectId
+    await connectToDatabase()
+
+    const user = await getCurrentOrganizer()
+    if (!user) throw new Error("User not found")
+
     const newEvent = await Event.create({
       ...eventData,
-      organizer: user._id, // Store ObjectId reference
+      organizer: user._id,
       startDateTime: new Date(eventData.startDateTime),
       endDateTime: new Date(eventData.endDateTime),
-    });
-    
-    // 3. Return the populated event
+    })
+
     const populatedEvent = await Event.findById(newEvent._id)
-      .populate('organizer', 'firstName lastName organization')
-      .lean();
-      
-    return JSON.parse(JSON.stringify(populatedEvent));
+      .populate("organizer", "firstName lastName organization")
+      .lean()
+
+    revalidatePath("/events")
+    revalidatePath("/my-events")
+    return JSON.parse(JSON.stringify(populatedEvent))
   } catch (error) {
-    console.error("Error creating event:", error);
-    throw error;
+    console.error("Error creating event:", error)
+    throw error
   }
 }
 
+// Get All Events with Filters
 export async function getAllEvents({
   query = '',
   category = '',
   tag = '',
   filter = 'all'
 }: {
-  query?: string;
-  category?: string;
-  tag?: string;
-  filter?: string;
+  query?: string
+  category?: string
+  tag?: string
+  filter?: string
 } = {}): Promise<IEvent[]> {
   try {
     await connectToDatabase()
-    
     const conditions: FilterQuery<IEvent> = {}
 
-    // Text search
-    if (query) {
-      conditions.$text = { $search: query }
-    }
+    if (query) conditions.$text = { $search: query }
 
-    // Category filter
     if (category) {
       const categoryDoc = await Category.findOne({ name: category })
-      if (categoryDoc) {
-        conditions.category = categoryDoc._id
-      }
+      if (categoryDoc) conditions.category = categoryDoc._id
     }
 
-    // Tag filter
-    if (tag) {
-      conditions.tags = tag
-    }
+    if (tag) conditions.tags = tag
 
-    // Date filters
     const now = new Date()
-    if (filter === 'upcoming') {
-      conditions.startDateTime = { $gte: now }
-    } else if (filter === 'past') {
-      conditions.endDateTime = { $lt: now }
-    } else if (filter === 'free') {
-      conditions.isFree = true
-    }
+    if (filter === 'upcoming') conditions.startDateTime = { $gte: now }
+    else if (filter === 'past') conditions.endDateTime = { $lt: now }
+    else if (filter === 'free') conditions.isFree = true
 
     const events = await Event.find(conditions)
-      .populate({
-        path: 'organizer',
-        model: User,
-        select: '_id firstName lastName'
-      })
-      .populate({
-        path: 'category',
-        model: Category,
-        select: 'name'
-      })
+      .populate("organizer", "firstName lastName")
+      .populate("category", "name")
       .sort({ startDateTime: 'asc' })
       .lean()
 
@@ -102,35 +80,45 @@ export async function getAllEvents({
   }
 }
 
-export async function deleteEvent(eventId: string) {
+// Get Events Created by the Logged-In User
+export async function getUserEvents(
+  clerkUserId: string,
+  {
+    query = '',
+    filter = 'all'
+  }: {
+    query?: string
+    filter?: string
+  } = {}
+): Promise<IEvent[]> {
   try {
     await connectToDatabase()
-    const organizer = await getCurrentOrganizer()
 
-    if (!organizer) {
-      throw new Error("Unauthorized: Organizer not found.")
-    }
+    const user = await User.findOne({ clerkId: clerkUserId })
+    if (!user) return []
 
-    const event = await Event.findById(eventId)
+    const conditions: FilterQuery<IEvent> = { organizer: user._id }
+    if (query) conditions.$text = { $search: query }
 
-    if (!event) {
-      throw new Error("Event not found.")
-    }
+    const now = new Date()
+    if (filter === 'upcoming') conditions.startDateTime = { $gte: now }
+    else if (filter === 'past') conditions.endDateTime = { $lt: now }
+    else if (filter === 'draft') conditions.isPublished = false
 
-    // Check ownership
-    if (event.organizer.toString() !== organizer._id.toString()) {
-      throw new Error("You can only delete events you created.")
-    }
+    const events = await Event.find(conditions)
+      .populate("organizer", "firstName lastName organization")
+      .populate("category", "name")
+      .sort({ startDateTime: 'asc' })
+      .lean()
 
-    await Event.findByIdAndDelete(eventId)
-    revalidatePath("/events")
-
-    return { success: true }
-  } catch (err) {
-    console.error("deleteEvent error:", err)
-    return { success: false, message: err instanceof Error ? err.message : "Failed to delete event." }
+    return JSON.parse(JSON.stringify(events))
+  } catch (error) {
+    console.error("Error fetching user events:", error)
+    throw error
   }
 }
+
+// Update Event
 interface UpdateEventParams {
   eventId: string
   title: string
@@ -147,8 +135,9 @@ interface UpdateEventParams {
 export async function updateEvent(data: UpdateEventParams) {
   try {
     await connectToDatabase()
+
     const organizer = await getCurrentOrganizer()
-    if (!organizer) throw new Error("Unauthorized")
+    if (!organizer) throw new Error("Organizer not found")
 
     const event = await Event.findById(data.eventId)
     if (!event) throw new Error("Event not found")
@@ -159,7 +148,6 @@ export async function updateEvent(data: UpdateEventParams) {
 
     const startDateTime = new Date(data.startDateTime)
     const endDateTime = new Date(data.endDateTime)
-
     if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
       throw new Error("Invalid date format")
     }
@@ -172,6 +160,7 @@ export async function updateEvent(data: UpdateEventParams) {
 
     await event.save()
     revalidatePath("/events")
+    revalidatePath("/my-events")
 
     return { success: true, event: JSON.parse(JSON.stringify(event)) }
   } catch (error) {
@@ -183,55 +172,27 @@ export async function updateEvent(data: UpdateEventParams) {
   }
 }
 
-export async function getUserEvents(
-  clerkUserId: string,
-  {
-    query = '',
-    filter = 'all'
-  }: {
-    query?: string;
-    filter?: string;
-  } = {}
-): Promise<IEvent[]> {
+// Delete Event
+export async function deleteEvent(eventId: string) {
   try {
     await connectToDatabase()
-    
-    const user = await User.findOne({ clerkId: clerkUserId })
-    if (!user) return []
+    const organizer = await getCurrentOrganizer()
+    if (!organizer) throw new Error("Unauthorized: Organizer not found.")
 
-    const conditions: FilterQuery<IEvent> = { organizer: user._id }
+    const event = await Event.findById(eventId)
+    if (!event) throw new Error("Event not found.")
 
-    // Text search
-    if (query) {
-      conditions.$text = { $search: query }
+    if (event.organizer.toString() !== organizer._id.toString()) {
+      throw new Error("You can only delete events you created.")
     }
 
-    // Status filters
-    const now = new Date()
-    if (filter === 'upcoming') {
-      conditions.startDateTime = { $gte: now }
-    } else if (filter === 'past') {
-      conditions.endDateTime = { $lt: now }
-    } else if (filter === 'draft') {
-      conditions.isPublished = false
-    }
+    await Event.findByIdAndDelete(eventId)
+    revalidatePath("/events")
+    revalidatePath("/my-events")
 
-    const events = await Event.find(conditions)
-      .populate({
-        path: 'organizer',
-        select: 'firstName lastName organization'
-      })
-      .populate({
-        path: 'category',
-        model: Category,
-        select: 'name'
-      })
-      .sort({ startDateTime: 'asc' })
-      .lean()
-
-    return JSON.parse(JSON.stringify(events))
-  } catch (error) {
-    console.error("Error fetching user events:", error)
-    throw error
+    return { success: true }
+  } catch (err) {
+    console.error("deleteEvent error:", err)
+    return { success: false, message: err instanceof Error ? err.message : "Failed to delete event." }
   }
 }
