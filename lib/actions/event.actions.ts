@@ -1,5 +1,6 @@
 "use server"
 
+import { clerkClient } from "@clerk/clerk-sdk-node"
 import { connectToDatabase } from "@/lib/database/connect"
 import Event from "@/lib/database/models/event.model"
 import User from "@/lib/database/models/user.model"
@@ -12,25 +13,35 @@ import { FilterQuery } from "mongoose"
 // Create Event
 export async function createEvent(eventData: CreateEventParams) {
   try {
-    await connectToDatabase()
+    await connectToDatabase();
+    
+    // 1. Find the User document
+    let user = await User.findOne({ clerkId: eventData.organizer });
+    
+    if (!user) {
+      // Fetch from Clerk API if not found
+      const clerkUser = await clerkClient.users.getUser(eventData.organizer);
+      
+      // Create new user in your database
+      user = await User.create({
+        clerkId: clerkUser.id,
+        email: clerkUser.emailAddresses[0]?.emailAddress || '',
+        firstName: clerkUser.firstName || 'New',
+        lastName: clerkUser.lastName || 'User',
+        photo: clerkUser.imageUrl || '',
+        organization: clerkUser.firstName ? `${clerkUser.firstName}'s Events` : 'New Organizer'
+      });
+    }
 
-    const user = await getCurrentOrganizer()
-    if (!user) throw new Error("User not found")
-
+    // 2. Create event with the User's ObjectId
     const newEvent = await Event.create({
       ...eventData,
       organizer: user._id,
       startDateTime: new Date(eventData.startDateTime),
       endDateTime: new Date(eventData.endDateTime),
-    })
-
-    const populatedEvent = await Event.findById(newEvent._id)
-      .populate("organizer", "firstName lastName organization")
-      .lean()
-
-    revalidatePath("/events")
-    revalidatePath("/my-events")
-    return JSON.parse(JSON.stringify(populatedEvent))
+    });
+    
+    return JSON.parse(JSON.stringify(newEvent));
   } catch (error) {
     console.error("Error creating event:", error)
     throw error
