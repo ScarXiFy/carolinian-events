@@ -1,3 +1,4 @@
+// lib/actions/user.actions.ts
 'use server';
 
 import { connectToDatabase } from '@/lib/database/connect';
@@ -13,7 +14,6 @@ export async function createOrUpdateUser(user: {
 }) {
   try {
     await connectToDatabase();
-
     const updatedUser = await User.findOneAndUpdate(
       { clerkId: user.clerkId },
       {

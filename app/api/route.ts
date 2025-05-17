@@ -1,7 +1,37 @@
-import { connectToDatabase } from '@/lib/database/connect';
-import { NextResponse } from 'next/server';
+// app/api/events/route.ts
+import { NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/database/connect";
+import Event from "@/lib/database/models/event.model"; // Your Mongoose model
 
-export async function GET() {
-  await connectToDatabase();
-  return NextResponse.json({ message: 'Connected to MongoDB!' });
-}
+// GET all events
+const GET = async () => {
+  try {
+    await connectToDatabase(); // Use Mongoose connection
+    const events = await Event.find({}); // Mongoose query
+    return NextResponse.json(events);
+  } catch (error) {
+    console.error("GET Error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch events" },
+      { status: 500 }
+    );
+  }
+};
+
+// CREATE a new event
+const POST = async (request: Request) => {
+  try {
+    await connectToDatabase();
+    const data = await request.json();
+    const newEvent = await Event.create(data); // Mongoose create
+    return NextResponse.json(newEvent, { status: 201 });
+  } catch (error) {
+    console.error("POST Error:", error);
+    return NextResponse.json(
+      { error: "Failed to create event" },
+      { status: 500 }
+    );
+  }
+};
+
+export { GET, POST };

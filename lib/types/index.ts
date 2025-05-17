@@ -1,3 +1,4 @@
+// lib/types/index.ts
 import { Document, Types } from "mongoose";
 
 export interface ICategory {

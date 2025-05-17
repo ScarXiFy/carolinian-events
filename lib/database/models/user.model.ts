@@ -1,3 +1,4 @@
+// lib/database/models/user.model.ts
 import { Schema, model, models } from "mongoose";
 
 const UserSchema = new Schema({
@@ -7,6 +8,7 @@ const UserSchema = new Schema({
   lastName: { type: String },
   photo: { type: String },
   organization: { type: String },
+  role: { type: String, enum: ['user', 'organizer', 'admin'], default: 'user' },
 }, { timestamps: true });
 
 const User = models.User || model("User", UserSchema);
