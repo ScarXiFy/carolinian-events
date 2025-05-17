@@ -1,59 +1,82 @@
 import { Document, ObjectId, Schema, Types } from "mongoose"
 import { FilterQuery } from "mongoose"
 
+// Registration Types
+export interface IRegistration {
+  _id: Types.ObjectId;
+  event: Types.ObjectId | IEvent;
+  user: Types.ObjectId | IUser;
+  registeredAt: Date;
+  status: "pending" | "confirmed" | "cancelled" | "waitlisted";
+  paymentStatus?: "unpaid" | "pending" | "paid" | "refunded";
+  metadata?: Record<string, unknown>;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 // For Mongoose documents (backend)
 export interface IEventDocument extends Document {
-  _id: Types.ObjectId
-  title: string
-  description: string
-  location: string
-  imageUrl: string
-  startDateTime: Date
-  endDateTime: Date
-  price: string
-  isFree: boolean
+  _id: Types.ObjectId;
+  title: string;
+  description: string;
+  location: string;
+  imageUrl: string;
+  startDateTime: Date;
+  endDateTime: Date;
+  price: string;
+  isFree: boolean;
   organizer: Types.ObjectId | {
-    _id: Types.ObjectId
-    firstName: string
-    lastName: string
-  }
-  createdAt: Date
+    _id: Types.ObjectId;
+    firstName: string;
+    lastName: string;
+  };
+  createdAt: Date;
+  registrations?: Types.ObjectId[] | IRegistration[];
+  maxRegistrations?: number | null;
+  registrationCount?: number;
+  availableSpots?: number | "Unlimited";
   // Add other fields as needed
 }
 
 // For frontend usage
 export interface IEvent {
-  _id: string | ObjectId
-  title: string
-  description: string
-  location: string
-  imageUrl: string
-  startDateTime: Date | string
-  endDateTime: Date | string
-  category?: Types.ObjectId
-  price: string
-  isFree: boolean
-  tags: string[]
+  _id: string | ObjectId;
+  title: string;
+  description: string;
+  location: string;
+  imageUrl: string;
+  startDateTime: Date | string;
+  endDateTime: Date | string;
+  category?: Types.ObjectId;
+  price: string;
+  isFree: boolean;
+  tags: string[];
   organizer: {
-    _id: string
-    organization: string
-  }
+    _id: string;
+    organization: string;
+  };
   participants: {
-    _id: string
-    firstName: string
-    lastName: string
-    department: string
-  }
-  createdAt?: Date | string
+    _id: string;
+    firstName: string;
+    lastName: string;
+    department: string;
+  };
+  registrations?: IRegistration[];
+  maxRegistrations?: number | null;
+  registrationCount?: number;
+  availableSpots?: number | "Unlimited";
+  createdAt?: Date | string;
 }
 
 export interface IUser {
-  clerkId: string
-  organization: string
-  email: string
-  photo: string
+  clerkId: string;
+  organization: string;
+  email: string;
+  photo: string;
+  registrations?: Types.ObjectId[] | IRegistration[];
   // Add any additional fields you need
 }
+
 
 export type CreateEventParams = {
   title: string
@@ -65,6 +88,22 @@ export type CreateEventParams = {
   price?: string
   isFree?: boolean
   organizer: string
+  maxRegistrations?: number | null
+}
+
+// Add new type for registration
+export type RegisterForEventParams = {
+  eventId: string;
+  userId: string;
+  status?: "pending" | "confirmed";
+  paymentStatus?: "unpaid" | "pending";
+}
+
+// Add new type for registration status update
+export type UpdateRegistrationParams = {
+  registrationId: string;
+  status: "pending" | "confirmed" | "cancelled" | "waitlisted";
+  paymentStatus?: "unpaid" | "pending" | "paid" | "refunded";
 }
 
 export type GetAllEventsParams = {

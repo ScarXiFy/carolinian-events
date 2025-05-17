@@ -75,11 +75,45 @@ category: {
     type: Schema.Types.ObjectId, 
     ref: "Participants" 
   },
+
+  registrations: [{
+    type: Schema.Types.ObjectId,
+    ref: "Registration",
+    default: []
+  }],
+
+  maxRegistrations: {
+    type: Number,
+    default: null,
+    validate: {
+      validator: function (value: number | null) {
+        return value === null || (Number.isInteger(value) && value > 0);
+      },
+      message: "Max registrations must be a positive integer or null",
+    }
+  },
+  
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
-})
+}
+)
+
+// Add virtual for registration count
+EventSchema.virtual("registrationCount").get(function() {
+  return this.registrations?.length || 0;
+});
+
+// Add virtual for available spots (if using maxRegistrations)
+EventSchema.virtual("availableSpots").get(function() {
+  if (this.maxRegistrations === null || typeof this.maxRegistrations === "undefined") return "Unlimited";
+  const registrationsLength = Array.isArray(this.registrations) ? this.registrations.length : 0;
+  return Math.max(0, this.maxRegistrations - registrationsLength);
+});
+
+// Add index for registrations
+EventSchema.index({ registrations: 1 });
 
 // Indexes for better query performance
 EventSchema.index({ title: "text", description: "text", location: "text" })

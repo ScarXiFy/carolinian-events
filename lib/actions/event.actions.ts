@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache"
 import { getCurrentOrganizer } from "@/lib/auth"
 import Category from "../database/models/category.model"
 import { FilterQuery } from "mongoose"
+import dbConnect from "@/lib/db"
 
 export async function createEvent(eventData: CreateEventParams) {
   try {
@@ -233,5 +234,25 @@ export async function getUserEvents(
   } catch (error) {
     console.error("Error fetching user events:", error)
     throw error
+  }
+}
+
+export async function getEventById(eventId: string) {
+  try {
+    await dbConnect()
+    
+    const event = await Event.findById(eventId).populate('category')
+
+    if (!event) return null
+
+    return {
+      ...event.toObject(),
+      _id: event._id.toString(),
+      startDateTime: new Date(event.startDateTime),
+      endDateTime: new Date(event.endDateTime),
+    }
+  } catch (error) {
+    console.error('Error getting event:', error)
+    return null
   }
 }

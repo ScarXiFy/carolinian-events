@@ -33,6 +33,7 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.56.3",
     "react-slick": "^0.30.3",
+    "resend": "^4.5.1",
     "slick-carousel": "^1.8.1",
     "svix": "^1.65.0",
     "tailwind-merge": "^3.3.0",
