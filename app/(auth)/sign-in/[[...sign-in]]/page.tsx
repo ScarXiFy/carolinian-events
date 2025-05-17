@@ -4,7 +4,7 @@ import { SignIn } from "@clerk/nextjs"
 import { useTheme } from "next-themes"
 
 export default function SignInPage() {
-  const { resolvedTheme } = useTheme()
+  useTheme()
 
   return (
     <div className="relative min-h-screen overflow-hidden">
