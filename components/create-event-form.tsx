@@ -24,13 +24,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { createEvent } from "@/lib/actions/event.actions"
 import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import ImageUpload from "@/components/image-upload"
-import { Calendar, Clock, MapPin, Tag, User, Users, Mail, DollarSign, X } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Switch } from "@/components/ui/switch"
+import ImageUpload from "@/components/image-upload" // Import your ImageUpload component
+import Image from "next/image"
 
-// Utility function remains the same
 function formatForDateTimeInput(dateString: string): string {
   if (!dateString) return "";
   const date = new Date(dateString);
@@ -45,7 +41,6 @@ function formatForDateTimeInput(dateString: string): string {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-// Schemas remain the same
 const organizerSchema = z.object({
   name: z.string().min(1, "Organizer name is required"),
   socialMedia: z.string().optional(),
@@ -82,12 +77,19 @@ const eventFormSchema = z.object({
   requirements: z.string().optional(),
 })
 
-const LOCATION_OPTIONS = [
-  "USC Talamban Campus",
-  "USC Downtown Campus",
-]
+    // Add this array of locations (you can expand this later)
+    const LOCATION_OPTIONS = [
+        "USC Talamban Campus",
+        "USC Downtown Campus",
+    // Add more locations here as needed
+    ]
 
-const PREDEFINED_TAGS = ["Scientia", "Virtus", "Devotio"]
+    // Add this constant near the top of your file
+    const PREDEFINED_TAGS = ["Scientia", 
+        "Virtus", 
+        "Devotio",
+    // Add more predefined tags here
+    ]
 
 export function CreateEventForm() {
   const { user } = useUser()
@@ -95,7 +97,6 @@ export function CreateEventForm() {
   const [error, setError] = React.useState("")
   const [customLocation, setCustomLocation] = useState("")
   const [showCustomLocation, setShowCustomLocation] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<z.infer<typeof eventFormSchema>>({
     resolver: zodResolver(eventFormSchema),
@@ -110,7 +111,7 @@ export function CreateEventForm() {
       isFree: false,
       organizers: [{ name: user?.fullName || "", socialMedia: "" }],
       sponsors: [],
-      contactEmail: user?.primaryEmailAddress?.emailAddress || "",
+      contactEmail: "",
       contactPhone: "",
       maxAttendees: undefined,
       tags: [],
@@ -128,11 +129,14 @@ export function CreateEventForm() {
     name: "sponsors",
   })
 
-  const tags = form.watch("tags") || []
+  const { fields: tagFields, append: appendTag, remove: removeTag } = useFieldArray({
+    control: form.control,
+    name: "tags" as never,
+  })
 
-  async function onSubmit(values: z.infer<typeof eventFormSchema>) {
+  // In your form's onSubmit handler
+async function onSubmit(values: z.infer<typeof eventFormSchema>) {
     try {
-      setIsSubmitting(true)
       if (!user) throw new Error("Please sign in first");
       
       const eventData = {
@@ -144,572 +148,256 @@ export function CreateEventForm() {
 
       await createEvent(eventData);
       router.push("/my-events");
+      router.refresh();
     } catch (err) {
       console.error("Error creating event:", err);
       setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setIsSubmitting(false)
     }
-  }
-
-  const addTag = (tag: string) => {
-    if (!tags.includes(tag)) {
-      form.setValue("tags", [...tags, tag])
-    }
-  }
-
-  const removeTag = (tag: string) => {
-    form.setValue("tags", tags.filter(t => t !== tag))
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Create New Event</h1>
-        <p className="text-muted-foreground">Fill out the form below to create your event</p>
-      </div>
+    <Form {...form}>
+      {error && (
+        <div className="mb-4 p-3 bg-destructive/10 text-destructive">
+          {error}
+        </div>
+      )}
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Basic Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Event Details</h3>
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Event Title*</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Tech Conference 2023" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-      <Form {...form}>
-        {error && (
-          <div className="mb-6 p-4 bg-destructive/10 text-destructive rounded-lg border border-destructive">
-            <p>{error}</p>
-          </div>
-        )}
-        
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          {/* Basic Information Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="w-5 h-5" />
-                <span>Event Details</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Event Title*</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Tech Conference 2023" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description*</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Describe your event..." 
+                      className="min-h-[120px]" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description*</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Describe your event in detail..." 
-                        className="min-h-[120px]" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Location*</FormLabel>
-                    {!showCustomLocation ? (
-                      <div className="space-y-2">
-                        <Select
-                          onValueChange={(value) => {
-                            if (value === "custom") {
-                              setShowCustomLocation(true)
-                              form.setValue("location", "")
-                            } else {
-                              field.onChange(value)
-                            }
-                          }}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a location" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {LOCATION_OPTIONS.map((location) => (
-                              <SelectItem key={location} value={location}>
-                                <div className="flex items-center gap-2">
-                                  <MapPin className="w-4 h-4" />
-                                  {location}
-                                </div>
-                              </SelectItem>
-                            ))}
-                            <SelectItem value="custom">
-                              <div className="flex items-center gap-2">
-                                <MapPin className="w-4 h-4" />
-                                Add custom location...
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </div>
-                    ) : (
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="Enter custom location"
-                          value={customLocation}
-                          onChange={(e) => {
-                            setCustomLocation(e.target.value)
-                            field.onChange(e.target.value)
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setShowCustomLocation(false)
-                            setCustomLocation("")
-                            field.onChange("")
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    )}
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                  control={form.control}
-                  name="imageUrl"
-                  render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Event Image*</FormLabel>
-                    <FormControl>
-                      <ImageUpload 
-                        onChange={(url) => field.onChange(url)}
-                        value={field.value}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Date & Time Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="w-5 h-5" />
-                <span>Date & Time</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="startDateTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Start Date & Time*</FormLabel>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-muted-foreground" />
-                      <FormControl>
-                        <Input
-                          type="datetime-local"
-                          value={field.value ? formatForDateTimeInput(field.value) : ""}
-                          onChange={(e) => {
-                            const date = new Date(e.target.value)
-                            if (!isNaN(date.getTime())) {
-                              field.onChange(date.toISOString())
-                            }
-                          }}
-                        />
-                      </FormControl>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="endDateTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>End Date & Time*</FormLabel>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-muted-foreground" />
-                      <FormControl>
-                        <Input
-                          type="datetime-local"
-                          value={field.value ? formatForDateTimeInput(field.value) : ""}
-                          onChange={(e) => {
-                            const date = new Date(e.target.value)
-                            if (!isNaN(date.getTime())) {
-                              field.onChange(date.toISOString())
-                            }
-                          }}
-                        />
-                      </FormControl>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="md:col-span-2 grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Price*</FormLabel>
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="w-5 h-5 text-muted-foreground" />
-                        <FormControl>
-                          <Input type="text" placeholder="0.00" {...field} />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="isFree"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Free Event</FormLabel>
-                      <FormControl>
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                          <span>{field.value ? "Free" : "Paid"}</span>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Organizers Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                <span>Organizers</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {organizerFields.map((field, index) => (
-                <div key={field.id} className="space-y-4 p-4 rounded-lg border">
-                  <FormField
-                    control={form.control}
-                    name={`organizers.${index}.name`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className={index > 0 ? "sr-only" : ""}>
-                          {index === 0 ? "Organizer Name*" : "Additional Organizer"}
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Organizer name"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name={`organizers.${index}.socialMedia`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Social Media Links</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Github: https://github.com/username\nLinkedIn: https://linkedin.com/in/username\n...etc"
-                            className="min-h-[80px]"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {index > 0 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeOrganizer(index)}
-                      className="mt-2"
-                    >
-                      Remove Organizer
-                    </Button>
-                  )}
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => appendOrganizer({ name: "", socialMedia: "" })}
-              >
-                Add Organizer
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Sponsors Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                <span>Sponsors</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {sponsorFields.map((field, index) => (
-                <div key={field.id} className="space-y-4 p-4 rounded-lg border">
-                  <FormField
-                    control={form.control}
-                    name={`sponsors.${index}.name`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className={index > 0 ? "sr-only" : ""}>
-                          {index === 0 ? "Sponsor Name*" : "Additional Sponsor"}
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Sponsor name (e.g., Redbull)"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name={`sponsors.${index}.website`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Website URL</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="https://example.com"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => removeSponsor(index)}
-                  >
-                    Remove Sponsor
-                  </Button>
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => appendSponsor({ name: "", website: "" })}
-              >
-                Add Sponsor
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Additional Information Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Additional Information</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h4 className="font-medium flex items-center gap-2">
-                  <Mail className="w-5 h-5" />
-                  Contact Information
-                </h4>
-                <FormField
-                  control={form.control}
-                  name="contactEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contact Email*</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="contact@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="contactPhone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contact Phone</FormLabel>
-                      <FormControl>
-                        <Input type="tel" placeholder="+1 (555) 123-4567" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="font-medium flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Event Capacity
-                </h4>
-                <FormField
-                  control={form.control}
-                  name="maxAttendees"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Maximum Attendees</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="1"
-                          placeholder="100"
-                          {...field}
-                          onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Tags Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Tag className="w-5 h-5" />
-                <span>Tags</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h4 className="text-sm font-medium mb-2">Predefined Tags</h4>
-                <div className="flex flex-wrap gap-2">
-                  {PREDEFINED_TAGS.map((tag) => (
-                    <Badge
-                      key={tag}
-                      variant={tags.includes(tag) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => tags.includes(tag) ? removeTag(tag) : addTag(tag)}
-                    >
-                      {tag}
-                      {tags.includes(tag) && (
-                        <X className="w-3 h-3 ml-1" />
-                      )}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              <FormField
-                control={form.control}
-                name="tags"
-                render={({ }) => (
-                  <FormItem>
-                    <FormLabel>Custom Tags</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Type a tag and press Enter"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault()
-                            const value = e.currentTarget.value.trim()
-                            if (value && !tags.includes(value)) {
-                              form.setValue("tags", [...tags, value])
-                              e.currentTarget.value = ""
-                            }
-                          }
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {tags.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Selected Tags</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {tags.map((tag) => (
-                      <Badge
-                        key={tag}
-                        variant="default"
-                        className="flex items-center gap-1"
-                      >
-                        {tag}
-                        <X 
-                          className="w-3 h-3 cursor-pointer"
-                          onClick={() => removeTag(tag)}
-                        />
-                      </Badge>
+            <FormField
+        control={form.control}
+        name="location"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Location*</FormLabel>
+            {!showCustomLocation ? (
+              <div className="space-y-2">
+                <Select
+                  onValueChange={(value) => {
+                    if (value === "custom") {
+                      setShowCustomLocation(true)
+                      form.setValue("location", "")
+                    } else {
+                      field.onChange(value)
+                    }
+                  }}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a location" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {LOCATION_OPTIONS.map((location) => (
+                      <SelectItem key={location} value={location}>
+                        {location}
+                      </SelectItem>
                     ))}
+                    <SelectItem value="custom">Add custom location...</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter custom location"
+                  value={customLocation}
+                  onChange={(e) => {
+                    setCustomLocation(e.target.value)
+                    field.onChange(e.target.value)
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowCustomLocation(false)
+                    setCustomLocation("")
+                    field.onChange("")
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </FormItem>
+        )}
+      />
+
+            <FormField
+        control={form.control}
+        name="imageUrl"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Upload Event Image*</FormLabel>
+            <div className="space-y-2">
+              <ImageUpload 
+                onChange={(url) => {
+                  field.onChange(url) // Update form value with the uploaded URL
+                }}
+                value={field.value}
+              />
+              {field.value && (
+                <div className="mt-2">
+                  <div className="relative aspect-video w-full max-w-xs">
+                    <Image
+                      src={field.value}
+                      alt="Uploaded event image"
+                      fill
+                      className="rounded-md object-cover"
+                    />
                   </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Image uploaded successfully
+                  </p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+          </div>
 
-          {/* Requirements Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Special Requirements</CardTitle>
-            </CardHeader>
-            <CardContent>
+          {/* Date & Time */}
+          <div className="space-y-4">
+        <h3 className="text-lg font-medium">Date & Time</h3>
+        <FormField
+  control={form.control}
+  name="startDateTime"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Start Date & Time*</FormLabel>
+      <FormControl>
+        <Input
+          type="datetime-local"
+          value={field.value ? formatForDateTimeInput(field.value) : ""}
+          onChange={(e) => {
+            const date = new Date(e.target.value)
+            if (!isNaN(date.getTime())) {
+              field.onChange(date.toISOString())
+            }
+          }}
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+
+<FormField
+  control={form.control}
+  name="endDateTime"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>End Date & Time*</FormLabel>
+      <FormControl>
+        <Input
+          type="datetime-local"
+          value={field.value ? formatForDateTimeInput(field.value) : ""}
+          onChange={(e) => {
+            const date = new Date(e.target.value)
+            if (!isNaN(date.getTime())) {
+              field.onChange(date.toISOString())
+            }
+          }}
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="requirements"
+                name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Any special requirements for attendees?</FormLabel>
+                    <FormLabel>Price*</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="Dress code, items to bring, age restrictions, etc."
-                        className="min-h-[100px]"
+                      <Input type="text" placeholder="0.00" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="isFree"
+                render={({ field }) => (
+                  <FormItem className="flex items-center space-x-2">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={field.onChange}
+                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                    </FormControl>
+                    <FormLabel className="!mt-0">Free Event</FormLabel>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Organizers Section */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Organizers</h3>
+          {organizerFields.map((field, index) => (
+            <div key={field.id} className="space-y-4 border p-4 rounded-lg">
+              <FormField
+                control={form.control}
+                name={`organizers.${index}.name`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={index > 0 ? "sr-only" : ""}>
+                      {index === 0 ? "Organizer Name*" : "Additional Organizer"}
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Organizer name"
                         {...field}
                       />
                     </FormControl>
@@ -717,26 +405,262 @@ export function CreateEventForm() {
                   </FormItem>
                 )}
               />
-            </CardContent>
-          </Card>
 
-          <div className="flex justify-end gap-4 pt-4">
+              <FormField
+                control={form.control}
+                name={`organizers.${index}.socialMedia`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Social Media Links</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Github: https://github.com/username\nLinkedIn: https://linkedin.com/in/username\n...etc"
+                        className="min-h-[80px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {index > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => removeOrganizer(index)}
+                  className="mt-2"
+                >
+                  Remove Organizer
+                </Button>
+              )}
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => appendOrganizer({ name: "", socialMedia: "" })}
+          >
+            Add Organizer
+          </Button>
+        </div>
+
+        {/* Sponsors Section */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Sponsors</h3>
+          {sponsorFields.map((field, index) => (
+            <div key={field.id} className="space-y-4 border p-4 rounded-lg">
+              <FormField
+                control={form.control}
+                name={`sponsors.${index}.name`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={index > 0 ? "sr-only" : ""}>
+                      {index === 0 ? "Sponsor Name*" : "Additional Sponsor"}
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Sponsor name (e.g., Redbull)"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name={`sponsors.${index}.website`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Website URL</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="https://example.com"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => removeSponsor(index)}
+                className="mt-2"
+              >
+                Remove Sponsor
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => appendSponsor({ name: "", website: "" })}
+          >
+            Add Sponsor
+          </Button>
+        </div>
+
+        {/* Additional Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Contact Information</h3>
+            <FormField
+              control={form.control}
+              name="contactEmail"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contact Email*</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="contact@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="contactPhone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contact Phone</FormLabel>
+                  <FormControl>
+                    <Input type="tel" placeholder="+1 (555) 123-4567" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Event Capacity</h3>
+            <FormField
+              control={form.control}
+              name="maxAttendees"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Maximum Attendees</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="1"
+                      placeholder="100"
+                      {...field}
+                      onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        {/* Tags Section */}
+<div className="space-y-4">
+  <h3 className="text-lg font-medium">Tags</h3>
+  
+  {/* Predefined tags */}
+  <div className="flex flex-wrap gap-2">
+    {PREDEFINED_TAGS.map((tag) => (
+      <Button
+        key={tag}
+        type="button"
+        variant={form.watch("tags")?.includes(tag) ? "default" : "outline"}
+        onClick={() => {
+          const currentTags = form.getValues("tags") || []
+          if (currentTags.includes(tag)) {
+            form.setValue(
+              "tags",
+              currentTags.filter((t) => t !== tag)
+            )
+          } else {
+            form.setValue("tags", [...currentTags, tag])
+          }
+        }}
+      >
+        {tag}
+      </Button>
+    ))}
+  </div>
+
+  {/* Custom tags input */}
+  {tagFields.map((field, index) => (
+    <FormField
+      key={field.id}
+      control={form.control}
+      name={`tags.${index}`}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel className={index > 0 ? "sr-only" : ""}>
+            {index === 0 ? "Custom Tags" : "Additional Tag"}
+          </FormLabel>
+          <div className="flex space-x-2">
+            <FormControl>
+              <Input
+                placeholder="Add custom tag (press Enter)"
+                {...field}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault()
+                    if (field.value.trim()) {
+                      appendTag({ name: "" })
+                    }
+                  }
+                }}
+              />
+            </FormControl>
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.back()}
+              onClick={() => removeTag(index)}
             >
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Creating..." : "Create Event"}
+              Remove
             </Button>
           </div>
-        </form>
-      </Form>
-    </div>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  ))}
+  <Button
+    type="button"
+    variant="outline"
+    onClick={() => appendTag({ name: "" })}
+  >
+    Add Custom Tag
+  </Button>
+</div>
+
+        {/* Requirements */}
+        <FormField
+          control={form.control}
+          name="requirements"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Special Requirements</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Any special requirements for attendees..."
+                  className="min-h-[100px]"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <Button type="submit" className="w-full md:w-auto">
+          Create Event
+        </Button>
+      </form>
+    </Form>
   )
 }
