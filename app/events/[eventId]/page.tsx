@@ -52,7 +52,7 @@ export default async function EventDetails({
           </div>
           <div className="flex items-center gap-2 text-gray-600">
             <Tag className="w-5 h-5" />
-            <span>{event.category.name}</span>
+            <span>{event.category?.name || "Uncategorized"}</span>
           </div>
           <p>{event.description}</p>
 
