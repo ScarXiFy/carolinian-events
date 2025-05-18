@@ -23,12 +23,17 @@ export default async function MyEventsPage({
 
   return (
     <div className="container py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">My Events</h1>
-        <Button asChild>
-          <Link href="/create-event">Create New Event</Link>
-        </Button>
-      </div>
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-10 gap-4">
+  <h1 className="text-4xl font-extrabold text-gray-900">My Events</h1>
+  <div className="flex gap-3">
+    <Button asChild size="lg" variant="outline">
+      <Link href="/events">Browse Events</Link>
+    </Button>
+    <Button asChild size="lg" className="whitespace-nowrap">
+      <Link href="/create-event">+ Create New Event</Link>
+    </Button>
+  </div>
+</div>
 
       {/* Search and Filters */}
       <div className="mb-8 space-y-4">

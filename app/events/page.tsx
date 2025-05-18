@@ -1,4 +1,3 @@
-// app/events/page.tsx
 import { Button } from "@/components/ui/button"
 import EventCard from "@/components/EventCard"
 import { getAllEvents } from "@/lib/actions/event.actions"
@@ -27,10 +26,15 @@ export default async function BrowseEvents({
   const user = await currentUser()
 
   return (
-    <div className="container py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Browse Events</h1>
-        <Button asChild>
+    <div className="container py-10 max-w-7xl">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-10">
+        <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">
+          Browse Events
+        </h1>
+        <Button
+          asChild
+          className="rounded-3xl border-yellow-400 bg-yellow-400 text-black hover:bg-yellow-500 hover:border-yellow-500 shadow-lg px-7 py-3 text-lg font-semibold transition-colors duration-300"
+        >
           <Link href={user ? "/create-event" : "/sign-in?redirect_url=/create-event"}>
             Create Event
           </Link>
@@ -38,33 +42,23 @@ export default async function BrowseEvents({
       </div>
 
       {/* Search and Filters */}
-      <div className="mb-8 space-y-4">
+      <div className="mb-10 grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 items-center">
         <SearchEvents defaultValue={searchQuery} />
-        
         <EventsFilter>
-  {categories.map((cat) => {
-    // Ensure the category has a valid name
-    const categoryValue = cat.name?.trim() || cat._id.toString();
-    if (!categoryValue) {
-      console.error('Invalid category:', cat);
-      return null; // Skip invalid categories
-    }
-
-    return (
-      <SelectItem 
-        key={cat._id.toString()} 
-        value={categoryValue}
-      >
-        {cat.name}
-      </SelectItem>
-    );
-  })}
-</EventsFilter>
-
+          {categories.map((cat) => {
+            const categoryValue = cat.name?.trim() || cat._id.toString()
+            if (!categoryValue) return null
+            return (
+              <SelectItem key={cat._id.toString()} value={categoryValue}>
+                {cat.name}
+              </SelectItem>
+            )
+          })}
+        </EventsFilter>
       </div>
 
       {/* Events Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
         {events.length > 0 ? (
           events.map((event: IEvent) => (
             <EventCard
@@ -85,7 +79,7 @@ export default async function BrowseEvents({
             />
           ))
         ) : (
-          <div className="col-span-full text-center text-muted-foreground py-12">
+          <div className="col-span-full text-center text-muted-foreground py-20 text-xl font-semibold">
             No events found. Try adjusting your search or filters.
           </div>
         )}

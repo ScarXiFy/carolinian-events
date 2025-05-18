@@ -212,6 +212,12 @@ export function CreateEventForm({ event, categories, onSubmit: propOnSubmit }: E
           {event ? "Update your event details" : "Fill out the form below to create your event"}
         </p>
       </div>
+      <Button
+          variant="outline"
+          onClick={() => router.push("/events")}
+        >
+          Browse Events
+        </Button>
 
       <Form {...form}>
         {error && (
