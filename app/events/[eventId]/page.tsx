@@ -1,12 +1,10 @@
 // app/events/[eventId]/page.tsx
-import { currentUser } from "@clerk/nextjs/server";
-import { getEventById, deleteEvent } from "@/lib/actions/event.actions";
+
+import { getEventById } from "@/lib/actions/event.actions"; // Removed deleteEvent
 import { format } from "date-fns";
 import { Calendar, MapPin, Tag } from "lucide-react";
 import Image from "next/image";
-import EventJoinForm from "@/components/EventJoinForm"; // Changed import
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import EventJoinForm from "@/components/EventJoinForm";
 
 export default async function EventDetails({
   params,
@@ -14,13 +12,10 @@ export default async function EventDetails({
   params: { eventId: string };
 }) {
   const event = await getEventById(params.eventId);
-  const user = await currentUser();
 
   if (!event) {
     return <div>Event not found</div>;
   }
-
-  const isOwner = user?.id === event.organizer.clerkId;
 
   return (
     <div className="container py-8">
@@ -55,25 +50,19 @@ export default async function EventDetails({
           </div>
           <p>{event.description}</p>
 
-          {/* Replaced RegisterButton with EventJoinForm */}
-          <div className="mt-6 p-4 border rounded-lg bg-gray-50">
-            <h2 className="text-xl font-semibold mb-4">Join this event</h2>
+          {/* Event Join Form */}
+          <div className="mt-6 p-6 border rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 shadow-lg">
+            <div className="flex items-center gap-3 mb-4">
+              <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c1.657 0 3-1.343 3-3S13.657 5 12 5s-3 1.343-3 3 1.343 3 3 3zm0 2c-2.67 0-8 1.337-8 4v2a1 1 0 001 1h14a1 1 0 001-1v-2c0-2.663-5.33-4-8-4z" />
+              </svg>
+              <h2 className="text-2xl font-bold text-blue-800">Join this Event</h2>
+            </div>
+            <p className="text-gray-700 mb-4">
+              Secure your spot and connect with other attendees. Fill out the form below to join!
+            </p>
             <EventJoinForm eventId={event._id} />
           </div>
-
-          {isOwner && (
-            <div className="flex gap-4 mt-4">
-              <Link href={`/events/${event._id}/edit`}>
-                <Button>Edit</Button>
-              </Link>
-              <form action={async () => {
-                "use server";
-                await deleteEvent(event._id);
-              }}>
-                <Button variant="destructive" type="submit">Delete</Button>
-              </form>
-            </div>
-          )}
         </div>
       </div>
     </div>
