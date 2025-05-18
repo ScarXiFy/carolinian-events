@@ -141,20 +141,7 @@ export async function deleteEvent(eventId: string) {
     return { success: false, message: err instanceof Error ? err.message : "Failed to delete event." }
   }
 }
-// interface UpdateEventParams {
-//   eventId: string
-//   title: string
-//   description: string
-//   location: string
-//   startDateTime: string
-//   endDateTime: string
-//   imageUrl: string
-//   category: string
-//   price?: string
-//   isFree?: boolean
-// }
-
-export async function updateEvent(data: {
+interface UpdateEventParams {
   eventId: string;
   title: string;
   description: string;
@@ -162,11 +149,19 @@ export async function updateEvent(data: {
   startDateTime: string;
   endDateTime: string;
   imageUrl: string;
-  category: string;
-  price?: string;
-  isFree?: boolean;
-  tags?: string[];
-}) {
+  categoryId?: string;
+  price: string;
+  isFree: boolean;
+  organizers: Array<{ name: string; socialMedia?: string }>;
+  sponsors?: Array<{ name: string; website?: string }>;
+  contactEmail: string;
+  contactPhone?: string;
+  maxAttendees?: number;
+  tags: string[];
+  requirements?: string;
+}
+
+export async function updateEvent(data: UpdateEventParams) {
   try {
     await connectToDatabase();
     const organizer = await getCurrentOrganizer();
@@ -180,10 +175,7 @@ export async function updateEvent(data: {
       throw new Error("You can only edit your own events");
     }
 
-    // Find category if needed
-    const category = await Category.findOne({ _id: data.category });
-
-    // Update event
+    // Update event with all fields
     const updatedEvent = await Event.findByIdAndUpdate(
       data.eventId,
       {
@@ -193,15 +185,22 @@ export async function updateEvent(data: {
         startDateTime: new Date(data.startDateTime),
         endDateTime: new Date(data.endDateTime),
         imageUrl: data.imageUrl,
-        category: category?._id,
+        category: data.categoryId,
         price: data.price,
         isFree: data.isFree,
-        tags: data.tags || [],
+        organizers: data.organizers,
+        sponsors: data.sponsors || [],
+        contactEmail: data.contactEmail,
+        contactPhone: data.contactPhone,
+        maxAttendees: data.maxAttendees,
+        tags: data.tags,
+        requirements: data.requirements,
       },
-      { new: true }
+      { new: true } // Return the updated document
     );
 
     revalidatePath("/events");
+    revalidatePath(`/events/${data.eventId}`);
     return JSON.parse(JSON.stringify(updatedEvent));
   } catch (error) {
     console.error("updateEvent error:", error);
