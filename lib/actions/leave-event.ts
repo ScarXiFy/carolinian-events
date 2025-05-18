@@ -1,50 +1,62 @@
-'use server'
+// 'use server'
 
-import { connectToDatabase } from "@/lib/database/connect"
-import Participant from "@/lib/database/models/participant.model"
-import Event from "@/lib/database/models/event.model"
-import { revalidatePath } from "next/cache"
+// import { connectToDatabase } from "@/lib/database/connect"
+// //import Participant from "@/lib/database/models/participant.model"
+// import Event from "@/lib/database/models/event.model"
+// import { revalidatePath } from "next/cache"
+// import { jwtVerify } from "jose"
+// //import { Types } from "mongoose"
 
-export async function leaveEvent({
-  email,
-  eventId,
-}: {
-  email: string
-  eventId: string
-}) {
-  try {
-    await connectToDatabase()
+// // Define your JWT secret key here or import it from a secure location
+// const secretKey = process.env.JWT_SECRET || "your_default_secret_key";
 
-    const participant = await Participant.findOne({ email })
+// // app/actions/event.actions.ts
+// export async function leaveEvent({
+//   email,
+//   userId,
+//   eventId,
+//   token
+// }: {
+//   email?: string;
+//   userId?: string;
+//   eventId: string;
+//   token?: string;
+// }) {
+//   try {
+//     await connectToDatabase();
 
-    if (!participant) {
-      throw new Error("No participant found with this email.")
-    }
+//     // Token verification (for email links)
+//     if (token) {
+//       const { payload } = await jwtVerify(token, secretKey);
+//       email = payload.email;
+//       eventId = payload.eventId;
+//     }
 
-    // Check if they joined the event
-    if (!participant.joinedEvents.includes(eventId)) {
-      throw new Error("You have not joined this event.")
-    }
+//     // Validate inputs
+//     if (!eventId) throw new Error("Event ID is required");
+//     if (!userId && !email) throw new Error("Either user ID or email is required");
 
-    // Remove event from user's list
-    participant.joinedEvents = participant.joinedEvents.filter(
-      (id: string) => id.toString() !== eventId
-    )
-    await participant.save()
+//     // Find and delete registration
+//     const deletedRegistration = userId
+//       ? await Registration.findOneAndDelete({ event: eventId, user: userId })
+//       : await Registration.findOneAndDelete({ event: eventId, email });
 
-    // Remove user from event's participants list
-    await Event.findByIdAndUpdate(eventId, {
-      $pull: { participants: participant._id },
-    })
+//     if (!deletedRegistration) {
+//       throw new Error("Registration not found");
+//     }
 
-    revalidatePath("/events")
+//     // Update event participants count
+//     await Event.findByIdAndUpdate(eventId, {
+//       $inc: { participantsCount: -1 }
+//     });
 
-    return { success: true }
-  } catch (error) {
-    console.error("leaveEvent error:", error)
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : "Could not remove application",
-    }
-  }
-}
+//     revalidatePath(`/events/${eventId}`);
+//     return { success: true };
+//   } catch (error) {
+//     console.error("Leave event error:", error);
+//     return { 
+//       success: false, 
+//       message: error instanceof Error ? error.message : "Failed to leave event" 
+//     };
+//   }
+// }
