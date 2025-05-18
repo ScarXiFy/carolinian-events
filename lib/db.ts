@@ -1,4 +1,6 @@
 /*
+// lib/db.ts
+
 import mongoose from 'mongoose';
 
 // More complete typing

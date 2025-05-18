@@ -1,4 +1,3 @@
-// lib/database/connect.ts
 import mongoose from 'mongoose';
 
 const MONGODB_URI = process.env.MONGODB_URI as string;
@@ -12,34 +11,27 @@ interface MongooseCache {
   promise: Promise<typeof mongoose> | null;
 }
 
-// Extend globalThis to include mongooseGlobal
+// Extend globalThis to include mongoose cache
 declare global {
   // eslint-disable-next-line no-var
   var mongooseGlobal: MongooseCache | undefined;
 }
 
-// Use existing cached connection or create a new one
 globalThis.mongooseGlobal = globalThis.mongooseGlobal || { conn: null, promise: null };
 const cached = globalThis.mongooseGlobal;
 
 export async function connectToDatabase() {
   if (cached.conn) {
-    console.log('🚀 Using cached MongoDB connection');
     return cached.conn;
   }
 
   if (!cached.promise) {
-    console.log('🔌 Creating new MongoDB connection');
-    cached.promise = mongoose.connect(MONGODB_URI).then((mongoose) => {
-      console.log('✅ MongoDB connected successfully');
-      return mongoose;
+    cached.promise = mongoose.connect(MONGODB_URI).then((mongooseInstance) => {
+      console.log('✅ MongoDB connected');
+      return mongooseInstance;
     });
   }
+
   cached.conn = await cached.promise;
   return cached.conn;
-}
-
-export async function getMongoClient() {
-  await connectToDatabase(); // Ensure Mongoose is connected
-  return mongoose.connection.getClient(); // Returns native MongoDB driver client
 }

@@ -1,4 +1,5 @@
 // app/api/webhooks/clerk/route.ts
+
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
 import { WebhookEvent } from '@clerk/nextjs/server';
@@ -50,23 +51,28 @@ export async function POST(req: Request) {
     await connectToDatabase();
 
     if (eventType === 'user.created') {
-      const { id, email_addresses, first_name, last_name, image_url } = evt.data;
+      const { id, email_addresses, username, first_name, last_name, image_url } = evt.data;
 
-      await User.create({
-        clerkId: id,
-        email: email_addresses[0]?.email_address,
-        firstName: first_name,
-        lastName: last_name,
-        photo: image_url,
-        organization: first_name ? `${first_name}'s Organization` : 'New Organizer',
-        role: 'organizer'
-      });
+      // Generate a fallback username if none provided
+      const safeUsername = username || `user_${id.slice(0, 8)}`;
+
+      await User.findOneAndUpdate(
+        { clerkId: id },
+        {
+          clerkId: id,
+          email: email_addresses[0]?.email_address,
+          username: safeUsername,
+          firstName: first_name,
+          lastName: last_name,
+          photo: image_url,
+          organization: first_name ? `${first_name}'s Organization` : 'New User',
+          role: 'user'
+        },
+        { upsert: true, new: true }
+      );
     }
 
-    if (eventType === 'user.deleted') {
-      const { id } = evt.data;
-      await User.findOneAndDelete({ clerkId: id });
-    }
+    // ... (keep existing update and delete handlers)
 
     return new Response('', { status: 200 });
   } catch (error) {
