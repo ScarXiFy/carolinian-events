@@ -1,10 +1,13 @@
 // app/events/[eventId]/page.tsx
 import { currentUser } from "@clerk/nextjs/server";
-import { getEventById } from "@/lib/actions/event.actions";
+import { getEventById, deleteEvent } from "@/lib/actions/event.actions";
 import { format } from "date-fns";
 import { Calendar, MapPin, Tag } from "lucide-react";
 import Image from "next/image";
 import RegisterButton from "@/components/RegisterButton";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+
 
 export default async function EventDetails({
   params,
@@ -17,6 +20,8 @@ export default async function EventDetails({
   if (!event) {
     return <div>Event not found</div>;
   }
+
+  const isOwner = user?.id === event.organizer.clerkId;
 
   return (
     <div className="container py-8">
@@ -33,62 +38,39 @@ export default async function EventDetails({
         </div>
 
         {/* Event Details */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           <h1 className="text-3xl font-bold">{event.title}</h1>
-          
-          <div className="flex items-center gap-4">
-            {event.category && (
-              <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
-                {event.category.name}
-              </span>
-            )}
-            <span className="font-medium">
-              {event.isFree ? "FREE" : `$${event.price}`}
+          <div className="flex items-center gap-2 text-gray-600">
+            <Calendar className="w-5 h-5" />
+            <span>
+              {format(new Date(event.startDateTime), "PPpp")} - {format(new Date(event.endDateTime), "PPpp")}
             </span>
           </div>
-
-          <p className="text-lg">{event.description}</p>
-
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Calendar className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="font-medium">When</p>
-                <p>
-                  {format(event.startDateTime, "MMMM d, yyyy h:mm a")} -{" "}
-                  {format(event.endDateTime, "MMMM d, yyyy h:mm a")}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <MapPin className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="font-medium">Where</p>
-                <p>{event.location}</p>
-              </div>
-            </div>
+          <div className="flex items-center gap-2 text-gray-600">
+            <MapPin className="w-5 h-5" />
+            <span>{event.location}</span>
           </div>
+          <div className="flex items-center gap-2 text-gray-600">
+            <Tag className="w-5 h-5" />
+            <span>{event.category.name}</span>
+          </div>
+          <p>{event.description}</p>
 
-          {/* Tags */}
-          {event.tags?.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {event.tags.map((tag: string) => (
-                <span
-                  key={tag}
-                  className="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground flex items-center"
-                >
-                  <Tag className="h-3 w-3 mr-1" /> #{tag}
-                </span>
-              ))}
+          <RegisterButton eventId={event._id} />
+
+          {isOwner && (
+            <div className="flex gap-4 mt-4">
+              <Link href={`/events/${event._id}/edit`}>
+                <Button>Edit</Button>
+              </Link>
+              <form action={async () => {
+                "use server";
+                await deleteEvent(event._id);
+              }}>
+                <Button variant="destructive" type="submit">Delete</Button>
+              </form>
             </div>
           )}
-
-          {/* Registration Button */}
-          <RegisterButton 
-            eventId={event._id.toString()} 
-            userId={user?.id} 
-          />
         </div>
       </div>
     </div>
