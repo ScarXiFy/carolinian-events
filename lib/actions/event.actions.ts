@@ -141,55 +141,71 @@ export async function deleteEvent(eventId: string) {
     return { success: false, message: err instanceof Error ? err.message : "Failed to delete event." }
   }
 }
-interface UpdateEventParams {
-  eventId: string
-  title: string
-  description: string
-  location: string
-  startDateTime: string
-  endDateTime: string
-  imageUrl: string
-  category: string
-  price?: string
-  isFree?: boolean
-}
+// interface UpdateEventParams {
+//   eventId: string
+//   title: string
+//   description: string
+//   location: string
+//   startDateTime: string
+//   endDateTime: string
+//   imageUrl: string
+//   category: string
+//   price?: string
+//   isFree?: boolean
+// }
 
-export async function updateEvent(data: UpdateEventParams) {
+export async function updateEvent(data: {
+  eventId: string;
+  title: string;
+  description: string;
+  location: string;
+  startDateTime: string;
+  endDateTime: string;
+  imageUrl: string;
+  category: string;
+  price?: string;
+  isFree?: boolean;
+  tags?: string[];
+}) {
   try {
-    await connectToDatabase()
-    const organizer = await getCurrentOrganizer()
-    if (!organizer) throw new Error("Unauthorized")
+    await connectToDatabase();
+    const organizer = await getCurrentOrganizer();
+    if (!organizer) throw new Error("Unauthorized");
 
-    const event = await Event.findById(data.eventId)
-    if (!event) throw new Error("Event not found")
+    const event = await Event.findById(data.eventId);
+    if (!event) throw new Error("Event not found");
 
+    // Check ownership
     if (event.organizer.toString() !== organizer._id.toString()) {
-      throw new Error("You can only edit your own events")
+      throw new Error("You can only edit your own events");
     }
 
-    const startDateTime = new Date(data.startDateTime)
-    const endDateTime = new Date(data.endDateTime)
+    // Find category if needed
+    const category = await Category.findOne({ _id: data.category });
 
-    if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
-      throw new Error("Invalid date format")
-    }
+    // Update event
+    const updatedEvent = await Event.findByIdAndUpdate(
+      data.eventId,
+      {
+        title: data.title,
+        description: data.description,
+        location: data.location,
+        startDateTime: new Date(data.startDateTime),
+        endDateTime: new Date(data.endDateTime),
+        imageUrl: data.imageUrl,
+        category: category?._id,
+        price: data.price,
+        isFree: data.isFree,
+        tags: data.tags || [],
+      },
+      { new: true }
+    );
 
-    Object.assign(event, {
-      ...data,
-      startDateTime,
-      endDateTime,
-    })
-
-    await event.save()
-    revalidatePath("/events")
-
-    return { success: true, event: JSON.parse(JSON.stringify(event)) }
+    revalidatePath("/events");
+    return JSON.parse(JSON.stringify(updatedEvent));
   } catch (error) {
-    console.error("updateEvent error:", error)
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : "Update failed",
-    }
+    console.error("updateEvent error:", error);
+    throw error;
   }
 }
 

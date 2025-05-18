@@ -184,11 +184,11 @@ export async function getPopularCategories(limit = 5) {
 
 export async function getCategories() {
   try {
-    await connectToDatabase();
-    const categories = await Category.find().lean();
-    return JSON.parse(JSON.stringify(categories));
+    await connectToDatabase()
+    const categories = await Category.find().lean()
+    return JSON.parse(JSON.stringify(categories))
   } catch (error) {
-    console.error('Error fetching categories:', error);
-    return [];
+    console.error('Error fetching categories:', error)
+    return []
   }
 }

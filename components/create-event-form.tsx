@@ -30,6 +30,7 @@ import { Calendar, Clock, MapPin, Tag, User, Users, Mail, X } from "lucide-react
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
+import { Category } from "@/lib/types/index"
 
 interface EventFormProps {
   event?: {
@@ -55,10 +56,7 @@ interface EventFormProps {
       name: string;
     }
   };
-  categories?: Array<{
-    _id: string;
-    name: string;
-  }>;
+  categories?: Category[];
   onSubmit?: (values: z.infer<typeof eventFormSchema>) => Promise<void>;
 }
 
@@ -120,7 +118,7 @@ const LOCATION_OPTIONS = [
 
 const PREDEFINED_TAGS = ["Scientia", "Virtus", "Devotio"]
 
-export function CreateEventForm({ event, categories = [], onSubmit: propOnSubmit }: EventFormProps) {
+export function CreateEventForm({ event, categories, onSubmit: propOnSubmit }: EventFormProps) {
   const { user } = useUser()
   const router = useRouter()
   const [error, setError] = React.useState("")
@@ -146,6 +144,7 @@ export function CreateEventForm({ event, categories = [], onSubmit: propOnSubmit
       maxAttendees: event?.maxAttendees || undefined,
       tags: event?.tags || [],
       requirements: event?.requirements || "",
+      categoryId: event?.categoryId || "",
     },
   })
 
@@ -673,12 +672,11 @@ export function CreateEventForm({ event, categories = [], onSubmit: propOnSubmit
             </CardContent>
           </Card>
 
-          {/* Categories Card */}
           <Card>
   <CardHeader>
     <CardTitle className="flex items-center gap-2">
       <Tag className="w-5 h-5" />
-      <span>Category</span>
+      <span>Category*</span>
     </CardTitle>
   </CardHeader>
   <CardContent>
@@ -695,7 +693,7 @@ export function CreateEventForm({ event, categories = [], onSubmit: propOnSubmit
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              {categories.map((category) => (
+              {categories && categories.map((category) => (
                 <SelectItem key={category._id} value={category._id}>
                   {category.name}
                 </SelectItem>

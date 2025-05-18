@@ -14,13 +14,18 @@ interface ImageUploadProps {
 
 const ImageUpload = ({ onChange, value }: ImageUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleRemoveImage = () => {
     onChange("");
+    setError(null);
   };
 
   return (
     <div className="space-y-4">
+      {error && (
+        <div className="text-red-500 text-sm text-center">{error}</div>
+      )}
       {!value ? (
         <UploadDropzone
           appearance={{
@@ -46,7 +51,10 @@ const ImageUpload = ({ onChange, value }: ImageUploadProps) => {
             }
           }}
           endpoint="imageUploader"
-          onUploadBegin={() => setIsUploading(true)}
+          onUploadBegin={() => {
+            setIsUploading(true);
+            setError(null);
+          }}
           onClientUploadComplete={(res) => {
             setIsUploading(false);
             if (res?.[0]?.url) {
@@ -55,6 +63,7 @@ const ImageUpload = ({ onChange, value }: ImageUploadProps) => {
           }}
           onUploadError={(error: Error) => {
             setIsUploading(false);
+            setError(error.message || "Upload failed");
             console.error("Upload error:", error);
           }}
         />

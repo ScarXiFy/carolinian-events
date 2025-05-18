@@ -8,7 +8,11 @@ const isProtectedRoute = createRouteMatcher([
 ])
 
 export default clerkMiddleware((auth, req) => {
-  if (isProtectedRoute(req)) auth.protect()
+  if (isProtectedRoute(req)) auth.protect();
+
+  if (req.nextUrl.pathname.startsWith('api/uploadthing')) {
+    return;
+  }
 })
 
 export const config = {
