@@ -4,10 +4,9 @@ import { getEventById, deleteEvent } from "@/lib/actions/event.actions";
 import { format } from "date-fns";
 import { Calendar, MapPin, Tag } from "lucide-react";
 import Image from "next/image";
-import RegisterButton from "@/components/RegisterButton";
+import EventJoinForm from "@/components/EventJoinForm"; // Changed import
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-
 
 export default async function EventDetails({
   params,
@@ -56,7 +55,11 @@ export default async function EventDetails({
           </div>
           <p>{event.description}</p>
 
-          <RegisterButton eventId={event._id} />
+          {/* Replaced RegisterButton with EventJoinForm */}
+          <div className="mt-6 p-4 border rounded-lg bg-gray-50">
+            <h2 className="text-xl font-semibold mb-4">Join this event</h2>
+            <EventJoinForm eventId={event._id} />
+          </div>
 
           {isOwner && (
             <div className="flex gap-4 mt-4">

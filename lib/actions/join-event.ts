@@ -1,3 +1,4 @@
+// app/actions/event.actions.ts
 'use server'
 
 import { connectToDatabase } from "@/lib/database/connect"
@@ -21,38 +22,56 @@ export async function joinEvent({
   try {
     await connectToDatabase()
 
+    // Validate required fields
+    if (!eventId || !firstName || !lastName || !email || !department) {
+      throw new Error("All fields are required")
+    }
+
+    // Basic email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new Error("Please enter a valid email address")
+    }
+
     const event = await Event.findById(eventId)
     if (!event) throw new Error("Event not found")
 
-    let participant = await Participant.findOne({ email })
+    // Check if this email is already registered for this event
+    const existingParticipant = await Participant.findOne({
+      email,
+      joinedEvents: eventId
+    })
 
-    if (participant && participant.joinedEvents.includes(eventId)) {
-      throw new Error("You have already joined this event.")
+    if (existingParticipant) {
+      throw new Error("This email is already registered for this event")
     }
 
-    if (!participant) {
-      participant = await Participant.create({
-        firstName,
-        lastName,
-        email,
-        department,
-        joinedEvents: [eventId],
-      })
-    } else {
-      participant.joinedEvents.push(eventId)
-      await participant.save()
-    }
+    // Create or update participant
+    const participant = await Participant.findOneAndUpdate(
+      { email },
+      {
+        $set: {
+          firstName,
+          lastName,
+          department,
+        },
+        $addToSet: { joinedEvents: eventId } // Only add if not already present
+      },
+      { upsert: true, new: true }
+    )
 
-    // Add user to event.joinedUsers if not already added
+    // Add participant to event if not already added
     if (!event.participants.includes(participant._id)) {
       event.participants.push(participant._id)
       await event.save()
     }
 
-    revalidatePath("/events")
+    revalidatePath(`/events/${eventId}`)
     return { success: true }
   } catch (error) {
     console.error("joinEvent error:", error)
-    return { success: false, message: error instanceof Error ? error.message : "Something went wrong" }
+    return { 
+      success: false, 
+      message: error instanceof Error ? error.message : "Something went wrong" 
+    }
   }
 }
