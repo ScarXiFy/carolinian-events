@@ -35,3 +35,9 @@ export interface IEvent extends Document {
   participants?: Types.ObjectId;
   tags?: string[];
 }
+
+export interface Category {
+  _id: string;
+  name: string;
+  description?: string;
+}

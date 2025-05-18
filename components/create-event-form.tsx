@@ -49,7 +49,16 @@ interface EventFormProps {
     maxAttendees?: number;
     tags: string[];
     requirements?: string;
+    categoryId?: string;
+    category?: {
+      _id: string;
+      name: string;
+    }
   };
+  categories?: Array<{
+    _id: string;
+    name: string;
+  }>;
   onSubmit?: (values: z.infer<typeof eventFormSchema>) => Promise<void>;
 }
 
@@ -77,7 +86,7 @@ const sponsorSchema = z.object({
   website: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
 })
 
-const eventFormSchema = z.object({
+export const eventFormSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   location: z.string().min(1, "Location is required"),
@@ -101,6 +110,7 @@ const eventFormSchema = z.object({
   maxAttendees: z.number().min(1, "Must have at least 1 attendee").optional(),
   tags: z.array(z.string()).min(1, "At least one tag is required"),
   requirements: z.string().optional(),
+  categoryId: z.string().optional(),
 })
 
 const LOCATION_OPTIONS = [
@@ -110,7 +120,7 @@ const LOCATION_OPTIONS = [
 
 const PREDEFINED_TAGS = ["Scientia", "Virtus", "Devotio"]
 
-export function CreateEventForm({ event, onSubmit: propOnSubmit }: EventFormProps) {
+export function CreateEventForm({ event, categories = [], onSubmit: propOnSubmit }: EventFormProps) {
   const { user } = useUser()
   const router = useRouter()
   const [error, setError] = React.useState("")
@@ -662,6 +672,42 @@ export function CreateEventForm({ event, onSubmit: propOnSubmit }: EventFormProp
               </div>
             </CardContent>
           </Card>
+
+          {/* Categories Card */}
+          <Card>
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <Tag className="w-5 h-5" />
+      <span>Category</span>
+    </CardTitle>
+  </CardHeader>
+  <CardContent>
+    <FormField
+      control={form.control}
+      name="categoryId"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Event Category</FormLabel>
+          <Select onValueChange={field.onChange} value={field.value}>
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {categories.map((category) => (
+                <SelectItem key={category._id} value={category._id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  </CardContent>
+</Card>
 
           {/* Tags Card */}
           <Card>
