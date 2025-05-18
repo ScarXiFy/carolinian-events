@@ -1,4 +1,4 @@
-// app/api/events/route.ts
+
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/database/connect";
 import Event from "@/lib/database/models/event.model"; // Your Mongoose model
