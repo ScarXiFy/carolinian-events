@@ -1,8 +1,9 @@
+// components/image-upload.tsx
 'use client';
 
 import { UploadDropzone } from "@/utils/uploadthing";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "./ui/button";
 
@@ -12,21 +13,15 @@ interface ImageUploadProps {
 }
 
 const ImageUpload = ({ onChange, value }: ImageUploadProps) => {
-  const [imageUrl, setImageUrl] = useState(value);
   const [isUploading, setIsUploading] = useState(false);
 
-  useEffect(() => {
-    setImageUrl(value);
-  }, [value]);
-
   const handleRemoveImage = () => {
-    setImageUrl("");
     onChange("");
   };
 
   return (
     <div className="space-y-4">
-      {!imageUrl ? (
+      {!value ? (
         <UploadDropzone
           appearance={{
             container: {
@@ -55,7 +50,6 @@ const ImageUpload = ({ onChange, value }: ImageUploadProps) => {
           onClientUploadComplete={(res) => {
             setIsUploading(false);
             if (res?.[0]?.url) {
-              setImageUrl(res[0].url);
               onChange(res[0].url);
             }
           }}
@@ -68,7 +62,7 @@ const ImageUpload = ({ onChange, value }: ImageUploadProps) => {
         <div className="relative group">
           <div className="relative aspect-square w-full max-w-xs mx-auto rounded-md overflow-hidden border">
             <Image
-              src={imageUrl}
+              src={value}
               alt="Uploaded image"
               fill
               className="object-cover"

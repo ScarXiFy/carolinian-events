@@ -1,5 +1,6 @@
+// components\create-event-form.tsx
 "use client"
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useFieldArray, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -25,8 +26,7 @@ import { createEvent } from "@/lib/actions/event.actions"
 import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import ImageUpload from "@/components/image-upload"
-import Image from "next/image"
-import { Calendar, Clock, MapPin, Tag, User, Users, Mail, DollarSign, X } from "lucide-react"
+import { Calendar, Clock, MapPin, Tag, User, Users, Mail, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
@@ -79,7 +79,7 @@ const eventFormSchema = z.object({
   contactEmail: z.string().email("Please enter a valid email"),
   contactPhone: z.string().optional(),
   maxAttendees: z.number().min(1, "Must have at least 1 attendee").optional(),
-  tags: z.array(z.string()).optional(),
+  tags: z.array(z.string()).min(1, "At least one tag is required"),
   requirements: z.string().optional(),
 })
 
@@ -131,6 +131,12 @@ export function CreateEventForm() {
 
   const tags = form.watch("tags") || []
 
+   useEffect(() => {
+    if (form.watch("isFree")) {
+      form.setValue("price", "0");
+    }
+  }, [form]);
+
   async function onSubmit(values: z.infer<typeof eventFormSchema>) {
     try {
       setIsSubmitting(true)
@@ -159,9 +165,9 @@ export function CreateEventForm() {
     }
   }
 
-  const removeTag = (tag: string) => {
-    form.setValue("tags", tags.filter(t => t !== tag))
-  }
+  const removeTag = (tagToRemove: string) => {
+  form.setValue("tags", tags.filter(tag => tag !== tagToRemove));
+};
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
@@ -290,33 +296,21 @@ export function CreateEventForm() {
               />
 
               <FormField
-                control={form.control}
-                name="imageUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Event Image*</FormLabel>
-                    <div className="space-y-2">
-                      <ImageUpload 
-                        onChange={(url) => field.onChange(url)}
-                        value={field.value}
-                      />
-                      {field.value && (
-                        <div className="mt-2">
-                          <div className="relative aspect-video w-full max-w-xs rounded-lg overflow-hidden border">
-                            <Image
-                              src={field.value}
-                              alt="Uploaded event image"
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+  control={form.control}
+  name="imageUrl"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Event Image*</FormLabel>
+      <div className="space-y-2">
+        <ImageUpload 
+          onChange={(url) => field.onChange(url)}
+          value={field.value}
+        />
+      </div>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
             </CardContent>
           </Card>
 
@@ -383,21 +377,32 @@ export function CreateEventForm() {
 
               <div className="md:col-span-2 grid grid-cols-2 gap-4">
                 <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Price*</FormLabel>
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="w-5 h-5 text-muted-foreground" />
-                        <FormControl>
-                          <Input type="text" placeholder="0.00" {...field} />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+    control={form.control}
+    name="price"
+    render={({ field }) => (
+      <FormItem>
+        <FormLabel>Price*</FormLabel>
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground">₱</span>
+          <FormControl>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              disabled={form.watch("isFree")}
+              {...field}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value);
+                field.onChange(isNaN(value) ? "0" : value.toString());
+              }}
+            />
+          </FormControl>
+        </div>
+        <FormMessage />
+      </FormItem>
+    )}
+  />
 
                 <FormField
                   control={form.control}
@@ -632,80 +637,87 @@ export function CreateEventForm() {
 
           {/* Tags Card */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Tag className="w-5 h-5" />
-                <span>Tags</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h4 className="text-sm font-medium mb-2">Predefined Tags</h4>
-                <div className="flex flex-wrap gap-2">
-                  {PREDEFINED_TAGS.map((tag) => (
-                    <Badge
-                      key={tag}
-                      variant={tags.includes(tag) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => tags.includes(tag) ? removeTag(tag) : addTag(tag)}
-                    >
-                      {tag}
-                      {tags.includes(tag) && (
-                        <X className="w-3 h-3 ml-1" />
-                      )}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              <FormField
-                control={form.control}
-                name="tags"
-                render={({ }) => (
-                  <FormItem>
-                    <FormLabel>Custom Tags</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Type a tag and press Enter"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault()
-                            const value = e.currentTarget.value.trim()
-                            if (value && !tags.includes(value)) {
-                              form.setValue("tags", [...tags, value])
-                              e.currentTarget.value = ""
-                            }
-                          }
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {tags.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Selected Tags</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {tags.map((tag) => (
-                      <Badge
-                        key={tag}
-                        variant="default"
-                        className="flex items-center gap-1"
-                      >
-                        {tag}
-                        <X 
-                          className="w-3 h-3 cursor-pointer"
-                          onClick={() => removeTag(tag)}
-                        />
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <Tag className="w-5 h-5" />
+        <span>Tags*</span>
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div>
+        <h4 className="text-sm font-medium mb-2">Predefined Tags</h4>
+        <div className="flex flex-wrap gap-2">
+          {PREDEFINED_TAGS.map((tag) => (
+            <Badge
+              key={tag}
+              variant={tags.includes(tag) ? "default" : "outline"}
+              className="cursor-pointer"
+              onClick={() => tags.includes(tag) ? removeTag(tag) : addTag(tag)}
+            >
+              {tag}
+              {tags.includes(tag) && (
+                <X className="w-3 h-3 ml-1" />
               )}
-            </CardContent>
-          </Card>
+            </Badge>
+          ))}
+        </div>
+      </div>
+
+      <FormField
+        control={form.control}
+        name="tags"
+        render={({ }) => (
+          <FormItem>
+            <FormLabel>Custom Tags</FormLabel>
+            <FormControl>
+              <Input
+                placeholder="Type a tag and press Enter"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const value = e.currentTarget.value.trim();
+                    if (value && !tags.includes(value)) {
+                      form.setValue("tags", [...tags, value]);
+                      e.currentTarget.value = "";
+                    }
+                  }
+                }}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {tags.length > 0 && (
+  <div className="space-y-2">
+    <h4 className="text-sm font-medium">Selected Tags</h4>
+    <div className="flex flex-wrap gap-2">
+      {tags.map((tag) => (
+        <Badge
+          key={tag}
+          variant="default"
+          className="flex items-center gap-1 hover:bg-primary/90 transition-colors"
+        >
+          {tag}
+          <button
+            type="button"
+            aria-label={`Remove ${tag} tag`}
+            onClick={(e) => {
+              e.stopPropagation();
+              removeTag(tag);
+            }}
+            className="hover:text-white focus:outline-none"
+          >
+            <X className="w-3 h-3" aria-hidden="true" />
+          </button>
+        </Badge>
+      ))}
+    </div>
+  </div>
+)}
+    </CardContent>
+  </Card>
 
           {/* Requirements Card */}
           <Card>
