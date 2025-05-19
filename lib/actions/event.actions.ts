@@ -34,8 +34,8 @@ export async function createEvent(eventData: CreateEventParams) {
       organizer: user._id,
       startDateTime: new Date(eventData.startDateTime),
       endDateTime: new Date(eventData.endDateTime),
+      maxRegistrations: eventData.maxRegistrations
     });
-    
     return JSON.parse(JSON.stringify(newEvent));
   } catch (error) {
     console.error("Error creating event:", error);
@@ -129,7 +129,7 @@ interface UpdateEventParams {
   startDateTime: string;
   endDateTime: string;
   imageUrl: string;
-  category?: string;
+  category?: string | null;
   price: string;
   isFree: boolean;
   organizers: Array<{ name: string; socialMedia?: string }>;
@@ -163,7 +163,7 @@ export async function updateEvent(data: UpdateEventParams) {
         startDateTime: new Date(data.startDateTime),
         endDateTime: new Date(data.endDateTime),
         imageUrl: data.imageUrl,
-        category: data.category,
+        category: data.category || null,
         price: data.price,
         isFree: data.isFree,
         organizers: data.organizers,
@@ -178,6 +178,7 @@ export async function updateEvent(data: UpdateEventParams) {
     );
 
     revalidatePath("/events");
+    revalidatePath("/my-events");
     revalidatePath(`/events/${data.eventId}`);
     return JSON.parse(JSON.stringify(updatedEvent));
   } catch (error) {
@@ -234,12 +235,19 @@ export async function getEventById(eventId: string, leanMode = true) {
   try {
     await connectToDatabase()
 
-    const query = Event.findById(eventId).populate("category")
+    const query = Event.findById(eventId)
+      .populate({
+        path: "organizer",
+        model: User,
+        select: "_id firstName lastName organization"
+      })
+      .populate("category")
     const event = leanMode ? await query.lean() : await query
 
     if (!event || Array.isArray(event)) return null
 
     if (leanMode) {
+      const organizer = event.organizer || {}
       return {
         ...event,
         _id: (event._id as { toString(): string }).toString(),
@@ -249,7 +257,12 @@ export async function getEventById(eventId: string, leanMode = true) {
           _id: event.category._id.toString(),
           name: event.category.name
         } : null,
-        organizer: event.organizer?.toString?.() ?? "",
+        organizer: {
+          _id: organizer._id?.toString() || organizer.toString() || "",
+          firstName: organizer.firstName || "",
+          lastName: organizer.lastName || "",
+          organization: organizer.organization || ""
+        }
       }
     }
 

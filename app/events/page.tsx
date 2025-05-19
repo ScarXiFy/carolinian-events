@@ -14,16 +14,17 @@ export default async function BrowseEvents({
 }: {
   searchParams: { [key: string]: string | string[] | undefined }
 }) {
-  const searchQuery = searchParams?.query as string || ''
-  const category = searchParams?.category as string || ''
-  const filter = searchParams?.filter as string || 'all'
+  const params = await Promise.resolve(searchParams);
+  const searchQuery = params?.query as string || '';
+  const category = params?.category as string || '';
+  const filter = params?.filter as string || 'all';
 
   const [events, categories] = await Promise.all([
     getAllEvents({ query: searchQuery, category, filter }),
     getAllCategories()
-  ])
+  ]);
   
-  const user = await currentUser()
+  const user = await currentUser();
 
   return (
     <div className="container py-10 max-w-7xl">

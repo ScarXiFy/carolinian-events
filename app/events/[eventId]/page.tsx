@@ -13,7 +13,8 @@ export default async function EventDetails({
 }: {
   params: { eventId: string };
 }) {
-  const event = await getEventById(params.eventId);
+  const resolvedParams = await Promise.resolve(params);
+  const event = await getEventById(resolvedParams.eventId);
 
   if (!event) {
     return <div>Event not found</div>;

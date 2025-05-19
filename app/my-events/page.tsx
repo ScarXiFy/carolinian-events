@@ -13,13 +13,14 @@ export default async function MyEventsPage({
 }: {
   searchParams: { [key: string]: string | string[] | undefined }
 }) {
-  const searchQuery = searchParams?.query as string || ''
-  const filter = searchParams?.filter as string || 'all'
+  const params = await Promise.resolve(searchParams);
+  const searchQuery = params?.query as string || '';
+  const filter = params?.filter as string || 'all';
 
-  const user = await currentUser()
-  if (!user) return null
+  const user = await currentUser();
+  if (!user) return null;
 
-  const events = await getUserEvents(user.id, { query: searchQuery, filter })
+  const events = await getUserEvents(user.id, { query: searchQuery, filter });
 
   return (
     <div className="container py-8">

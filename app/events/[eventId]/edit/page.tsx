@@ -19,7 +19,8 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
   const categories = await getCategories()
 
   if (!event) return notFound()
-  if (event.organizer._id.toString() !== organizer._id.toString()) {
+  if (!organizer) return redirect("/events")
+  if (!event.organizer || event.organizer._id !== organizer._id.toString()) {
     return redirect("/events")
   }
 
@@ -28,12 +29,17 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
   ): Promise<void> => {
     "use server"
 
-    await updateEventWithId(params.eventId, {
+    const result = await updateEventWithId(params.eventId, {
       ...formData,
-      category: formData.categoryId ?? "",
+      category: formData.categoryId || null,
       startDateTime: formData.startDateTime,
       endDateTime: formData.endDateTime,
+      organizers: formData.additionalOrganizers
     })
+
+    if (!result.success) {
+      throw new Error(result.message || "Failed to update event")
+    }
   }
 
   return (

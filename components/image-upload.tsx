@@ -63,8 +63,12 @@ const ImageUpload = ({ onChange, value }: ImageUploadProps) => {
           }}
           onUploadError={(error: Error) => {
             setIsUploading(false);
-            setError(error.message || "Upload failed");
+            setError("Upload failed. Please try again.");
             console.error("Upload error:", error);
+            // Retry automatically after 1 second
+            setTimeout(() => {
+              setError(null);
+            }, 1000);
           }}
         />
       ) : (

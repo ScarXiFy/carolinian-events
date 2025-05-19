@@ -1,7 +1,7 @@
-import { IEvent } from "@/lib/types";
+import { IEventDocument } from "@/lib/types";
 import { Schema, model, models } from "mongoose"
 
-const EventSchema = new Schema<IEvent>({
+const EventSchema = new Schema({
   title: { 
     type: String, 
     required: [true, "Title is required"],
@@ -28,7 +28,7 @@ const EventSchema = new Schema<IEvent>({
     type: Date, 
     required: [true, "Start date is required"],
     validate: {
-      validator: function(this: IEvent, value: Date) {
+      validator: function(this: IEventDocument, value: Date) {
         return value < this.endDateTime
       },
       message: "Start date must be before end date"
@@ -47,16 +47,16 @@ const EventSchema = new Schema<IEvent>({
     default: false 
   },
   imageUrl: {
-  type: String,
-  required: [true, "Image URL is required"],
-  validate: {
-    validator: function (value: string) {
-      return typeof value === "string" && value.trim().length > 0;
-    },
-    message: "Image URL must be a non-empty string",
+    type: String,
+    required: [true, "Image URL is required"],
+    validate: {
+      validator: function (value: string) {
+        return typeof value === "string" && value.trim().length > 0;
+      },
+      message: "Image URL must be a non-empty string",
     },
   },
-category: { 
+  category: { 
     type: Schema.Types.ObjectId, 
     ref: "Category",
     index: true 
@@ -71,17 +71,46 @@ category: {
     ref: "User",
     required: true
   },
+  additionalOrganizers: [{
+    name: { type: String, required: true },
+    socialMedia: { type: String }
+  }],
+  sponsors: [{
+    name: { type: String, required: true },
+    website: { type: String }
+  }],
+  contactEmail: {
+    type: String,
+    required: [true, "Contact email is required"],
+    validate: {
+      validator: function(value: string) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+      },
+      message: "Please enter a valid email address"
+    }
+  },
+  contactPhone: {
+    type: String,
+    validate: {
+      validator: function(value: string) {
+        return !value || /^\+?[\d\s-()]+$/.test(value);
+      },
+      message: "Please enter a valid phone number"
+    }
+  },
+  requirements: {
+    type: String,
+    trim: true
+  },
   participants: { 
     type: Schema.Types.ObjectId, 
     ref: "Participants" 
   },
-
   registrations: [{
     type: Schema.Types.ObjectId,
     ref: "Registration",
     default: []
   }],
-
   maxRegistrations: {
     type: Number,
     default: null,
@@ -92,21 +121,19 @@ category: {
       message: "Max registrations must be a positive integer or null",
     }
   },
-  
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
-}
-)
+})
 
 // Add virtual for registration count
-EventSchema.virtual("registrationCount").get(function() {
+EventSchema.virtual("registrationCount").get(function(this: IEventDocument) {
   return this.registrations?.length || 0;
 });
 
 // Add virtual for available spots (if using maxRegistrations)
-EventSchema.virtual("availableSpots").get(function() {
+EventSchema.virtual("availableSpots").get(function(this: IEventDocument) {
   if (this.maxRegistrations === null || typeof this.maxRegistrations === "undefined") return "Unlimited";
   const registrationsLength = Array.isArray(this.registrations) ? this.registrations.length : 0;
   return Math.max(0, this.maxRegistrations - registrationsLength);
@@ -120,6 +147,6 @@ EventSchema.index({ title: "text", description: "text", location: "text" })
 EventSchema.index({ startDateTime: 1 })
 EventSchema.index({ organizer: 1 })
 
-const Event = models.Event || model<IEvent>("Event", EventSchema)
+const Event = models.Event || model<IEventDocument>("Event", EventSchema)
 
 export default Event

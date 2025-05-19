@@ -43,7 +43,7 @@ interface EventFormProps {
     endDateTime: string;
     price: string;
     isFree: boolean;
-    organizers: Array<{ name: string; socialMedia: string }>;
+    additionalOrganizers: Array<{ name: string; socialMedia: string }>;
     sponsors?: Array<{ name: string; website: string }>;
     contactEmail: string;
     contactPhone?: string;
@@ -101,7 +101,7 @@ export const eventFormSchema = z.object({
   }),
   price: z.string(),
   isFree: z.boolean(),
-  organizers: z.array(organizerSchema).min(1, "At least one organizer is required"),
+  additionalOrganizers: z.array(organizerSchema).min(1, "At least one organizer is required"),
   sponsors: z.array(sponsorSchema).optional(),
   contactEmail: z.string().email("Please enter a valid email"),
   contactPhone: z.string().optional(),
@@ -137,7 +137,7 @@ export function CreateEventForm({ event, categories, onSubmit: propOnSubmit }: E
       endDateTime: event?.endDateTime || new Date(Date.now() + 3600000).toISOString(),
       price: event?.price || "0",
       isFree: event?.isFree || false,
-      organizers: event?.organizers || [{ name: user?.fullName || "", socialMedia: "" }],
+      additionalOrganizers: event?.additionalOrganizers || [{ name: user?.fullName || "", socialMedia: "" }],
       sponsors: event?.sponsors || [],
       contactEmail: event?.contactEmail || user?.primaryEmailAddress?.emailAddress || "",
       contactPhone: event?.contactPhone || "",
@@ -150,7 +150,7 @@ export function CreateEventForm({ event, categories, onSubmit: propOnSubmit }: E
 
   const { fields: organizerFields, append: appendOrganizer, remove: removeOrganizer } = useFieldArray({
     control: form.control,
-    name: "organizers",
+    name: "additionalOrganizers",
   })
 
   const { fields: sponsorFields, append: appendSponsor, remove: removeSponsor } = useFieldArray({
@@ -558,7 +558,7 @@ export function CreateEventForm({ event, categories, onSubmit: propOnSubmit }: E
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
-                          name={`organizers.${index}.name`}
+                          name={`additionalOrganizers.${index}.name`}
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className={index > 0 ? "sr-only" : "text-base font-medium"}>
@@ -578,7 +578,7 @@ export function CreateEventForm({ event, categories, onSubmit: propOnSubmit }: E
 
                         <FormField
                           control={form.control}
-                          name={`organizers.${index}.socialMedia`}
+                          name={`additionalOrganizers.${index}.socialMedia`}
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-base font-medium">Social Media Links</FormLabel>
@@ -761,7 +761,11 @@ export function CreateEventForm({ event, categories, onSubmit: propOnSubmit }: E
                               placeholder="100"
                               className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                               {...field}
-                              onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                              value={field.value || ""}
+                              onChange={(e) => {
+                                const value = e.target.value === "" ? undefined : Number(e.target.value);
+                                field.onChange(value);
+                              }}
                             />
                           </FormControl>
                           <FormMessage />
