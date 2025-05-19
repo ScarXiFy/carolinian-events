@@ -14,14 +14,11 @@ export async function createEvent(eventData: CreateEventParams) {
   try {
     await connectToDatabase();
     
-    // 1. Find the User document
     let user = await User.findOne({ clerkId: eventData.organizer });
     
     if (!user) {
-      // Fetch from Clerk API if not found
       const clerkUser = await clerkClient.users.getUser(eventData.organizer);
-      
-      // Create new user in your database
+
       user = await User.create({
         clerkId: clerkUser.id,
         email: clerkUser.emailAddresses[0]?.emailAddress || '',
@@ -32,7 +29,6 @@ export async function createEvent(eventData: CreateEventParams) {
       });
     }
 
-    // 2. Create event with the User's ObjectId
     const newEvent = await Event.create({
       ...eventData,
       organizer: user._id,
@@ -60,15 +56,13 @@ export async function getAllEvents({
 } = {}): Promise<IEvent[]> {
   try {
     await connectToDatabase()
-    
+
     const conditions: FilterQuery<IEvent> = {}
 
-    // Text search
     if (query) {
       conditions.$text = { $search: query }
     }
 
-    // Category filter
     if (category) {
       const categoryDoc = await Category.findOne({ name: category })
       if (categoryDoc) {
@@ -76,12 +70,10 @@ export async function getAllEvents({
       }
     }
 
-    // Tag filter
     if (tag) {
       conditions.tags = tag
     }
 
-    // Date filters
     const now = new Date()
     if (filter === 'upcoming') {
       conditions.startDateTime = { $gte: now }
@@ -92,16 +84,8 @@ export async function getAllEvents({
     }
 
     const events = await Event.find(conditions)
-      .populate({
-        path: 'organizer',
-        model: User,
-        select: '_id firstName lastName'
-      })
-      .populate({
-        path: 'category',
-        model: Category,
-        select: 'name'
-      })
+      .populate({ path: 'organizer', model: User, select: '_id firstName lastName' })
+      .populate({ path: 'category', model: Category, select: 'name' })
       .sort({ startDateTime: 'asc' })
       .lean()
 
@@ -122,12 +106,7 @@ export async function deleteEvent(eventId: string) {
     }
 
     const event = await Event.findById(eventId)
-
-    if (!event) {
-      throw new Error("Event not found.")
-    }
-
-    // Check ownership
+    if (!event) throw new Error("Event not found.")
     if (event.organizer.toString() !== organizer._id.toString()) {
       throw new Error("You can only delete events you created.")
     }
@@ -141,6 +120,7 @@ export async function deleteEvent(eventId: string) {
     return { success: false, message: err instanceof Error ? err.message : "Failed to delete event." }
   }
 }
+
 interface UpdateEventParams {
   eventId: string;
   title: string;
@@ -170,7 +150,6 @@ export async function updateEvent(data: UpdateEventParams) {
     const event = await Event.findById(data.eventId);
     if (!event) throw new Error("Event not found");
 
-    // Check ownership
     if (event.organizer.toString() !== organizer._id.toString()) {
       throw new Error("You can only edit your own events");
     }
@@ -184,7 +163,7 @@ export async function updateEvent(data: UpdateEventParams) {
         startDateTime: new Date(data.startDateTime),
         endDateTime: new Date(data.endDateTime),
         imageUrl: data.imageUrl,
-        category: data.category, // ✅ fixed
+        category: data.category,
         price: data.price,
         isFree: data.isFree,
         organizers: data.organizers,
@@ -207,7 +186,6 @@ export async function updateEvent(data: UpdateEventParams) {
   }
 }
 
-
 export async function getUserEvents(
   clerkUserId: string,
   {
@@ -226,12 +204,10 @@ export async function getUserEvents(
 
     const conditions: FilterQuery<IEvent> = { organizer: user._id }
 
-    // Text search
     if (query) {
       conditions.$text = { $search: query }
     }
 
-    // Status filters
     const now = new Date()
     if (filter === 'upcoming') {
       conditions.startDateTime = { $gte: now }
@@ -242,15 +218,8 @@ export async function getUserEvents(
     }
 
     const events = await Event.find(conditions)
-      .populate({
-        path: 'organizer',
-        select: 'firstName lastName organization'
-      })
-      .populate({
-        path: 'category',
-        model: Category,
-        select: 'name'
-      })
+      .populate({ path: 'organizer', select: 'firstName lastName organization' })
+      .populate({ path: 'category', model: Category, select: 'name' })
       .sort({ startDateTime: 'asc' })
       .lean()
 
@@ -266,7 +235,6 @@ export async function getEventById(eventId: string, leanMode = true) {
     await connectToDatabase()
 
     const query = Event.findById(eventId).populate("category")
-
     const event = leanMode ? await query.lean() : await query
 
     if (!event || Array.isArray(event)) return null
@@ -285,7 +253,7 @@ export async function getEventById(eventId: string, leanMode = true) {
       }
     }
 
-    return event // full Mongoose document
+    return event
   } catch (error) {
     console.error("Error getting event:", error)
     return null
