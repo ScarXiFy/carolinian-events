@@ -149,7 +149,7 @@ interface UpdateEventParams {
   startDateTime: string;
   endDateTime: string;
   imageUrl: string;
-  categoryId?: string;
+  category?: string;
   price: string;
   isFree: boolean;
   organizers: Array<{ name: string; socialMedia?: string }>;
@@ -175,7 +175,6 @@ export async function updateEvent(data: UpdateEventParams) {
       throw new Error("You can only edit your own events");
     }
 
-    // Update event with all fields
     const updatedEvent = await Event.findByIdAndUpdate(
       data.eventId,
       {
@@ -185,7 +184,7 @@ export async function updateEvent(data: UpdateEventParams) {
         startDateTime: new Date(data.startDateTime),
         endDateTime: new Date(data.endDateTime),
         imageUrl: data.imageUrl,
-        category: data.categoryId,
+        category: data.category, // ✅ fixed
         price: data.price,
         isFree: data.isFree,
         organizers: data.organizers,
@@ -196,7 +195,7 @@ export async function updateEvent(data: UpdateEventParams) {
         tags: data.tags,
         requirements: data.requirements,
       },
-      { new: true } // Return the updated document
+      { new: true }
     );
 
     revalidatePath("/events");
@@ -207,6 +206,7 @@ export async function updateEvent(data: UpdateEventParams) {
     throw error;
   }
 }
+
 
 export async function getUserEvents(
   clerkUserId: string,
@@ -261,22 +261,33 @@ export async function getUserEvents(
   }
 }
 
-export async function getEventById(eventId: string) {
+export async function getEventById(eventId: string, leanMode = true) {
   try {
     await connectToDatabase()
-    
-    const event = await Event.findById(eventId).populate('category')
 
-    if (!event) return null
+    const query = Event.findById(eventId).populate("category")
 
-    return {
-      ...event.toObject(),
-      _id: event._id.toString(),
-      startDateTime: new Date(event.startDateTime),
-      endDateTime: new Date(event.endDateTime),
+    const event = leanMode ? await query.lean() : await query
+
+    if (!event || Array.isArray(event)) return null
+
+    if (leanMode) {
+      return {
+        ...event,
+        _id: (event._id as { toString(): string }).toString(),
+        startDateTime: new Date(event.startDateTime).toISOString(),
+        endDateTime: new Date(event.endDateTime).toISOString(),
+        category: event.category ? {
+          _id: event.category._id.toString(),
+          name: event.category.name
+        } : null,
+        organizer: event.organizer?.toString?.() ?? "",
+      }
     }
+
+    return event // full Mongoose document
   } catch (error) {
-    console.error('Error getting event:', error)
+    console.error("Error getting event:", error)
     return null
   }
 }
