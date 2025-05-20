@@ -2,11 +2,11 @@ import { currentUser } from "@clerk/nextjs/server"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { getUserEvents } from "@/lib/actions/event.actions"
-import { handleDeleteEvent } from "@/lib/actions/handle-delete-event"
 import EventCard from "@/components/EventCard"
 import { SearchEvents } from "@/components/SearchEvents"
 import { MyEventsFilter } from "@/components/MyEventsFilter"
 import { IEvent } from "@/lib/types"
+import { DeleteEventForm } from "@/components/DeleteEventForm"
 
 export default async function MyEventsPage({
   searchParams,
@@ -65,12 +65,7 @@ export default async function MyEventsPage({
                 <Button asChild size="sm" variant="outline">
                   <Link href={`/events/${event._id}/edit`}>Edit</Link>
                 </Button>
-                <form action={handleDeleteEvent}>
-  <input type="hidden" name="eventId" value={event._id.toString()} />
-  <Button size="sm" variant="destructive" type="submit">
-    Delete
-  </Button>
-</form>
+                <DeleteEventForm eventId={event._id.toString()} />
               </div>
             </div>
           ))

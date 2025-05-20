@@ -7,8 +7,15 @@ import User from "@/lib/database/models/user.model"
 import { CreateEventParams, IEvent } from "@/lib/types"
 import { revalidatePath } from "next/cache"
 import { getCurrentOrganizer } from "@/lib/auth"
-import Category from "../database/models/category.model"
 import { FilterQuery } from "mongoose"
+import { Types } from "mongoose"
+
+interface IParticipant {
+  _id: Types.ObjectId;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
 
 export async function createEvent(eventData: CreateEventParams) {
   try {
@@ -34,7 +41,7 @@ export async function createEvent(eventData: CreateEventParams) {
       organizer: user._id,
       startDateTime: new Date(eventData.startDateTime),
       endDateTime: new Date(eventData.endDateTime),
-      maxRegistrations: eventData.maxRegistrations
+      maxRegistrations: eventData.maxRegistrations || null
     });
     return JSON.parse(JSON.stringify(newEvent));
   } catch (error) {
@@ -64,10 +71,7 @@ export async function getAllEvents({
     }
 
     if (category) {
-      const categoryDoc = await Category.findOne({ name: category })
-      if (categoryDoc) {
-        conditions.category = categoryDoc._id
-      }
+      conditions.categories = category
     }
 
     if (tag) {
@@ -85,7 +89,6 @@ export async function getAllEvents({
 
     const events = await Event.find(conditions)
       .populate({ path: 'organizer', model: User, select: '_id firstName lastName' })
-      .populate({ path: 'category', model: Category, select: 'name' })
       .sort({ startDateTime: 'asc' })
       .lean()
 
@@ -129,15 +132,14 @@ interface UpdateEventParams {
   startDateTime: string;
   endDateTime: string;
   imageUrl: string;
-  category?: string | null;
+  tags: string[];
   price: string;
   isFree: boolean;
   organizers: Array<{ name: string; socialMedia?: string }>;
   sponsors?: Array<{ name: string; website?: string }>;
   contactEmail: string;
   contactPhone?: string;
-  maxAttendees?: number;
-  tags: string[];
+  maxRegistrations?: number | null;
   requirements?: string;
 }
 
@@ -163,15 +165,14 @@ export async function updateEvent(data: UpdateEventParams) {
         startDateTime: new Date(data.startDateTime),
         endDateTime: new Date(data.endDateTime),
         imageUrl: data.imageUrl,
-        category: data.category || null,
+        tags: data.tags,
         price: data.price,
         isFree: data.isFree,
         organizers: data.organizers,
         sponsors: data.sponsors || [],
         contactEmail: data.contactEmail,
         contactPhone: data.contactPhone,
-        maxAttendees: data.maxAttendees,
-        tags: data.tags,
+        maxRegistrations: data.maxRegistrations || null,
         requirements: data.requirements,
       },
       { new: true }
@@ -220,7 +221,6 @@ export async function getUserEvents(
 
     const events = await Event.find(conditions)
       .populate({ path: 'organizer', select: 'firstName lastName organization' })
-      .populate({ path: 'category', model: Category, select: 'name' })
       .sort({ startDateTime: 'asc' })
       .lean()
 
@@ -235,40 +235,67 @@ export async function getEventById(eventId: string, leanMode = true) {
   try {
     await connectToDatabase()
 
+    // Ensure Participant model is registered
+    const Participant = (await import("@/lib/database/models/participant.model")).default
+
     const query = Event.findById(eventId)
       .populate({
         path: "organizer",
-        model: User,
-        select: "_id firstName lastName organization"
+        select: "_id firstName lastName"
       })
-      .populate("category")
+      .populate({
+        path: "participants",
+        select: "_id firstName lastName email department",
+        model: Participant
+      })
+
     const event = leanMode ? await query.lean() : await query
 
     if (!event || Array.isArray(event)) return null
 
-    if (leanMode) {
-      const organizer = event.organizer || {}
-      return {
-        ...event,
-        _id: (event._id as { toString(): string }).toString(),
-        startDateTime: new Date(event.startDateTime).toISOString(),
-        endDateTime: new Date(event.endDateTime).toISOString(),
-        category: event.category ? {
-          _id: event.category._id.toString(),
-          name: event.category.name
-        } : null,
-        organizer: {
-          _id: organizer._id?.toString() || organizer.toString() || "",
-          firstName: organizer.firstName || "",
-          lastName: organizer.lastName || "",
-          organization: organizer.organization || ""
-        }
-      }
+    // Convert ObjectIds to strings
+    const serializedEvent = {
+      ...event,
+      _id: event._id.toString(),
+      organizer: event.organizer ? {
+        ...event.organizer,
+        _id: event.organizer._id.toString()
+      } : null,
+      participants: event.participants ? event.participants.map((participant: IParticipant) => ({
+        ...participant,
+        _id: participant._id.toString()
+      })) : []
     }
 
-    return event
+    return serializedEvent
   } catch (error) {
     console.error("Error getting event:", error)
-    return null
+    throw error
+  }
+}
+
+export async function updateEventTagsToCategories(eventId: string) {
+  try {
+    await connectToDatabase();
+    
+    const event = await Event.findById(eventId);
+    if (!event) throw new Error("Event not found");
+
+    // Convert tags to categories if they exist
+    const categories = event.tags && event.tags.length > 0 ? event.tags : [];
+    
+    const updatedEvent = await Event.findByIdAndUpdate(
+      eventId,
+      {
+        categories: categories,
+        tags: [] // Clear the tags array
+      },
+      { new: true }
+    );
+
+    return JSON.parse(JSON.stringify(updatedEvent));
+  } catch (error) {
+    console.error("Error updating event tags to categories:", error);
+    throw error;
   }
 }

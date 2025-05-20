@@ -1,7 +1,7 @@
 // components/create-event-form.tsx
 "use client"
 import React, { useEffect, useState } from "react"
-import { useFieldArray, useForm } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
@@ -26,10 +26,10 @@ import { createEvent } from "@/lib/actions/event.actions"
 import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import ImageUpload from "@/components/image-upload"
-import { Calendar, Clock, MapPin, Tag, User, Users, Mail, X } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { Calendar, Clock, MapPin, Tag, User, X, Mail, Phone, Building2, Plus } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge"
 import { Category } from "@/lib/types/index"
 
 interface EventFormProps {
@@ -43,18 +43,17 @@ interface EventFormProps {
     endDateTime: string;
     price: string;
     isFree: boolean;
-    additionalOrganizers: Array<{ name: string; socialMedia: string }>;
-    sponsors?: Array<{ name: string; website: string }>;
-    contactEmail: string;
-    contactPhone?: string;
-    maxAttendees?: number;
-    tags: string[];
-    requirements?: string;
+    tags?: string[];
     categoryId?: string;
     category?: {
       _id: string;
       name: string;
     }
+    maxRegistrations?: number | null;
+    contactEmail: string;
+    contactPhone: string;
+    requirements: string;
+    sponsors?: Array<{ name: string; website?: string }>;
   };
   categories?: Category[];
   onSubmit?: (values: z.infer<typeof eventFormSchema>) => Promise<void>;
@@ -74,16 +73,6 @@ function formatForDateTimeInput(dateString: string): string {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-const organizerSchema = z.object({
-  name: z.string().min(1, "Organizer name is required"),
-  socialMedia: z.string().optional(),
-})
-
-const sponsorSchema = z.object({
-  name: z.string().min(1, "Sponsor name is required"),
-  website: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-})
-
 export const eventFormSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
@@ -101,14 +90,15 @@ export const eventFormSchema = z.object({
   }),
   price: z.string(),
   isFree: z.boolean(),
-  additionalOrganizers: z.array(organizerSchema).min(1, "At least one organizer is required"),
-  sponsors: z.array(sponsorSchema).optional(),
-  contactEmail: z.string().email("Please enter a valid email"),
+  tags: z.array(z.string()).min(1, "At least one category is required"),
+  maxRegistrations: z.number().nullable().optional(),
+  contactEmail: z.string().email("Please enter a valid email address"),
   contactPhone: z.string().optional(),
-  maxAttendees: z.number().min(1, "Must have at least 1 attendee").optional(),
-  tags: z.array(z.string()).min(1, "At least one tag is required"),
   requirements: z.string().optional(),
-  categoryId: z.string().optional(),
+  sponsors: z.array(z.object({
+    name: z.string().min(1, "Sponsor name is required"),
+    website: z.string().url("Please enter a valid URL").optional(),
+  })).optional(),
 })
 
 const LOCATION_OPTIONS = [
@@ -116,15 +106,23 @@ const LOCATION_OPTIONS = [
   "USC Downtown Campus",
 ]
 
-const PREDEFINED_TAGS = ["Scientia", "Virtus", "Devotio"]
+const PREDEFINED_CATEGORIES = [
+  { id: "scientia", name: "Scientia" },
+  { id: "virtus", name: "Virtus" },
+  { id: "devotio", name: "Devotio" }
+]
 
-export function CreateEventForm({ event, categories, onSubmit: propOnSubmit }: EventFormProps) {
+export function CreateEventForm({ event, onSubmit: propOnSubmit }: EventFormProps) {
   const { user } = useUser()
   const router = useRouter()
   const [error, setError] = React.useState("")
   const [customLocation, setCustomLocation] = useState("")
   const [showCustomLocation, setShowCustomLocation] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [customCategory, setCustomCategory] = useState("")
+  const [sponsors, setSponsors] = useState<Array<{ name: string; website?: string }>>(
+    event?.sponsors || []
+  )
 
   const form = useForm<z.infer<typeof eventFormSchema>>({
     resolver: zodResolver(eventFormSchema),
@@ -137,34 +135,51 @@ export function CreateEventForm({ event, categories, onSubmit: propOnSubmit }: E
       endDateTime: event?.endDateTime || new Date(Date.now() + 3600000).toISOString(),
       price: event?.price || "0",
       isFree: event?.isFree || false,
-      additionalOrganizers: event?.additionalOrganizers || [{ name: user?.fullName || "", socialMedia: "" }],
-      sponsors: event?.sponsors || [],
-      contactEmail: event?.contactEmail || user?.primaryEmailAddress?.emailAddress || "",
-      contactPhone: event?.contactPhone || "",
-      maxAttendees: event?.maxAttendees || undefined,
       tags: event?.tags || [],
+      maxRegistrations: event?.maxRegistrations || null,
+      contactEmail: event?.contactEmail || "",
+      contactPhone: event?.contactPhone || "",
       requirements: event?.requirements || "",
-      categoryId: event?.categoryId || "",
+      sponsors: event?.sponsors || [],
     },
   })
 
-  const { fields: organizerFields, append: appendOrganizer, remove: removeOrganizer } = useFieldArray({
-    control: form.control,
-    name: "additionalOrganizers",
-  })
+  const selectedCategories = form.watch("tags") || []
 
-  const { fields: sponsorFields, append: appendSponsor, remove: removeSponsor } = useFieldArray({
-    control: form.control,
-    name: "sponsors",
-  })
+  const addCategory = (category: string) => {
+    if (!selectedCategories.includes(category)) {
+      form.setValue("tags", [...selectedCategories, category])
+    }
+  }
 
-  const tags = form.watch("tags") || []
+  const removeCategory = (categoryToRemove: string) => {
+    form.setValue("tags", selectedCategories.filter(category => category !== categoryToRemove))
+  }
 
   useEffect(() => {
-    if (form.watch("isFree")) {
-      form.setValue("price", "0");
+    if (form.watch("price") === "0") {
+      form.setValue("isFree", true);
     }
   }, [form]);
+
+  const addSponsor = () => {
+    const newSponsors = [...sponsors, { name: "", website: "" }]
+    setSponsors(newSponsors)
+    form.setValue("sponsors", newSponsors)
+  }
+
+  const removeSponsor = (index: number) => {
+    const newSponsors = sponsors.filter((_, i) => i !== index)
+    setSponsors(newSponsors)
+    form.setValue("sponsors", newSponsors)
+  }
+
+  const updateSponsor = (index: number, field: "name" | "website", value: string) => {
+    const newSponsors = [...sponsors]
+    newSponsors[index] = { ...newSponsors[index], [field]: value }
+    setSponsors(newSponsors)
+    form.setValue("sponsors", newSponsors)
+  }
 
   async function onSubmit(values: z.infer<typeof eventFormSchema>) {
     try {
@@ -194,16 +209,6 @@ export function CreateEventForm({ event, categories, onSubmit: propOnSubmit }: E
     }
   }
 
-  const addTag = (tag: string) => {
-    if (!tags.includes(tag)) {
-      form.setValue("tags", [...tags, tag])
-    }
-  }
-
-  const removeTag = (tagToRemove: string) => {
-    form.setValue("tags", tags.filter(tag => tag !== tagToRemove));
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/10">
       <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
@@ -218,13 +223,6 @@ export function CreateEventForm({ event, categories, onSubmit: propOnSubmit }: E
             {event ? "Update your event details" : "Fill out the form below to create your event"}
           </p>
         </div>
-        <Button
-            variant="outline"
-            onClick={() => router.push("/events")}
-            className="mb-12 hover:bg-primary/10 transition-all duration-200 hover:scale-105"
-          >
-            Browse Events
-          </Button>
 
         <Form {...form}>
           {error && (
@@ -233,421 +231,438 @@ export function CreateEventForm({ event, categories, onSubmit: propOnSubmit }: E
             </div>
           )}
           
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            {/* Left Column */}
-            <div className="space-y-10">
-              {/* Basic Information Card */}
-              <Card className="border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur-sm overflow-hidden group">
-                <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-b border-border/50 relative">
-                  <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
-                  <CardTitle className="flex items-center gap-3 text-xl font-semibold text-primary relative group-hover:translate-x-1 transition-transform duration-200">
-                    <div className="p-2.5 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-200">
-                      <User className="w-6 h-6" />
-                    </div>
-                    <span>Event Details</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6 pt-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel className="text-base font-medium">Event Title*</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Tech Conference 2023" 
-                              className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel className="text-base font-medium">Description*</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="Describe your event in detail..." 
-                              className="min-h-[120px] bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="imageUrl"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel className="text-base font-medium">Event Image*</FormLabel>
-                          <div className="space-y-2">
-                            <ImageUpload 
-                              onChange={(url) => field.onChange(url)}
-                              value={field.value}
-                            />
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10">
+            {/* Basic Information Card */}
+            <Card className="border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur-sm overflow-hidden group">
+              <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-b border-border/50 relative">
+                <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
+                <CardTitle className="flex items-center gap-3 text-xl font-semibold text-primary relative group-hover:translate-x-1 transition-transform duration-200">
+                  <div className="p-2.5 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-200">
+                    <User className="w-6 h-6" />
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Date & Time Card */}
-              <Card className="border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur-sm overflow-hidden group">
-                <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-b border-border/50 relative">
-                  <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
-                  <CardTitle className="flex items-center gap-3 text-xl font-semibold text-primary relative group-hover:translate-x-1 transition-transform duration-200">
-                    <div className="p-2.5 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-200">
-                      <Clock className="w-6 h-6" />
-                    </div>
-                    <span>Date & Time</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6 pt-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="startDateTime"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base font-medium">Start Date & Time*</FormLabel>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-5 h-5 text-muted-foreground" />
-                            <FormControl>
-                              <Input
-                                type="datetime-local"
-                                value={field.value ? formatForDateTimeInput(field.value) : ""}
-                                onChange={(e) => {
-                                  const date = new Date(e.target.value)
-                                  if (!isNaN(date.getTime())) {
-                                    field.onChange(date.toISOString())
-                                  }
-                                }}
-                                className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                              />
-                            </FormControl>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="endDateTime"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base font-medium">End Date & Time*</FormLabel>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-5 h-5 text-muted-foreground" />
-                            <FormControl>
-                              <Input
-                                type="datetime-local"
-                                value={field.value ? formatForDateTimeInput(field.value) : ""}
-                                onChange={(e) => {
-                                  const date = new Date(e.target.value)
-                                  if (!isNaN(date.getTime())) {
-                                    field.onChange(date.toISOString())
-                                  }
-                                }}
-                                className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                              />
-                            </FormControl>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="price"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base font-medium">Price*</FormLabel>
-                          <div className="flex items-center gap-2">
-                            <span className="text-muted-foreground">₱</span>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                placeholder="0.00"
-                                disabled={form.watch("isFree")}
-                                className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                                {...field}
-                                onChange={(e) => {
-                                  const value = parseFloat(e.target.value);
-                                  field.onChange(isNaN(value) ? "0" : value.toString());
-                                }}
-                              />
-                            </FormControl>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="isFree"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel className="text-base font-medium">Free Event</FormLabel>
-                          <FormControl>
-                            <div className="flex items-center gap-2">
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                                className="data-[state=checked]:bg-primary transition-colors duration-200"
-                              />
-                              <span>{field.value ? "Free" : "Paid"}</span>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Location Card */}
-              <Card className="border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur-sm overflow-hidden group">
-                <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-b border-border/50 relative">
-                  <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
-                  <CardTitle className="flex items-center gap-3 text-xl font-semibold text-primary relative group-hover:translate-x-1 transition-transform duration-200">
-                    <div className="p-2.5 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-200">
-                      <MapPin className="w-6 h-6" />
-                    </div>
-                    <span>Location</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-8">
+                  <span>Event Details</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6 pt-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
-                    name="location"
+                    name="title"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-base font-medium">Location*</FormLabel>
-                        {!showCustomLocation ? (
-                          <div className="space-y-2">
-                            <Select
-                              onValueChange={(value) => {
-                                if (value === "custom") {
-                                  setShowCustomLocation(true)
-                                  form.setValue("location", "")
-                                } else {
-                                  field.onChange(value)
-                                }
-                              }}
-                              value={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20">
-                                  <SelectValue placeholder="Select a location" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {LOCATION_OPTIONS.map((location) => (
-                                  <SelectItem key={location} value={location}>
-                                    <div className="flex items-center gap-2">
-                                      <MapPin className="w-4 h-4" />
-                                      {location}
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                                <SelectItem value="custom">
-                                  <div className="flex items-center gap-2">
-                                    <MapPin className="w-4 h-4" />
-                                    Add custom location...
-                                  </div>
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </div>
-                        ) : (
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder="Enter custom location"
-                              value={customLocation}
-                              onChange={(e) => {
-                                setCustomLocation(e.target.value)
-                                field.onChange(e.target.value)
-                              }}
-                              className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => {
-                                setShowCustomLocation(false)
-                                setCustomLocation("")
-                                field.onChange("")
-                              }}
-                              className="hover:bg-primary/10 transition-colors duration-200"
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        )}
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Requirements Card */}
-              <Card className="border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur-sm overflow-hidden group">
-                <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-b border-border/50 relative">
-                  <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
-                  <CardTitle className="text-xl font-semibold text-primary relative group-hover:translate-x-1 transition-transform duration-200">Special Requirements</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-8">
-                  <FormField
-                    control={form.control}
-                    name="requirements"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-base font-medium">Any special requirements for attendees?</FormLabel>
+                      <FormItem className="md:col-span-2">
+                        <FormLabel className="text-base font-medium">Event Title*</FormLabel>
                         <FormControl>
-                          <Textarea
-                            placeholder="Dress code, items to bring, age restrictions, etc."
-                            className="min-h-[100px] bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                            {...field}
+                          <Input 
+                            placeholder="Tech Conference 2023" 
+                            className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20" 
+                            {...field} 
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                </CardContent>
-              </Card>
-            </div>
 
-            {/* Right Column */}
-            <div className="space-y-10">
-              {/* Organizers Card */}
-              <Card className="border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur-sm overflow-hidden group">
-                <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-b border-border/50 relative">
-                  <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
-                  <CardTitle className="flex items-center gap-3 text-xl font-semibold text-primary relative group-hover:translate-x-1 transition-transform duration-200">
-                    <div className="p-2.5 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-200">
-                      <Users className="w-6 h-6" />
-                    </div>
-                    <span>Organizers</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6 pt-8">
-                  {organizerFields.map((field, index) => (
-                    <div key={field.id} className="space-y-4 p-4 rounded-lg border border-border/50 bg-background/50 hover:bg-background/70 transition-colors duration-200">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name={`additionalOrganizers.${index}.name`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className={index > 0 ? "sr-only" : "text-base font-medium"}>
-                                {index === 0 ? "Organizer Name*" : "Additional Organizer"}
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Organizer name"
-                                  className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel className="text-base font-medium">Description*</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Describe your event in detail..." 
+                            className="min-h-[120px] bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                        <FormField
-                          control={form.control}
-                          name={`additionalOrganizers.${index}.socialMedia`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-base font-medium">Social Media Links</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="https://github.com/username"
-                                  className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                  <FormField
+                    control={form.control}
+                    name="imageUrl"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel className="text-base font-medium">Event Image*</FormLabel>
+                        <div className="space-y-2">
+                          <ImageUpload 
+                            onChange={(url) => field.onChange(url)}
+                            value={field.value}
+                          />
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-                      {index > 0 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeOrganizer(index)}
-                          className="mt-2 hover:bg-primary/10 transition-colors duration-200"
-                        >
-                          Remove Organizer
-                        </Button>
+            {/* Date & Time Card */}
+            <Card className="border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur-sm overflow-hidden group">
+              <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-b border-border/50 relative">
+                <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
+                <CardTitle className="flex items-center gap-3 text-xl font-semibold text-primary relative group-hover:translate-x-1 transition-transform duration-200">
+                  <div className="p-2.5 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-200">
+                    <Clock className="w-6 h-6" />
+                  </div>
+                  <span>Date & Time</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6 pt-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="startDateTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-medium">Start Date & Time*</FormLabel>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-5 h-5 text-muted-foreground" />
+                          <FormControl>
+                            <Input
+                              type="datetime-local"
+                              value={field.value ? formatForDateTimeInput(field.value) : ""}
+                              onChange={(e) => {
+                                const date = new Date(e.target.value)
+                                if (!isNaN(date.getTime())) {
+                                  field.onChange(date.toISOString())
+                                }
+                              }}
+                              className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                            />
+                          </FormControl>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="endDateTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-medium">End Date & Time*</FormLabel>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-5 h-5 text-muted-foreground" />
+                          <FormControl>
+                            <Input
+                              type="datetime-local"
+                              value={field.value ? formatForDateTimeInput(field.value) : ""}
+                              onChange={(e) => {
+                                const date = new Date(e.target.value)
+                                if (!isNaN(date.getTime())) {
+                                  field.onChange(date.toISOString())
+                                }
+                              }}
+                              className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                            />
+                          </FormControl>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-medium">Price*</FormLabel>
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">₱</span>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="0.00"
+                              disabled={form.watch("isFree")}
+                              className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                              {...field}
+                              onChange={(e) => {
+                                const value = parseFloat(e.target.value);
+                                const newValue = isNaN(value) ? "0" : value.toString();
+                                field.onChange(newValue);
+                                if (newValue === "0") {
+                                  form.setValue("isFree", true);
+                                }
+                              }}
+                            />
+                          </FormControl>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="isFree"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel className="text-base font-medium">Free Event</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={(checked) => {
+                                field.onChange(checked);
+                                if (checked) {
+                                  form.setValue("price", "0");
+                                }
+                              }}
+                              className="data-[state=checked]:bg-primary transition-colors duration-200"
+                            />
+                            <span>{field.value ? "Free" : "Paid"}</span>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="maxRegistrations"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-medium">Maximum Registrations</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            placeholder="Leave empty for unlimited"
+                            value={field.value || ""}
+                            onChange={(e) => {
+                              const value = e.target.value === "" ? null : parseInt(e.target.value);
+                              field.onChange(value);
+                            }}
+                            className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Location Card */}
+            <Card className="border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur-sm overflow-hidden group">
+              <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-b border-border/50 relative">
+                <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
+                <CardTitle className="flex items-center gap-3 text-xl font-semibold text-primary relative group-hover:translate-x-1 transition-transform duration-200">
+                  <div className="p-2.5 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-200">
+                    <MapPin className="w-6 h-6" />
+                  </div>
+                  <span>Location</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-8">
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-medium">Location*</FormLabel>
+                      {!showCustomLocation ? (
+                        <div className="space-y-2">
+                          <Select
+                            onValueChange={(value) => {
+                              if (value === "custom") {
+                                setShowCustomLocation(true)
+                                form.setValue("location", "")
+                              } else {
+                                field.onChange(value)
+                              }
+                            }}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20">
+                                <SelectValue placeholder="Select a location" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {LOCATION_OPTIONS.map((location) => (
+                                <SelectItem key={location} value={location}>
+                                  <div className="flex items-center gap-2">
+                                    <MapPin className="w-4 h-4" />
+                                    {location}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="custom">
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="w-4 h-4" />
+                                  Add custom location...
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Enter custom location"
+                            value={customLocation}
+                            onChange={(e) => {
+                              setCustomLocation(e.target.value)
+                              field.onChange(e.target.value)
+                            }}
+                            className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setShowCustomLocation(false)
+                              setCustomLocation("")
+                              field.onChange("")
+                            }}
+                            className="hover:bg-primary/10 transition-colors duration-200"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
                       )}
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => appendOrganizer({ name: "", socialMedia: "" })}
-                    className="hover:bg-primary/10 transition-colors duration-200"
-                  >
-                    Add Organizer
-                  </Button>
-                </CardContent>
-              </Card>
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
 
-              {/* Sponsors Card */}
-              <Card className="border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur-sm overflow-hidden group">
-                <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-b border-border/50 relative">
-                  <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
-                  <CardTitle className="flex items-center gap-3 text-xl font-semibold text-primary relative group-hover:translate-x-1 transition-transform duration-200">
-                    <div className="p-2.5 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-200">
-                      <Users className="w-6 h-6" />
+            {/* Category Card */}
+            <Card className="border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur-sm overflow-hidden group">
+              <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-b border-border/50 relative">
+                <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
+                <CardTitle className="flex items-center gap-3 text-xl font-semibold text-primary relative group-hover:translate-x-1 transition-transform duration-200">
+                  <div className="p-2.5 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-200">
+                    <Tag className="w-6 h-6" />
+                  </div>
+                  <span>Event Categories</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6 pt-8">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Predefined Categories</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {PREDEFINED_CATEGORIES.map((category) => (
+                        <Badge
+                          key={category.id}
+                          variant={selectedCategories.includes(category.name) ? "default" : "outline"}
+                          className="cursor-pointer hover:bg-primary/90 transition-all duration-200 hover:scale-105"
+                          onClick={() => selectedCategories.includes(category.name) ? removeCategory(category.name) : addCategory(category.name)}
+                        >
+                          {category.name}
+                          {selectedCategories.includes(category.name) && (
+                            <X className="w-3 h-3 ml-1" />
+                          )}
+                        </Badge>
+                      ))}
                     </div>
-                    <span>Sponsors</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6 pt-8">
-                  {sponsorFields.map((field, index) => (
-                    <div key={field.id} className="space-y-4 p-4 rounded-lg border border-border/50 bg-background/50 hover:bg-background/70 transition-colors duration-200">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="tags"
+                    render={({ }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-medium">Custom Categories</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Type a category and press Enter"
+                            value={customCategory}
+                            onChange={(e) => setCustomCategory(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                const value = e.currentTarget.value.trim();
+                                if (value && !selectedCategories.includes(value)) {
+                                  addCategory(value);
+                                  setCustomCategory("");
+                                }
+                              }
+                            }}
+                            className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {selectedCategories.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">Selected Categories</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedCategories.map((category) => (
+                          <Badge
+                            key={category}
+                            variant="default"
+                            className="flex items-center gap-1 hover:bg-primary/90 transition-all duration-200 hover:scale-105"
+                          >
+                            {category}
+                            <button
+                              type="button"
+                              aria-label={`Remove ${category} category`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeCategory(category);
+                              }}
+                              className="hover:text-white focus:outline-none"
+                            >
+                              <X className="w-3 h-3" aria-hidden="true" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Sponsors Card */}
+            <Card className="border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur-sm overflow-hidden group">
+              <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-b border-border/50 relative">
+                <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
+                <CardTitle className="flex items-center gap-3 text-xl font-semibold text-primary relative group-hover:translate-x-1 transition-transform duration-200">
+                  <div className="p-2.5 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-200">
+                    <Building2 className="w-6 h-6" />
+                  </div>
+                  <span>Event Sponsors</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6 pt-8">
+                <div className="space-y-4">
+                  {sponsors.map((sponsor, index) => (
+                    <div key={index} className="flex gap-4 items-start">
+                      <div className="flex-1 space-y-4">
                         <FormField
                           control={form.control}
                           name={`sponsors.${index}.name`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className={index > 0 ? "sr-only" : "text-base font-medium"}>
-                                {index === 0 ? "Sponsor Name*" : "Additional Sponsor"}
-                              </FormLabel>
+                              <FormLabel className="text-base font-medium">Sponsor Name*</FormLabel>
                               <FormControl>
                                 <Input
-                                  placeholder="Sponsor name (e.g., Redbull)"
+                                  placeholder="Enter sponsor name"
                                   className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                                  {...field}
+                                  value={field.value || ""}
+                                  onChange={(e) => {
+                                    field.onChange(e)
+                                    updateSponsor(index, "name", e.target.value)
+                                  }}
                                 />
                               </FormControl>
                               <FormMessage />
@@ -660,12 +675,16 @@ export function CreateEventForm({ event, categories, onSubmit: propOnSubmit }: E
                           name={`sponsors.${index}.website`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-base font-medium">Website URL</FormLabel>
+                              <FormLabel className="text-base font-medium">Website (Optional)</FormLabel>
                               <FormControl>
                                 <Input
                                   placeholder="https://example.com"
                                   className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                                  {...field}
+                                  value={field.value || ""}
+                                  onChange={(e) => {
+                                    field.onChange(e)
+                                    updateSponsor(index, "website", e.target.value)
+                                  }}
                                 />
                               </FormControl>
                               <FormMessage />
@@ -673,224 +692,108 @@ export function CreateEventForm({ event, categories, onSubmit: propOnSubmit }: E
                           )}
                         />
                       </div>
-
                       <Button
                         type="button"
-                        variant="outline"
-                        size="sm"
+                        variant="ghost"
+                        size="icon"
+                        className="mt-8 hover:bg-destructive/10 hover:text-destructive"
                         onClick={() => removeSponsor(index)}
-                        className="hover:bg-primary/10 transition-colors duration-200"
                       >
-                        Remove Sponsor
+                        <X className="w-5 h-5" />
                       </Button>
                     </div>
                   ))}
+
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
-                    onClick={() => appendSponsor({ name: "", website: "" })}
-                    className="hover:bg-primary/10 transition-colors duration-200"
+                    className="w-full mt-4 hover:bg-primary/10"
+                    onClick={addSponsor}
                   >
+                    <Plus className="w-4 h-4 mr-2" />
                     Add Sponsor
                   </Button>
-                </CardContent>
-              </Card>
+                </div>
+              </CardContent>
+            </Card>
 
-              {/* Contact Information Card */}
-              <Card className="border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur-sm overflow-hidden group">
-                <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-b border-border/50 relative">
-                  <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
-                  <CardTitle className="flex items-center gap-3 text-xl font-semibold text-primary relative group-hover:translate-x-1 transition-transform duration-200">
-                    <div className="p-2.5 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-200">
-                      <Mail className="w-6 h-6" />
-                    </div>
-                    <span>Contact Information</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6 pt-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="contactEmail"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base font-medium">Contact Email*</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="email" 
-                              placeholder="contact@example.com" 
-                              className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="contactPhone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base font-medium">Contact Phone</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="tel" 
-                              placeholder="+1 (555) 123-4567" 
-                              className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="maxAttendees"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel className="text-base font-medium">Maximum Attendees</FormLabel>
+            {/* Contact Information Card */}
+            <Card className="border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur-sm overflow-hidden group">
+              <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-b border-border/50 relative">
+                <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
+                <CardTitle className="flex items-center gap-3 text-xl font-semibold text-primary relative group-hover:translate-x-1 transition-transform duration-200">
+                  <div className="p-2.5 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-200">
+                    <Mail className="w-6 h-6" />
+                  </div>
+                  <span>Contact Information</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6 pt-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="contactEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-medium">Contact Email*</FormLabel>
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-5 h-5 text-muted-foreground" />
                           <FormControl>
                             <Input
-                              type="number"
-                              min="1"
-                              placeholder="100"
+                              type="email"
+                              placeholder="events@usc.edu.ph"
                               className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                               {...field}
-                              value={field.value || ""}
-                              onChange={(e) => {
-                                const value = e.target.value === "" ? undefined : Number(e.target.value);
-                                field.onChange(value);
-                              }}
                             />
                           </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              {/* Category and Tags Card */}
-              <Card className="border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur-sm overflow-hidden group">
-                <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-b border-border/50 relative">
-                  <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
-                  <CardTitle className="flex items-center gap-3 text-xl font-semibold text-primary relative group-hover:translate-x-1 transition-transform duration-200">
-                    <div className="p-2.5 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-200">
-                      <Tag className="w-6 h-6" />
-                    </div>
-                    <span>Category & Tags</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6 pt-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="categoryId"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel className="text-base font-medium">Event Category*</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20">
-                                <SelectValue placeholder="Select a category" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {categories && categories.map((category) => (
-                                <SelectItem key={category._id} value={category._id}>
-                                  {category.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="md:col-span-2">
-                      <h4 className="text-sm font-medium mb-2">Predefined Tags</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {PREDEFINED_TAGS.map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant={tags.includes(tag) ? "default" : "outline"}
-                            className="cursor-pointer hover:bg-primary/90 transition-all duration-200 hover:scale-105"
-                            onClick={() => tags.includes(tag) ? removeTag(tag) : addTag(tag)}
-                          >
-                            {tag}
-                            {tags.includes(tag) && (
-                              <X className="w-3 h-3 ml-1" />
-                            )}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    <FormField
-                      control={form.control}
-                      name="tags"
-                      render={({ }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel className="text-base font-medium">Custom Tags</FormLabel>
+                  <FormField
+                    control={form.control}
+                    name="contactPhone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-medium">Contact Phone (Optional)</FormLabel>
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-5 h-5 text-muted-foreground" />
                           <FormControl>
                             <Input
-                              placeholder="Type a tag and press Enter"
+                              type="tel"
+                              placeholder="+63 XXX XXX XXXX"
                               className="bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  e.preventDefault();
-                                  const value = e.currentTarget.value.trim();
-                                  if (value && !tags.includes(value)) {
-                                    form.setValue("tags", [...tags, value]);
-                                    e.currentTarget.value = "";
-                                  }
-                                }
-                              }}
+                              {...field}
                             />
                           </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {tags.length > 0 && (
-                      <div className="md:col-span-2 space-y-2">
-                        <h4 className="text-sm font-medium">Selected Tags</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {tags.map((tag) => (
-                            <Badge
-                              key={tag}
-                              variant="default"
-                              className="flex items-center gap-1 hover:bg-primary/90 transition-all duration-200 hover:scale-105"
-                            >
-                              {tag}
-                              <button
-                                type="button"
-                                aria-label={`Remove ${tag} tag`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  removeTag(tag);
-                                }}
-                                className="hover:text-white focus:outline-none"
-                              >
-                                <X className="w-3 h-3" aria-hidden="true" />
-                              </button>
-                            </Badge>
-                          ))}
                         </div>
-                      </div>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="requirements"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel className="text-base font-medium">Requirements (Optional)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="List any requirements or prerequisites for attending the event..."
+                            className="min-h-[100px] bg-background/50 border-border/50 focus:border-primary/50 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
           </form>
 
           <div className="flex justify-end gap-4 pt-8 mt-8 border-t border-border/50">

@@ -30,7 +30,7 @@ export interface IEvent extends Document {
   price: string;
   isFree: boolean;
   imageUrl: string;
-  category?: ICategory | Types.ObjectId;
+  categories: string[];
   organizer: Types.ObjectId;
   additionalOrganizers: Array<{
     name: string;
@@ -72,7 +72,7 @@ export type CreateEventParams = {
   contactEmail: string
   contactPhone?: string
   requirements?: string
-  maxAttendees?: number | null
+  maxRegistrations?: number | null
   tags: string[]
-  categoryId?: string
+  categories: string[]
 }

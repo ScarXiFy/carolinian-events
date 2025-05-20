@@ -56,10 +56,11 @@ const EventSchema = new Schema({
       message: "Image URL must be a non-empty string",
     },
   },
-  category: { 
-    type: Schema.Types.ObjectId, 
-    ref: "Category",
-    index: true 
+  categories: {
+    type: [String],
+    required: [true, "At least one category is required"],
+    default: [],
+    index: true
   },
   tags: {
     type: [String],
@@ -102,10 +103,11 @@ const EventSchema = new Schema({
     type: String,
     trim: true
   },
-  participants: { 
+  participants: [{ 
     type: Schema.Types.ObjectId, 
-    ref: "Participants" 
-  },
+    ref: "Participant",
+    default: []
+  }],
   registrations: [{
     type: Schema.Types.ObjectId,
     ref: "Registration",

@@ -18,7 +18,6 @@ export interface UpdateEventParams {
   maxAttendees?: number
   tags: string[]
   requirements?: string
-  category: string | null
 }
 
 export async function updateEventWithId(eventId: string, formData: UpdateEventParams) {
@@ -45,7 +44,6 @@ export async function updateEventWithId(eventId: string, formData: UpdateEventPa
       endDateTime: endDate.toISOString(),
       sponsors: formData.sponsors || [],
       tags: formData.tags || [],
-      category: formData.category || null,
     }
 
     const result = await updateEvent(updateData)

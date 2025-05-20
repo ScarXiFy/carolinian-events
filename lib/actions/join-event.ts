@@ -5,6 +5,7 @@ import { connectToDatabase } from "@/lib/database/connect"
 import Event from "@/lib/database/models/event.model"
 import Participant from "@/lib/database/models/participant.model"
 import { revalidatePath } from "next/cache"
+import { sendEventRegistrationEmail } from "@/lib/utils/send-email"
 
 export async function joinEvent({
   eventId,
@@ -32,8 +33,11 @@ export async function joinEvent({
       throw new Error("Please enter a valid email address")
     }
 
+    // Find event and ensure it exists
     const event = await Event.findById(eventId)
-    if (!event) throw new Error("Event not found")
+    if (!event) {
+      throw new Error("Event not found")
+    }
 
     // Check if this email is already registered for this event
     const existingParticipant = await Participant.findOne({
@@ -59,10 +63,34 @@ export async function joinEvent({
       { upsert: true, new: true }
     )
 
-    // Add participant to event if not already added
-    if (!event.participants.includes(participant._id)) {
-      event.participants.push(participant._id)
-      await event.save()
+    // Update event with new participant
+    await Event.findByIdAndUpdate(
+      eventId,
+      {
+        $addToSet: { participants: participant._id }
+      },
+      { new: true }
+    )
+
+    // Send confirmation email
+    const emailResult = await sendEventRegistrationEmail({
+      email,
+      firstName,
+      lastName,
+      eventName: event.title,
+      eventLocation: event.location || 'TBA',
+      startDateTime: event.startDateTime,
+      endDateTime: event.endDateTime,
+      price: event.price || "0",
+      isFree: event.isFree || false,
+      description: event.description || "",
+      tags: event.tags || [],
+      maxRegistrations: event.maxRegistrations || undefined,
+    })
+
+    if (!emailResult.success) {
+      console.error('Failed to send confirmation email:', emailResult.error)
+      // Don't throw error here, as registration was successful
     }
 
     revalidatePath(`/events/${eventId}`)

@@ -73,13 +73,13 @@ export default function EventCard({ event }: EventCardProps) {
         </div>
 
         <div className="flex justify-between items-center">
-  <span className={`font-medium ${event.isFree ? 'text-green-600' : 'text-red-600'}`}>
-    {event.isFree ? "FREE" : `$${event.price}`}
-  </span>
-  <Button asChild size="sm">
-    <Link href={`/events/${event._id}`}>View Details</Link>
-  </Button>
-</div>
+          <span className={`font-medium ${event.isFree || event.price === "0" ? 'text-green-600' : 'text-red-600'}`}>
+            {event.isFree || event.price === "0" ? "FREE" : `$${event.price}`}
+          </span>
+          <Button asChild size="sm">
+            <Link href={`/events/${event._id}`}>View Details</Link>
+          </Button>
+        </div>
       </div>
     </div>
   )

@@ -9,10 +9,7 @@ export default function SignUpPage() {
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/usc-background.png')" }}
-      />
+      <div className="absolute inset-0 bg-cover bg-center bg-[url('/usc-background.png')]" />
 
       {/* Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-white via-[#b7e4c7] to-[#40916c] opacity-90" />

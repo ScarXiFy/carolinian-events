@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // components/EventJoinForm.tsx
 "use client"
 
@@ -24,12 +23,28 @@ export default function EventJoinForm({ eventId }: { eventId: string }) {
     setIsSubmitting(true)
     
     try {
+      // First, validate the email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(formData.email)) {
+        setStatus({ 
+          success: false, 
+          message: "Please enter a valid email address" 
+        })
+        setIsSubmitting(false)
+        return
+      }
+
+      setStatus({ 
+        success: true, 
+        message: "Processing your registration..." 
+      })
+
       const result = await joinEvent({ eventId, ...formData })
       
       if (result.success) {
         setStatus({ 
           success: true, 
-          message: "You've successfully joined the event! A confirmation has been sent to your email." 
+          message: "Registration successful! A confirmation email has been sent to your email address." 
         })
         setFormData({
           firstName: "",
@@ -45,6 +60,7 @@ export default function EventJoinForm({ eventId }: { eventId: string }) {
         })
       }
     } catch (error) {
+      console.error("Registration error:", error)
       setStatus({ 
         success: false, 
         message: "An unexpected error occurred. Please try again later." 
@@ -116,7 +132,7 @@ export default function EventJoinForm({ eventId }: { eventId: string }) {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                   </svg>
-                  Registering...
+                  {status.success ? "Sending confirmation..." : "Registering..."}
                 </span>
               ) : 'Register Now'}
             </button>

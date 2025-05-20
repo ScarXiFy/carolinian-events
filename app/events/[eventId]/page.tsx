@@ -2,11 +2,16 @@
 
 import { getEventById } from "@/lib/actions/event.actions";
 import { format } from "date-fns";
-import { Calendar, MapPin, Tag } from "lucide-react";
+import { Calendar, MapPin, Tag, User, Clock, Users, Mail, Phone, Building2, FileText } from "lucide-react";
 import Image from "next/image";
 import EventJoinForm from "@/components/EventJoinForm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+
+interface Sponsor {
+  name: string;
+  website?: string;
+}
 
 export default async function EventDetails({
   params,
@@ -19,6 +24,10 @@ export default async function EventDetails({
   if (!event) {
     return <div>Event not found</div>;
   }
+
+  const organizerName = event.organizer?.firstName && event.organizer?.lastName 
+    ? `${event.organizer.firstName} ${event.organizer.lastName}`
+    : "Unknown Organizer";
 
   return (
     <div className="container py-8 space-y-12">
@@ -35,24 +44,117 @@ export default async function EventDetails({
         </div>
 
         {/* Event Details */}
-        <div className="space-y-4">
-          <h1 className="text-3xl font-bold">{event.title}</h1>
-          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-            <Calendar className="w-5 h-5" />
-            <span>
-              {format(new Date(event.startDateTime), "PPpp")} -{" "}
-              {format(new Date(event.endDateTime), "PPpp")}
-            </span>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">{event.title}</h1>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <User className="w-5 h-5" />
+              <span>Organized by {organizerName}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-            <MapPin className="w-5 h-5" />
-            <span>{event.location}</span>
+
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Calendar className="w-5 h-5" />
+              <span>Starts: {format(new Date(event.startDateTime), "PPpp")}</span>
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Clock className="w-5 h-5" />
+              <span>Ends: {format(new Date(event.endDateTime), "PPpp")}</span>
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <MapPin className="w-5 h-5" />
+              <span>{event.location}</span>
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Tag className="w-5 h-5" />
+              <div className="flex flex-wrap gap-2">
+                {event.tags?.map((tag: string) => (
+                  <span key={tag} className="px-2 py-1 bg-primary/10 rounded-full text-sm">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {event.maxRegistrations && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Users className="w-5 h-5" />
+                <span>Maximum Registrations: {event.maxRegistrations}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <span className={`font-medium ${event.isFree || event.price === "0" ? 'text-green-600' : 'text-red-600'}`}>
+                {event.isFree || event.price === "0" ? "FREE" : `₱${event.price}`}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-            <Tag className="w-5 h-5" />
-            <span>{event.category?.name || "Uncategorized"}</span>
+
+          <div className="pt-4">
+            <h2 className="text-xl font-semibold mb-2">Description</h2>
+            <p className="text-muted-foreground whitespace-pre-wrap">{event.description}</p>
           </div>
-          <p className="text-gray-800 dark:text-gray-300">{event.description}</p>
+
+          {/* Contact Information */}
+          <div className="pt-4 border-t">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Mail className="w-5 h-5" />
+              Contact Information
+            </h2>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Mail className="w-5 h-5" />
+                <a href={`mailto:${event.contactEmail}`} className="hover:text-primary transition-colors">
+                  {event.contactEmail}
+                </a>
+              </div>
+              {event.contactPhone && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Phone className="w-5 h-5" />
+                  <a href={`tel:${event.contactPhone}`} className="hover:text-primary transition-colors">
+                    {event.contactPhone}
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Requirements */}
+          {event.requirements && (
+            <div className="pt-4 border-t">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Requirements
+              </h2>
+              <p className="text-muted-foreground whitespace-pre-wrap">{event.requirements}</p>
+            </div>
+          )}
+
+          {/* Sponsors */}
+          {event.sponsors && event.sponsors.length > 0 && (
+            <div className="pt-4 border-t">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <Building2 className="w-5 h-5" />
+                Event Sponsors
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {event.sponsors.map((sponsor: Sponsor, index: number) => (
+                  <div key={index} className="p-4 bg-card rounded-lg border border-border/50">
+                    <h3 className="font-semibold mb-1">{sponsor.name}</h3>
+                    {sponsor.website && (
+                      <a
+                        href={sponsor.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        Visit Website
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

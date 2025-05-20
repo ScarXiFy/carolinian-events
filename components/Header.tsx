@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Button } from "./ui/button"
 import { UserButton, useUser } from "@clerk/nextjs"
-import { Moon, Sun, Monitor, ChevronDown } from "lucide-react"
+import { Moon, Sun, Monitor, ChevronDown, Bell } from "lucide-react"
 import { useTheme } from "next-themes"
 import {
   DropdownMenu,
@@ -45,6 +45,14 @@ export function Header() {
             </Button>
           ) : isSignedIn ? (
             <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition"
+              >
+                <Bell className="h-5 w-5" />
+              </Button>
+
               <Button
                 asChild
                 variant="ghost"
