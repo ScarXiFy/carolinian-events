@@ -47,11 +47,9 @@ export interface IEvent {
   location: string;
   imageUrl: string;
   startDateTime: Date | string;
-  endDateTime: Date | string;
-  category?: Types.ObjectId;
+  endDateTime: Date | string;  categories: string[];
   price: string;
   isFree: boolean;
-  tags: string[];
   organizer: {
     _id: string;
     organization: string;

@@ -67,15 +67,14 @@ export async function getAllEvents({
     const conditions: FilterQuery<IEvent> = {}
 
     if (query) {
-      conditions.$text = { $search: query }
-    }
-
+      conditions.$text = { $search: query }    }
+    
     if (category) {
-      conditions.categories = category
+      conditions.categories = { $in: [category] }
     }
-
+    
     if (tag) {
-      conditions.tags = tag
+      conditions.tags = { $in: [tag] }
     }
 
     const now = new Date()
@@ -87,12 +86,16 @@ export async function getAllEvents({
       conditions.isFree = true
     }
 
-    const events = await Event.find(conditions)
-      .populate({ path: 'organizer', model: User, select: '_id firstName lastName' })
+    const events = await Event.find(conditions)      .populate({ path: 'organizer', model: User, select: '_id firstName lastName' })
       .sort({ startDateTime: 'asc' })
       .lean()
 
-    return JSON.parse(JSON.stringify(events))
+    const formattedEvents = events.map(event => ({
+      ...event,
+      categories: Array.isArray(event.categories) ? event.categories : []
+    }));
+
+    return JSON.parse(JSON.stringify(formattedEvents))
   } catch (error) {
     console.error("Error fetching events:", error)
     throw new Error("Failed to fetch events")
@@ -130,9 +133,8 @@ interface UpdateEventParams {
   description: string;
   location: string;
   startDateTime: string;
-  endDateTime: string;
-  imageUrl: string;
-  tags: string[];
+  endDateTime: string;  imageUrl: string;
+  categories: string[];
   price: string;
   isFree: boolean;
   organizers: Array<{ name: string; socialMedia?: string }>;
@@ -161,11 +163,10 @@ export async function updateEvent(data: UpdateEventParams) {
       {
         title: data.title,
         description: data.description,
-        location: data.location,
-        startDateTime: new Date(data.startDateTime),
+        location: data.location,        startDateTime: new Date(data.startDateTime),
         endDateTime: new Date(data.endDateTime),
         imageUrl: data.imageUrl,
-        tags: data.tags,
+        categories: data.categories,
         price: data.price,
         isFree: data.isFree,
         organizers: data.organizers,
@@ -274,28 +275,7 @@ export async function getEventById(eventId: string, leanMode = true) {
   }
 }
 
-export async function updateEventTagsToCategories(eventId: string) {
-  try {
-    await connectToDatabase();
-    
-    const event = await Event.findById(eventId);
-    if (!event) throw new Error("Event not found");
-
-    // Convert tags to categories if they exist
-    const categories = event.tags && event.tags.length > 0 ? event.tags : [];
-    
-    const updatedEvent = await Event.findByIdAndUpdate(
-      eventId,
-      {
-        categories: categories,
-        tags: [] // Clear the tags array
-      },
-      { new: true }
-    );
-
-    return JSON.parse(JSON.stringify(updatedEvent));
-  } catch (error) {
-    console.error("Error updating event tags to categories:", error);
-    throw error;
-  }
+export async function updateEventTagsToCategories() {
+  // This function is deprecated as we now use categories directly
+  return null;
 }

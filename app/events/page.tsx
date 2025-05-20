@@ -7,7 +7,7 @@ import { getAllCategories } from "@/lib/actions/category.actions"
 import { IEvent } from "@/lib/types"
 import { SearchEvents } from "@/components/SearchEvents"
 import { EventsFilter } from "@/components/EventsFilter"
-import { SelectItem } from "@radix-ui/react-select"
+import { SelectItem } from "@/components/ui/select"
 
 export default async function BrowseEvents({
   searchParams,
@@ -42,13 +42,15 @@ export default async function BrowseEvents({
         </Button>
       </div>
 
-      {/* Search and Filters */}
-      <div className="mb-10 grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 items-center">
+      {/* Search and Filters */}      <div className="mb-10 grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 items-center">
         <SearchEvents defaultValue={searchQuery} />
         <EventsFilter>
+          <SelectItem value="Scientia">Scientia</SelectItem>
+          <SelectItem value="Virtus">Virtus</SelectItem>
+          <SelectItem value="Devotio">Devotio</SelectItem>
           {categories.map((cat) => {
             const categoryValue = cat.name?.trim() || cat._id.toString()
-            if (!categoryValue) return null
+            if (!categoryValue || ['Scientia', 'Virtus', 'Devotio'].includes(categoryValue)) return null
             return (
               <SelectItem key={cat._id.toString()} value={categoryValue}>
                 {cat.name}
@@ -65,17 +67,9 @@ export default async function BrowseEvents({
             <EventCard
               key={event._id.toString()}
               event={{
-                ...event,
-                _id: event._id.toString(),
+                ...event,                _id: event._id.toString(),
                 startDateTime: new Date(event.startDateTime),
-                endDateTime: new Date(event.endDateTime),
-                category:
-                  event.category && typeof event.category === "object" && "name" in event.category
-                    ? {
-                        _id: (event.category as { _id: string | { toString(): string } })._id.toString(),
-                        name: (event.category as { name: string }).name
-                      }
-                    : undefined
+                endDateTime: new Date(event.endDateTime),                categories: event.categories || []
               }}
             />
           ))

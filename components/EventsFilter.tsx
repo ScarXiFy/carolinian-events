@@ -20,30 +20,33 @@ export function EventsFilter({ children }: EventsFilterProps) {
   const searchParams = useSearchParams()
 
   const createQueryString = (name: string, value: string) => {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(searchParams?.toString() || "")
     params.set(name, value)
     return params.toString()
   }
 
+  const currentCategory = searchParams?.get('category') || ''
+
   return (
     <div className="flex flex-wrap gap-3">
       <Select
-        value={searchParams.get('category') || ''}
+        value={currentCategory === '' ? 'all' : currentCategory}
         onValueChange={(value) => {
-          router.replace(`${pathname}?${createQueryString('category', value)}`)
+          const categoryValue = value === 'all' ? '' : value
+          router.replace(`${pathname}?${createQueryString('category', categoryValue)}`)
         }}
       >
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="All Categories" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">All Categories</SelectItem>
+          <SelectItem value="all">All Categories</SelectItem>
           {children}
         </SelectContent>
       </Select>
 
       <Select
-        value={searchParams.get('filter') || 'all'}
+        value={searchParams?.get('filter') || 'all'}
         onValueChange={(value) => {
           router.replace(`${pathname}?${createQueryString('filter', value)}`)
         }}

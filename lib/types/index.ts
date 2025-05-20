@@ -72,7 +72,6 @@ export type CreateEventParams = {
   contactEmail: string
   contactPhone?: string
   requirements?: string
-  maxRegistrations?: number | null
-  tags: string[]
-  categories: string[]
+  maxRegistrations?: number | null;
+  categories: string[];
 }

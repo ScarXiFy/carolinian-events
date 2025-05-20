@@ -90,7 +90,7 @@ export const eventFormSchema = z.object({
   }),
   price: z.string(),
   isFree: z.boolean(),
-  tags: z.array(z.string()).min(1, "At least one category is required"),
+  categories: z.array(z.string()).min(1, "At least one category is required"),
   maxRegistrations: z.number().nullable().optional(),
   contactEmail: z.string().email("Please enter a valid email address"),
   contactPhone: z.string().optional(),
@@ -130,12 +130,11 @@ export function CreateEventForm({ event, onSubmit: propOnSubmit }: EventFormProp
       title: event?.title || "",
       description: event?.description || "",
       location: event?.location || "",
-      imageUrl: event?.imageUrl || "",
-      startDateTime: event?.startDateTime || new Date().toISOString(),
+      imageUrl: event?.imageUrl || "",      startDateTime: event?.startDateTime || new Date().toISOString(),
       endDateTime: event?.endDateTime || new Date(Date.now() + 3600000).toISOString(),
       price: event?.price || "0",
       isFree: event?.isFree || false,
-      tags: event?.tags || [],
+      categories: event?.category?.name ? [event.category.name] : [],
       maxRegistrations: event?.maxRegistrations || null,
       contactEmail: event?.contactEmail || "",
       contactPhone: event?.contactPhone || "",
@@ -143,17 +142,16 @@ export function CreateEventForm({ event, onSubmit: propOnSubmit }: EventFormProp
       sponsors: event?.sponsors || [],
     },
   })
-
-  const selectedCategories = form.watch("tags") || []
+  const selectedCategories = form.watch("categories") || []
 
   const addCategory = (category: string) => {
     if (!selectedCategories.includes(category)) {
-      form.setValue("tags", [...selectedCategories, category])
+      form.setValue("categories", [...selectedCategories, category])
     }
   }
 
   const removeCategory = (categoryToRemove: string) => {
-    form.setValue("tags", selectedCategories.filter(category => category !== categoryToRemove))
+    form.setValue("categories", selectedCategories.filter(category => category !== categoryToRemove))
   }
 
   useEffect(() => {
@@ -570,11 +568,9 @@ export function CreateEventForm({ event, onSubmit: propOnSubmit }: EventFormProp
                         </Badge>
                       ))}
                     </div>
-                  </div>
-
-                  <FormField
+                  </div>                  <FormField
                     control={form.control}
-                    name="tags"
+                    name="categories"
                     render={({ }) => (
                       <FormItem>
                         <FormLabel className="text-base font-medium">Custom Categories</FormLabel>
