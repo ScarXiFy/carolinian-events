@@ -35,10 +35,11 @@ export function HeroOrbit({ events }: HeroOrbitProps) {
   );
 
   useEffect(() => {
-    const isMobile = window.innerWidth < 768;
+    const mobile = window.innerWidth < 768;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     const runtimeConfigs: OrbitConfig[] = configs.map((config, index) => {
-      const radiusX = (isMobile ? 120 : 180) + index * (isMobile ? 40 : 65);
+      const radiusX = (mobile ? 120 : 180) + index * (mobile ? 40 : 65);
 
       return {
         ...config,
@@ -65,7 +66,7 @@ export function HeroOrbit({ events }: HeroOrbitProps) {
         const depth = Math.sin(config.angle);
         const scale = 0.85 + depth * 0.15;
         const opacity = 0.5 + (depth + 1) * 0.25;
-        const zIndex = x < -100 && !isMobile ? 15 : Math.floor(depth * 10) + 20;
+        const zIndex = x < -100 && !mobile ? 15 : Math.floor(depth * 10) + 20;
         const blur = depth < -0.5 ? Math.abs(depth) * 1.5 : 0;
 
         card.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
@@ -84,10 +85,14 @@ export function HeroOrbit({ events }: HeroOrbitProps) {
 
   return (
     <div className="orbit-focal-point" aria-label="Featured event orbit">
-      <div className="orbit-rings" aria-hidden="true">
-        <div className="orbit-ring orbit-ring-green" />
-        <div className="orbit-ring orbit-ring-red" />
-        <div className="orbit-ring orbit-ring-blue" />
+      <div className="orbit-rings" id="orbit-rings" aria-hidden="true">
+        {events.map((event, index) => (
+          <div
+            className={`orbit-ring ${event.glowClass}`}
+            key={`${event.id}-ring`}
+            style={getRingStyle(index)}
+          />
+        ))}
       </div>
       <div className="orbit-core" aria-hidden="true" />
       {events.map((event, index) => (
@@ -100,13 +105,13 @@ export function HeroOrbit({ events }: HeroOrbitProps) {
           style={getInitialOrbitStyle(index, events.length)}
         >
           <div className="timeline-connector" aria-hidden="true" />
-          <p className="orbit-card-datetime">{event.dateTime}</p>
-          <h2 className="orbit-card-title">{event.eventName}</h2>
-          <div className="flex items-center gap-3">
-            <span className="status-dot" aria-hidden="true" />
-            <span className="text-xs font-semibold text-[#a1a1aa]">
-              {event.status}
-            </span>
+          <div className="card-datetime">{event.dateTime}</div>
+          <div className="card-title">{event.eventName}</div>
+          <div className="card-footer">
+            <div className="avatar-group">
+              <div className="avatar-circle" />
+            </div>
+            <div className="avatar-count">{event.status}</div>
           </div>
         </article>
       ))}
@@ -127,5 +132,14 @@ function getInitialOrbitStyle(index: number, total: number) {
     transform: `translate(${x}px, ${y}px) scale(${scale})`,
     zIndex: Math.floor(depth * 10) + 20,
     opacity: 0.5 + (depth + 1) * 0.25,
+  };
+}
+
+function getRingStyle(index: number) {
+  const radiusX = 180 + index * 65;
+
+  return {
+    width: `${radiusX * 2}px`,
+    height: `${radiusX * 2}px`,
   };
 }
