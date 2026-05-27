@@ -35,7 +35,7 @@ export default async function EventsPage({
   const sort = Object.values(EVENT_SORTS).includes(params.sort ?? EVENT_SORTS.DATE_DESC)
     ? params.sort
     : EVENT_SORTS.DATE_DESC;
-  const events = getVisibleEvents(getAllEvents(), { search, sort });
+  const events = getVisibleEvents(await getAllEvents(), { search, sort });
 
   return (
     <main className="legacy-home min-h-screen bg-[#050505] text-white">

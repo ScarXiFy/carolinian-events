@@ -23,7 +23,7 @@ export function generateStaticParams() {
 
 export default async function EventDetailPage(props: PageProps<"/events/[id]">) {
   const { id } = await props.params;
-  const event = getEventByRouteId(id);
+  const event = await getEventByRouteId(id);
 
   if (!event) {
     notFound();

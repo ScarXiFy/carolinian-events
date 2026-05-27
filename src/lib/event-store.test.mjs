@@ -37,10 +37,38 @@ test("mapLegacyEventRow converts legacy database fields to app event fields", ()
   });
 });
 
-test("event store exposes sample events through route-friendly helpers", () => {
-  assert.ok(getAllEvents().length > 0);
-  assert.equal(getEventByRouteId("2").eventName, "Proposal Hearing 2026");
-  assert.deepEqual(getEventStaticParams()[0], { id: "1" });
+test("event store exposes sample events through route-friendly helpers", async () => {
+  const events = await getAllEvents();
+
+  assert.ok(events.length > 0);
+  assert.equal((await getEventByRouteId("2")).eventName, "Proposal Hearing 2026");
+  assert.deepEqual((await getEventStaticParams())[0], { id: "1" });
+});
+
+test("event store reads MySQL rows when DATABASE_URL is configured", async () => {
+  const events = await getAllEvents({
+    env: { DATABASE_URL: "mysql://root@localhost:3306/carolinian_events_db" },
+    readDatabaseEvents: async (url) => {
+      assert.equal(url, "mysql://root@localhost:3306/carolinian_events_db");
+      return [
+        {
+          id: 9,
+          event_name: "Database Event",
+          organizer: "CPE Society",
+          description: "Loaded from MySQL.",
+          event_date: "2026-07-10",
+          event_time: "11:00:00",
+          location: "Engineering Auditorium",
+          category: "Academic",
+          status: "Upcoming",
+          created_at: "2026-07-01T08:00:00.000Z",
+        },
+      ];
+    },
+  });
+
+  assert.equal(events.length, 1);
+  assert.equal(events[0].eventName, "Database Event");
 });
 
 test("event store reports read-only sample mode without database config", () => {

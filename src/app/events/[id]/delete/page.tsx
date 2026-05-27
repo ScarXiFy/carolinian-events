@@ -14,7 +14,7 @@ export function generateStaticParams() {
 
 export default async function DeleteEventPage(props: PageProps<"/events/[id]/delete">) {
   const { id } = await props.params;
-  const event = getEventByRouteId(id);
+  const event = await getEventByRouteId(id);
 
   if (!event) {
     notFound();

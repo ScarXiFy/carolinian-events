@@ -8,8 +8,8 @@ import {
 } from "@/lib/events.mjs";
 import { getAllEvents } from "@/lib/event-store.mjs";
 
-export default function Home() {
-  const events = getAllEvents();
+export default async function Home() {
+  const events = await getAllEvents();
   const stats = getEventStats(events);
   const featuredEvents = getFeaturedEvents(events, 5);
   const orbitCards = featuredEvents.map((event, index) => ({

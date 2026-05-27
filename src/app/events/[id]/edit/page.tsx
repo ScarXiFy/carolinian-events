@@ -10,7 +10,7 @@ export function generateStaticParams() {
 
 export default async function EditEventPage(props: PageProps<"/events/[id]/edit">) {
   const { id } = await props.params;
-  const event = getEventByRouteId(id);
+  const event = await getEventByRouteId(id);
 
   if (!event) {
     notFound();

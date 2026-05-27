@@ -1,5 +1,6 @@
 import { getEventById, sampleEvents } from "./events.mjs";
-import { getEventStoreMode } from "./database-config.mjs";
+import { getDatabaseConfig, getEventStoreMode } from "./database-config.mjs";
+import { readMysqlEvents } from "./mysql-events.mjs";
 
 const legacyEventRows = sampleEvents.map((event) => ({
   id: event.id,
@@ -29,16 +30,24 @@ export function mapLegacyEventRow(row) {
   };
 }
 
-export function getAllEvents() {
-  return legacyEventRows.map(mapLegacyEventRow);
+export async function getAllEvents({
+  env = process.env,
+  readDatabaseEvents = readMysqlEvents,
+} = {}) {
+  const config = getDatabaseConfig(env);
+  const rows = config.isConfigured
+    ? await readDatabaseEvents(config.url)
+    : legacyEventRows;
+
+  return rows.map(mapLegacyEventRow);
 }
 
-export function getEventByRouteId(id) {
-  return getEventById(getAllEvents(), id);
+export async function getEventByRouteId(id, options) {
+  return getEventById(await getAllEvents(options), id);
 }
 
-export function getEventStaticParams() {
-  return getAllEvents().map((event) => ({
+export async function getEventStaticParams(options) {
+  return (await getAllEvents(options)).map((event) => ({
     id: String(event.id),
   }));
 }
