@@ -105,7 +105,7 @@ export default async function EventDetailPage(props: PageProps<"/events/[id]">) 
           <footer className="event-detail-footer">
             <p>Added on {formatCreatedDate(event)}</p>
             <div className="action-group">
-              <Link href={`/events/${event.id}`} className="legacy-btn legacy-btn-secondary btn-sm">
+              <Link href={`/events/${event.id}/edit`} className="legacy-btn legacy-btn-secondary btn-sm">
                 Edit
               </Link>
               <Link href={`/events/${event.id}`} className="legacy-btn btn-danger">

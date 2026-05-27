@@ -7,14 +7,42 @@ import {
   CATEGORY_OPTIONS,
   LOCATION_OPTIONS,
   computeEventStatus,
+  getSelectWithCustomValue,
 } from "@/lib/events.mjs";
 
-export function CreateEventForm() {
-  const [eventDate, setEventDate] = useState("");
-  const [eventTime, setEventTime] = useState("");
-  const [location, setLocation] = useState("");
-  const [category, setCategory] = useState("Academic");
+type EventFormInitialValues = {
+  eventName?: string;
+  organizer?: string;
+  description?: string;
+  eventDate?: string;
+  eventTime?: string;
+  location?: string;
+  category?: string;
+};
+
+type CreateEventFormProps = {
+  initialValues?: EventFormInitialValues;
+  mode?: "create" | "edit";
+};
+
+export function CreateEventForm({
+  initialValues,
+  mode = "create",
+}: CreateEventFormProps) {
+  const initialLocation = getSelectWithCustomValue(
+    LOCATION_OPTIONS,
+    initialValues?.location ?? "",
+  );
+  const initialCategory = getSelectWithCustomValue(
+    CATEGORY_OPTIONS,
+    initialValues?.category ?? "Academic",
+  );
+  const [eventDate, setEventDate] = useState(initialValues?.eventDate ?? "");
+  const [eventTime, setEventTime] = useState(initialValues?.eventTime ?? "");
+  const [location, setLocation] = useState(initialLocation.selectValue);
+  const [category, setCategory] = useState(initialCategory.selectValue);
   const [notice, setNotice] = useState("");
+  const actionLabel = mode === "edit" ? "Save Changes" : "Create Event";
 
   const status = useMemo(
     () => computeEventStatus(eventDate, eventTime),
@@ -23,7 +51,11 @@ export function CreateEventForm() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setNotice("Preview only. Database saving will be added in the database phase.");
+    setNotice(
+      mode === "edit"
+        ? "Preview only. Database updates will be added in the database phase."
+        : "Preview only. Database saving will be added in the database phase.",
+    );
   }
 
   return (
@@ -32,17 +64,35 @@ export function CreateEventForm() {
 
       <div className="form-group">
         <label htmlFor="event_name">Event Name *</label>
-        <input id="event_name" name="event_name" className="form-control" required />
+        <input
+          id="event_name"
+          name="event_name"
+          className="form-control"
+          defaultValue={initialValues?.eventName ?? ""}
+          required
+        />
       </div>
 
       <div className="form-group">
         <label htmlFor="organizer">Organizer *</label>
-        <input id="organizer" name="organizer" className="form-control" required />
+        <input
+          id="organizer"
+          name="organizer"
+          className="form-control"
+          defaultValue={initialValues?.organizer ?? ""}
+          required
+        />
       </div>
 
       <div className="form-group">
         <label htmlFor="description">Description</label>
-        <textarea id="description" name="description" className="form-control" rows={4} />
+        <textarea
+          id="description"
+          name="description"
+          className="form-control"
+          rows={4}
+          defaultValue={initialValues?.description ?? ""}
+        />
       </div>
 
       <div className="form-row">
@@ -97,6 +147,7 @@ export function CreateEventForm() {
             name="location_other"
             className="form-control other-input"
             placeholder="Enter custom location"
+            defaultValue={initialLocation.customValue}
             required
           />
         ) : null}
@@ -124,6 +175,7 @@ export function CreateEventForm() {
               name="category_other"
               className="form-control other-input"
               placeholder="Enter custom category"
+              defaultValue={initialCategory.customValue}
               required
             />
           ) : null}
@@ -147,7 +199,7 @@ export function CreateEventForm() {
           Cancel
         </Link>
         <button type="submit" className="legacy-btn legacy-btn-primary">
-          Create Event
+          {actionLabel}
         </button>
       </div>
     </form>

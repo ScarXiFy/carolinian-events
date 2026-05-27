@@ -138,7 +138,7 @@ export default async function EventsPage({
                       <Link href={`/events/${event.id}`} className="action-view">
                         View
                       </Link>
-                      <Link href={`/events/${event.id}`} className="action-edit">
+                      <Link href={`/events/${event.id}/edit`} className="action-edit">
                         Edit
                       </Link>
                       <Link href="/events" className="action-delete">

@@ -7,6 +7,7 @@ import {
   LOCATION_OPTIONS,
   computeEventStatus,
   getEventById,
+  getSelectWithCustomValue,
   getEventStats,
   getFeaturedEvents,
   getVisibleEvents,
@@ -90,4 +91,18 @@ test("computeEventStatus mirrors the legacy date and time status rules", () => {
   assert.equal(computeEventStatus("2026-05-27", "11:59", now), "Completed");
   assert.equal(computeEventStatus("2026-05-27", "12:01", now), "Ongoing");
   assert.equal(computeEventStatus("2026-05-28", "08:00", now), "Upcoming");
+});
+
+test("getSelectWithCustomValue resolves preset values for edit forms", () => {
+  assert.deepEqual(getSelectWithCustomValue(LOCATION_OPTIONS, "Bunzel Building"), {
+    selectValue: "Bunzel Building",
+    customValue: "",
+  });
+});
+
+test("getSelectWithCustomValue resolves custom values as Other for edit forms", () => {
+  assert.deepEqual(getSelectWithCustomValue(LOCATION_OPTIONS, "NCR Lab"), {
+    selectValue: "Other",
+    customValue: "NCR Lab",
+  });
 });

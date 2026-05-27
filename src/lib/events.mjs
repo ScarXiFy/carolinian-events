@@ -204,6 +204,20 @@ export function computeEventStatus(eventDate, eventTime, now = new Date()) {
   return "Upcoming";
 }
 
+export function getSelectWithCustomValue(options, value) {
+  if (options.includes(value)) {
+    return {
+      selectValue: value,
+      customValue: "",
+    };
+  }
+
+  return {
+    selectValue: "Other",
+    customValue: value ?? "",
+  };
+}
+
 function compareCreatedAt(a, b) {
   const byCreatedAt = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   return byCreatedAt === 0 ? a.id - b.id : byCreatedAt;
