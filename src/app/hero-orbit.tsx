@@ -44,7 +44,11 @@ export function HeroOrbit({ events }: HeroOrbitProps) {
         ...config,
         radiusX,
         radiusY: radiusX * 0.55,
+<<<<<<< HEAD
         speed: reducedMotion ? config.speed * 0.2 : config.speed,
+=======
+        speed: reducedMotion ? 0 : config.speed,
+>>>>>>> a8b3d01 ([enricode-PC][Updated] animate legacy home UI)
       };
     });
 
