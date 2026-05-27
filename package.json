@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --test src/lib/*.test.mjs",
-    "db:seed": "node scripts/seed-events.mjs"
+    "db:seed": "node scripts/seed-events.mjs",
+    "db:smoke": "node scripts/crud-smoke.mjs"
   },
   "dependencies": {
     "mysql2": "^3.22.4",
