@@ -8,6 +8,7 @@ import {
   getEventStaticParams,
   getEventStoreStatus,
   mapLegacyEventRow,
+  updateEvent,
 } from "./event-store.mjs";
 
 test("mapLegacyEventRow converts legacy database fields to app event fields", () => {
@@ -115,6 +116,54 @@ test("createEvent stays in preview mode when DATABASE_URL is missing", async () 
   );
 
   assert.deepEqual(created, { mode: "sample", id: null });
+});
+
+test("updateEvent writes to MySQL when DATABASE_URL is configured", async () => {
+  const updated = await updateEvent(
+    12,
+    {
+      eventName: "Updated Colloquium",
+      organizer: "CPE Department",
+      description: "Updated details.",
+      eventDate: "2026-07-01",
+      eventTime: "09:30",
+      location: "Bunzel Building",
+      category: "Academic",
+      status: "Upcoming",
+    },
+    {
+      env: { DATABASE_URL: "mysql://root@localhost:3306/carolinian_events_db" },
+      writeDatabaseEvents: {
+        updateEvent: async (url, id, input) => {
+          assert.equal(url, "mysql://root@localhost:3306/carolinian_events_db");
+          assert.equal(id, 12);
+          assert.equal(input.eventName, "Updated Colloquium");
+          return { affectedRows: 1 };
+        },
+      },
+    },
+  );
+
+  assert.deepEqual(updated, { mode: "database", affectedRows: 1 });
+});
+
+test("updateEvent stays in preview mode when DATABASE_URL is missing", async () => {
+  const updated = await updateEvent(
+    12,
+    {
+      eventName: "Updated Colloquium",
+      organizer: "CPE Department",
+      description: "Updated details.",
+      eventDate: "2026-07-01",
+      eventTime: "09:30",
+      location: "Bunzel Building",
+      category: "Academic",
+      status: "Upcoming",
+    },
+    { env: {} },
+  );
+
+  assert.deepEqual(updated, { mode: "sample", affectedRows: 0 });
 });
 
 test("event store reports read-only sample mode without database config", () => {

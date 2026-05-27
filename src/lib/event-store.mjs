@@ -76,6 +76,31 @@ export async function createEvent(
   };
 }
 
+export async function updateEvent(
+  id,
+  input,
+  {
+    env = process.env,
+    writeDatabaseEvents = writeMysqlEvents,
+  } = {},
+) {
+  const config = getDatabaseConfig(env);
+
+  if (!config.isConfigured) {
+    return {
+      mode: "sample",
+      affectedRows: 0,
+    };
+  }
+
+  const updated = await writeDatabaseEvents.updateEvent(config.url, Number(id), input);
+
+  return {
+    mode: "database",
+    affectedRows: updated.affectedRows,
+  };
+}
+
 export function getEventStoreStatus(env = process.env) {
   const mode = getEventStoreMode(env);
 

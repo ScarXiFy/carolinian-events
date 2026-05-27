@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CreateEventForm } from "../../create/create-event-form";
+import { updateEventAction } from "./actions";
 import { getEventByRouteId, getEventStaticParams } from "@/lib/event-store.mjs";
 
 export function generateStaticParams() {
@@ -45,6 +46,7 @@ export default async function EditEventPage(props: PageProps<"/events/[id]/edit"
           </h1>
           <CreateEventForm
             mode="edit"
+            formAction={updateEventAction.bind(null, event.id)}
             initialValues={{
               eventName: event.eventName,
               organizer: event.organizer,
