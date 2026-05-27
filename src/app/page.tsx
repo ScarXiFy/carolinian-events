@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import {
@@ -11,115 +10,195 @@ import {
 
 export default function Home() {
   const stats = getEventStats(sampleEvents);
-  const featuredEvents = getFeaturedEvents(sampleEvents, 3);
+  const featuredEvents = getFeaturedEvents(sampleEvents, 5);
+  const orbitCards = featuredEvents.map((event, index) => ({
+    event,
+    style: getOrbitStyle(index, featuredEvents.length),
+    glowClass: getGlowClass(event.status, index),
+  }));
 
   return (
-    <main className="min-h-screen bg-[#f8fbf7] text-[#172113]">
-      <section className="relative isolate overflow-hidden bg-[#102414] text-white">
-        <Image
-          src="/hero-image.png"
-          alt="USC campus event crowd"
-          fill
-          priority
-          className="object-cover opacity-24"
-          sizes="100vw"
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0d1f12] via-[#15381d]/92 to-[#705100]/72" />
-        <nav className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
-          <Link href="/" className="text-lg font-extrabold tracking-tight">
-            Carolinian<span className="text-[#f4c542]">Events</span>
+    <main className="legacy-home min-h-screen overflow-x-hidden bg-[#050505] text-white">
+      <div className="particle-field" aria-hidden="true" />
+      <div className="ambient-glow ambient-glow-green" aria-hidden="true" />
+      <div className="ambient-glow ambient-glow-gold" aria-hidden="true" />
+
+      <nav className="fixed left-0 top-0 z-50 flex w-full justify-center px-[5%] py-6 transition">
+        <div className="flex w-full max-w-[1200px] items-center justify-between">
+          <Link href="/" className="text-[1.4rem] font-extrabold tracking-normal">
+            Carolinian<span className="text-[#d4a843]">Events</span>
           </Link>
-          <div className="flex items-center gap-4 text-sm font-semibold">
-            <Link href="/events" className="text-white/82 transition hover:text-white">
-              Events
+          <div className="hidden items-center gap-9 text-sm font-bold text-white md:flex">
+            <Link href="/" className="transition hover:text-[#d4a843]">
+              Home
             </Link>
-            <Link
-              href="/events"
-              className="rounded-md bg-[#f4c542] px-4 py-2 text-[#172113] transition hover:bg-[#ffd866]"
+            <Link href="#features" className="transition hover:text-[#d4a843]">
+              Features
+            </Link>
+            <Link href="/events" className="transition hover:text-[#d4a843]">
+              Events Dashboard
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      <section className="relative z-10 flex min-h-screen items-center px-[5%] [perspective:1000px]">
+        <div className="legacy-hero-content relative z-20 mt-[-5vh] w-full max-w-[800px]">
+          <h1 className="legacy-title relative mb-8 text-[3.5rem] leading-[1.05] tracking-normal sm:text-[5rem] lg:text-[7rem]">
+            <span className="block font-light text-white">
+              Everything happening at USC,
+            </span>
+            <span className="legacy-title-accent block pl-[10%] font-extrabold">
+              in one place.
+            </span>
+          </h1>
+
+          <p className="max-w-[520px] pl-[10%] text-[1.15rem] leading-[1.6] text-[#a1a1aa]">
+            As a Carolinian, quickly find, create, and manage events across campus.
+          </p>
+
+          <div className="mt-12 flex flex-col items-start gap-6 pl-[10%] sm:flex-row">
+            <Link href="/events" className="legacy-btn legacy-btn-primary">
+              Create Event
+            </Link>
+            <Link href="/events" className="legacy-btn legacy-btn-secondary">
+              Explore Events
+            </Link>
+          </div>
+        </div>
+
+        <div className="orbit-focal-point" aria-label="Featured event orbit">
+          <div className="orbit-rings" aria-hidden="true">
+            <div className="orbit-ring orbit-ring-green" />
+            <div className="orbit-ring orbit-ring-red" />
+            <div className="orbit-ring orbit-ring-blue" />
+          </div>
+          <div className="orbit-core" aria-hidden="true" />
+          {orbitCards.map(({ event, style, glowClass }) => (
+            <article
+              key={event.id}
+              className={`orbit-card ${glowClass}`}
+              style={style}
             >
-              Explore
-            </Link>
-          </div>
-        </nav>
-        <div className="relative z-10 mx-auto grid min-h-[calc(100vh-88px)] w-full max-w-6xl items-center gap-12 px-6 pb-16 pt-10 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="max-w-3xl">
-            <p className="mb-4 text-sm font-bold uppercase tracking-[0.22em] text-[#f4c542]">
-              University of San Carlos
-            </p>
-            <h1 className="text-5xl font-black leading-[1.02] tracking-normal sm:text-6xl lg:text-7xl">
-              Everything happening at USC, in one place.
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/82">
-              Find campus activities, track event status, and manage Carolinian
-              events from one clean dashboard.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/events"
-                className="inline-flex min-h-12 items-center justify-center rounded-md bg-[#f4c542] px-6 text-sm font-extrabold text-[#172113] transition hover:bg-[#ffd866]"
-              >
-                Explore Events
-              </Link>
-              <Link
-                href="/events"
-                className="inline-flex min-h-12 items-center justify-center rounded-md border border-white/28 px-6 text-sm font-extrabold text-white transition hover:bg-white/10"
-              >
-                View Dashboard
-              </Link>
-            </div>
-          </div>
-          <div className="grid gap-4">
-            {featuredEvents.map((event) => (
-              <article
-                key={event.id}
-                className="rounded-lg border border-white/14 bg-white/12 p-5 shadow-2xl backdrop-blur"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-bold text-[#f4c542]">{event.category}</p>
-                    <h2 className="mt-2 text-xl font-extrabold">{event.eventName}</h2>
-                  </div>
-                  <span className="rounded-full bg-white/14 px-3 py-1 text-xs font-bold">
-                    {event.status}
-                  </span>
-                </div>
-                <p className="mt-4 text-sm leading-6 text-white/76">
-                  {formatEventDate(event)} at {formatEventTime(event)} · {event.location}
-                </p>
-              </article>
-            ))}
-          </div>
+              <div className="timeline-connector" aria-hidden="true" />
+              <p className="orbit-card-datetime">
+                {formatEventDate(event)} at {formatEventTime(event)}
+              </p>
+              <h2 className="orbit-card-title">{event.eventName}</h2>
+              <div className="flex items-center gap-3">
+                <span className="status-dot" aria-hidden="true" />
+                <span className="text-xs font-semibold text-[#a1a1aa]">
+                  {event.status}
+                </span>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div className="scroll-indicator" aria-hidden="true">
+          <div className="mouse" />
         </div>
       </section>
 
-      <section className="mx-auto grid w-full max-w-6xl gap-4 px-6 py-12 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          ["Total Events", stats.total],
-          ["Upcoming", stats.upcoming],
-          ["Ongoing", stats.ongoing],
-          ["Completed", stats.completed],
-        ].map(([label, value]) => (
-          <div key={label} className="rounded-lg border border-[#dfe7dc] bg-white p-6">
-            <p className="text-sm font-bold text-[#52624d]">{label}</p>
-            <p className="mt-3 text-4xl font-black text-[#204b22]">{value}</p>
-          </div>
-        ))}
-      </section>
+      <section id="features" className="relative z-10 bg-[#0a0a0a] px-[5%] py-24">
+        <div className="mx-auto max-w-[1200px] text-center">
+          <h2 className="text-4xl font-extrabold tracking-normal">
+            Seamless Management
+          </h2>
+          <p className="mt-3 text-[#a1a1aa]">
+            Everything you need to run successful campus events
+          </p>
+        </div>
 
-      <section className="mx-auto w-full max-w-6xl px-6 pb-16">
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="mx-auto mt-12 grid max-w-[1200px] gap-6 md:grid-cols-3">
           {[
-            ["Create and Customize", "Launch campus events with clear dates, locations, categories, and organizers."],
-            ["Search and Sort", "Find events by name or location and sort the dashboard like the legacy app."],
-            ["Track Status", "See upcoming, ongoing, completed, and cancelled events at a glance."],
+            [
+              "Create and Customize",
+              "Launch campus events with clear descriptions, dates, organizers, and category details.",
+            ],
+            [
+              "Manage Attendees",
+              "Track status and prepare the system for future student registration flows.",
+            ],
+            [
+              "Live Analytics",
+              "Keep the total, upcoming, ongoing, and completed event counts visible.",
+            ],
           ].map(([title, body]) => (
-            <article key={title} className="rounded-lg border border-[#dfe7dc] bg-white p-6">
-              <h2 className="text-xl font-extrabold text-[#172113]">{title}</h2>
-              <p className="mt-3 leading-7 text-[#52624d]">{body}</p>
+            <article
+              key={title}
+              className="rounded-2xl border border-white/10 bg-[#111] p-8 shadow-[0_20px_40px_rgba(0,0,0,0.25)]"
+            >
+              <h3 className="text-xl font-bold">{title}</h3>
+              <p className="mt-4 leading-7 text-[#a1a1aa]">{body}</p>
             </article>
           ))}
         </div>
       </section>
+
+      <section className="relative z-10 bg-[#050505] px-[5%] py-20">
+        <div className="mx-auto grid max-w-[1200px] gap-8 md:grid-cols-4">
+          {[
+            ["Total Events", stats.total],
+            ["Upcoming", stats.upcoming],
+            ["Ongoing", stats.ongoing],
+            ["Completed", stats.completed],
+          ].map(([label, value]) => (
+            <div key={label} className="text-center">
+              <p className="text-5xl font-extrabold text-[#d4a843]">{value}</p>
+              <p className="mt-3 text-sm font-semibold uppercase tracking-normal text-[#a1a1aa]">
+                {label}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="relative z-10 bg-[#0a0a0a] px-[5%] py-24">
+        <div className="mx-auto max-w-[900px] rounded-3xl border border-white/10 bg-[#111] p-10 text-center shadow-[0_30px_80px_rgba(0,0,0,0.35)]">
+          <h2 className="text-4xl font-extrabold tracking-normal">
+            Ready to host your next big event?
+          </h2>
+          <p className="mx-auto mt-4 max-w-xl text-[#a1a1aa]">
+            Join hundreds of Carolinians managing their events seamlessly.
+          </p>
+          <Link href="/events" className="legacy-btn legacy-btn-primary mt-8">
+            Get Started Now
+          </Link>
+        </div>
+      </section>
+
+      <footer className="relative z-10 border-t border-white/5 bg-[#050505] px-[5%] py-8 text-center text-sm text-[#a1a1aa]">
+        <p>&copy; 2026 Carolinian Events Management System. All rights reserved.</p>
+      </footer>
     </main>
   );
+}
+
+function getOrbitStyle(index: number, total: number) {
+  const ringX = [260, 320, 220, 280, 350][index % 5];
+  const ringY = [86, 112, 74, 96, 126][index % 5];
+  const angle = -55 + index * (360 / Math.max(total, 1));
+  const x = Math.cos((angle * Math.PI) / 180) * ringX;
+  const y = Math.sin((angle * Math.PI) / 180) * ringY;
+  const depth = Math.sin((angle * Math.PI) / 180);
+  const scale = 0.88 + (depth + 1) * 0.12;
+
+  return {
+    transform: `translate(${x}px, ${y}px) scale(${scale})`,
+    zIndex: Math.round((depth + 1) * 10),
+    opacity: 0.7 + (depth + 1) * 0.15,
+  };
+}
+
+function getGlowClass(status: string, index: number) {
+  if (status === "Completed") {
+    return "orbit-glow-red";
+  }
+
+  if (status === "Ongoing") {
+    return "orbit-glow-green";
+  }
+
+  return index % 2 === 0 ? "orbit-glow-blue" : "orbit-glow-green";
 }
