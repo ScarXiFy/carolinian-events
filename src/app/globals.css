@@ -408,12 +408,12 @@ body {
   position: absolute;
   top: 6px;
   left: 50%;
-  width: 4px;
-  height: 4px;
+  width: 5px;
+  height: 5px;
   border-radius: 9999px;
-  background: var(--legacy-muted);
+  background: var(--legacy-accent);
   transform: translateX(-50%);
-  animation: scroll-wheel 2s infinite;
+  animation: scroll-wheel 1.55s infinite;
 }
 
 .legacy-features {
@@ -578,9 +578,12 @@ body {
     top: 6px;
     opacity: 1;
   }
+  40% {
+    opacity: 1;
+  }
   70%,
   100% {
-    top: 18px;
+    top: 22px;
     opacity: 0;
   }
 }
@@ -593,7 +596,18 @@ body {
   }
   50% {
     border-color: rgba(212, 168, 67, 0.85);
-    box-shadow: 0 0 18px rgba(212, 168, 67, 0.16);
+    box-shadow: 0 0 22px rgba(212, 168, 67, 0.24);
+  }
+}
+
+@keyframes hero-stagger-in {
+  from {
+    opacity: 0;
+    transform: translateY(34px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -655,12 +669,17 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .particle-field,
   .ambient-glow,
-  .legacy-hero-content,
-  .orbit-core,
-  .scroll-indicator,
-  .mouse::before,
   .section-header {
     animation: none;
+  }
+
+  .scroll-indicator {
+    animation-duration: 3.5s;
+  }
+
+  .mouse,
+  .mouse::before {
+    animation-duration: 3.5s;
   }
 
   .marquee-track {
@@ -790,7 +809,6 @@ body {
   width: 100%;
   max-width: 800px;
   margin-top: -5vh;
-  animation: fade-up-in 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   transform-style: preserve-3d;
   will-change: transform;
 }
@@ -810,11 +828,14 @@ body {
 .legacy-home .title-line {
   position: relative;
   display: block;
+  opacity: 0;
+  animation: hero-stagger-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .legacy-home .title-line-1 {
   color: var(--legacy-text-main);
   font-weight: 300;
+  animation-delay: 0.1s;
 }
 
 .legacy-home .title-line-2 {
@@ -825,6 +846,7 @@ body {
   font-weight: 800;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  animation-delay: 0.24s;
 }
 
 .legacy-home .subtitle {
@@ -835,6 +857,8 @@ body {
   font-size: 1.15rem;
   font-weight: 400;
   line-height: 1.6;
+  opacity: 0;
+  animation: hero-stagger-in 0.85s 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .legacy-home .cta-group {
@@ -843,6 +867,8 @@ body {
   gap: 1.5rem;
   align-items: center;
   padding-left: 10%;
+  opacity: 0;
+  animation: hero-stagger-in 0.85s 0.56s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .legacy-home .btn {
@@ -990,7 +1016,7 @@ body {
   border-top: 1px solid var(--legacy-border);
   border-bottom: 1px solid var(--legacy-border);
   background: var(--legacy-bg-dark);
-  padding: 6rem 0;
+  padding: 4.25rem 0;
 }
 
 .legacy-home .grid {
@@ -1006,32 +1032,26 @@ body {
 }
 
 .legacy-home .stat-item {
-  border-radius: 18px;
-  padding: 1.25rem 0.75rem;
+  padding: 0.25rem 0.75rem;
   transition:
     opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.8s cubic-bezier(0.16, 1, 0.3, 1),
-    background 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .legacy-home .stat-item.reveal {
-  transform: translateY(44px) scale(0.94);
+  transform: translateY(46px) scale(0.9);
 }
 
 .legacy-home .stat-item.reveal.active {
-  background: rgba(255, 255, 255, 0.02);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 18px 48px rgba(0, 0, 0, 0.24);
   transform: translateY(0) scale(1);
 }
 
 .legacy-home .stat-item h3 {
   margin-bottom: 0.5rem;
   color: var(--legacy-text-main);
-  font-size: clamp(3rem, 6vw, 4.5rem);
+  font-size: clamp(3.5rem, 7vw, 5rem);
   font-weight: 700;
+  line-height: 1;
 }
 
 .legacy-home .stat-item p {
@@ -1261,19 +1281,18 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .legacy-home .hero-content,
-  .legacy-home .orbit-core,
-  .legacy-home .scroll-indicator,
-  .legacy-home .mouse,
-  .legacy-home .mouse::before {
-    animation: none;
+  .legacy-home .orbit-core {
+    animation-duration: 7s;
   }
 
-  .legacy-home .reveal,
-  .legacy-home .reveal.active {
-    opacity: 1;
-    transform: none;
-    transition: none;
+  .legacy-home .title-line,
+  .legacy-home .subtitle,
+  .legacy-home .cta-group {
+    animation-duration: 0.55s;
+  }
+
+  .legacy-home .reveal {
+    transition-duration: 0.45s;
   }
 }
 

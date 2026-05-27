@@ -21,11 +21,13 @@ type OrbitConfig = {
   speed: number;
 };
 
-const ORBIT_SPEED_MULTIPLIER = 1.8;
+const ORBIT_SPEED_MULTIPLIER = 3;
 
 export function HeroOrbit({ events }: HeroOrbitProps) {
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
   const isPausedRef = useRef(false);
+  const mouseTargetRef = useRef({ x: 0, y: 0 });
+  const mouseCurrentRef = useRef({ x: 0, y: 0 });
   const configs = useMemo(
     () =>
       events.map((_, index) => ({
@@ -48,13 +50,33 @@ export function HeroOrbit({ events }: HeroOrbitProps) {
         ...config,
         radiusX,
         radiusY: radiusX * 0.55,
-        speed: config.speed * (reducedMotion ? 0.35 : ORBIT_SPEED_MULTIPLIER),
+        speed: config.speed * (reducedMotion ? 0.75 : ORBIT_SPEED_MULTIPLIER),
       };
     });
 
     let frameId = 0;
 
+    const updateMouseTarget = (event: MouseEvent) => {
+      if (mobile) {
+        return;
+      }
+
+      mouseTargetRef.current = {
+        x: (event.clientX - window.innerWidth / 2) / (window.innerWidth / 2),
+        y: (event.clientY - window.innerHeight / 2) / (window.innerHeight / 2),
+      };
+    };
+
+    const resetMouseTarget = () => {
+      mouseTargetRef.current = { x: 0, y: 0 };
+    };
+
     function animateOrbit() {
+      mouseCurrentRef.current.x +=
+        (mouseTargetRef.current.x - mouseCurrentRef.current.x) * 0.08;
+      mouseCurrentRef.current.y +=
+        (mouseTargetRef.current.y - mouseCurrentRef.current.y) * 0.08;
+
       runtimeConfigs.forEach((config, index) => {
         const card = cardRefs.current[index];
 
@@ -73,19 +95,30 @@ export function HeroOrbit({ events }: HeroOrbitProps) {
         const opacity = 0.5 + (depth + 1) * 0.25;
         const zIndex = x < -100 && !mobile ? 15 : Math.floor(depth * 10) + 20;
         const blur = depth < -0.5 ? Math.abs(depth) * 1.5 : 0;
+        const frontness = (depth + 1) / 2;
+        const parallaxStrength = (reducedMotion ? 6 : 14) + frontness * (reducedMotion ? 8 : 24);
+        const parallaxX = mouseCurrentRef.current.x * parallaxStrength;
+        const parallaxY = mouseCurrentRef.current.y * parallaxStrength * 0.72;
 
-        card.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+        card.style.transform = `translate(${x + parallaxX}px, ${y + parallaxY}px) scale(${scale})`;
         card.style.zIndex = String(zIndex);
         card.style.opacity = String(opacity);
         card.style.setProperty("--orbit-blur", `${blur}px`);
+        card.style.setProperty("--orbit-depth", String(frontness));
       });
 
       frameId = window.requestAnimationFrame(animateOrbit);
     }
 
     animateOrbit();
+    window.addEventListener("mousemove", updateMouseTarget);
+    window.addEventListener("mouseleave", resetMouseTarget);
 
-    return () => window.cancelAnimationFrame(frameId);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("mousemove", updateMouseTarget);
+      window.removeEventListener("mouseleave", resetMouseTarget);
+    };
   }, [configs]);
 
   return (

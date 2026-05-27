@@ -19,12 +19,11 @@ export function LandingEffects() {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const hero = document.getElementById("parallax-container");
     const navbar = document.getElementById("navbar");
-    const orbitSystem = document.querySelector<HTMLElement>(".orbit-focal-point");
     const parallaxWrappers = document.querySelectorAll<HTMLElement>(".parallax-wrapper");
     const revealTargets = document.querySelectorAll<HTMLElement>(".reveal");
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
-    const mouse: { x?: number; y?: number; radius: number } = { radius: 150 };
+    const mouse: { x?: number; y?: number; radius: number } = { radius: 190 };
     let particles: Particle[] = [];
     let frameId = 0;
 
@@ -94,33 +93,27 @@ export function LandingEffects() {
     }
 
     const handleParallaxMove = (event: MouseEvent) => {
-      if (window.innerWidth < 968 || reducedMotion.matches) {
+      if (window.innerWidth < 968) {
         return;
       }
 
       const x = event.clientX - window.innerWidth / 2;
       const y = event.clientY - window.innerHeight / 2;
-      const rotateY = Math.max(-4, Math.min(4, x * 0.006));
-      const rotateX = Math.max(-3, Math.min(3, y * -0.006));
+      const motionScale = reducedMotion.matches ? 0.35 : 1;
+      const rotateY = Math.max(-8, Math.min(8, x * 0.01)) * motionScale;
+      const rotateX = Math.max(-6, Math.min(6, y * -0.01)) * motionScale;
 
       parallaxWrappers.forEach((wrapper) => {
         const speed = Number(wrapper.dataset.speed ?? "0");
-        wrapper.style.animation = "none";
-        wrapper.style.transform = `translate3d(${x * speed}px, ${y * speed}px, 0) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+        const translateScale = reducedMotion.matches ? 0.35 : 1;
+        wrapper.style.transform = `translate3d(${x * speed * translateScale}px, ${y * speed * translateScale}px, 0) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
       });
-
-      if (orbitSystem) {
-        orbitSystem.style.transform = `translate3d(${x * -0.01}px, ${y * -0.008}px, 0) rotateX(${rotateX * -0.6}deg) rotateY(${rotateY * -0.6}deg)`;
-      }
     };
 
     const resetParallax = () => {
       parallaxWrappers.forEach((wrapper) => {
         wrapper.style.transform = "translate3d(0px, 0px, 0) rotateX(0deg) rotateY(0deg)";
       });
-      if (orbitSystem) {
-        orbitSystem.style.transform = "translate3d(0px, 0px, 0) rotateX(0deg) rotateY(0deg)";
-      }
     };
 
     function initParticles() {
@@ -132,7 +125,7 @@ export function LandingEffects() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
-      const particleCount = Math.floor((canvas.width * canvas.height) / 8000);
+      const particleCount = Math.floor((canvas.width * canvas.height) / 6500);
 
       for (let index = 0; index < particleCount; index += 1) {
         const x = Math.random() * canvas.width;
@@ -165,14 +158,15 @@ export function LandingEffects() {
     }
 
     function updateParticle(particle: Particle) {
-      const dx = (mouse.x ?? particle.x) - particle.x;
-      const dy = (mouse.y ?? particle.y) - particle.y;
+      const dx = particle.x - (mouse.x ?? particle.x);
+      const dy = particle.y - (mouse.y ?? particle.y);
       const distance = Math.sqrt(dx * dx + dy * dy);
 
       if (distance < mouse.radius && mouse.x !== undefined && distance > 0) {
         const force = (mouse.radius - distance) / mouse.radius;
-        particle.x += (dx / distance) * force * particle.density;
-        particle.y += (dy / distance) * force * particle.density;
+        const push = force * force * particle.density * (reducedMotion.matches ? 0.32 : 0.62);
+        particle.x += (dx / distance) * push;
+        particle.y += (dy / distance) * push;
       } else {
         particle.x -= (particle.x - particle.baseX) / 25;
         particle.y -= (particle.y - particle.baseY) / 25;
@@ -189,16 +183,8 @@ export function LandingEffects() {
       context.clearRect(0, 0, canvas.width, canvas.height);
 
       particles.forEach((particle) => {
-        if (reducedMotion.matches) {
-          drawParticle(particle);
-        } else {
-          updateParticle(particle);
-        }
+        updateParticle(particle);
       });
-
-      if (reducedMotion.matches) {
-        return;
-      }
 
       frameId = window.requestAnimationFrame(animateParticles);
     }
