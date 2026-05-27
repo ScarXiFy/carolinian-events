@@ -609,9 +609,12 @@ body {
   .orbit-core,
   .scroll-indicator,
   .mouse::before,
-  .section-header,
-  .marquee-track {
+  .section-header {
     animation: none;
+  }
+
+  .marquee-track {
+    animation-duration: 120s;
   }
 }
 
