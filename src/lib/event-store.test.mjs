@@ -5,6 +5,7 @@ import {
   getAllEvents,
   getEventByRouteId,
   getEventStaticParams,
+  getEventStoreStatus,
   mapLegacyEventRow,
 } from "./event-store.mjs";
 
@@ -40,4 +41,11 @@ test("event store exposes sample events through route-friendly helpers", () => {
   assert.ok(getAllEvents().length > 0);
   assert.equal(getEventByRouteId("2").eventName, "Proposal Hearing 2026");
   assert.deepEqual(getEventStaticParams()[0], { id: "1" });
+});
+
+test("event store reports read-only sample mode without database config", () => {
+  assert.deepEqual(getEventStoreStatus({}), {
+    mode: "sample",
+    isReadOnly: true,
+  });
 });

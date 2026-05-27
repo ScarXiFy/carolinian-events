@@ -1,4 +1,5 @@
 import { getEventById, sampleEvents } from "./events.mjs";
+import { getEventStoreMode } from "./database-config.mjs";
 
 const legacyEventRows = sampleEvents.map((event) => ({
   id: event.id,
@@ -40,4 +41,11 @@ export function getEventStaticParams() {
   return getAllEvents().map((event) => ({
     id: String(event.id),
   }));
+}
+
+export function getEventStoreStatus(env = process.env) {
+  return {
+    mode: getEventStoreMode(env),
+    isReadOnly: true,
+  };
 }
