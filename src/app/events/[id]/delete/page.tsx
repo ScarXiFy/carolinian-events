@@ -7,6 +7,7 @@ import {
   getDeleteConfirmationMessage,
 } from "@/lib/events.mjs";
 import { getEventByRouteId, getEventStaticParams } from "@/lib/event-store.mjs";
+import { deleteEventAction } from "./actions";
 
 export function generateStaticParams() {
   return getEventStaticParams();
@@ -67,12 +68,14 @@ export default async function DeleteEventPage(props: PageProps<"/events/[id]/del
             <Link href={`/events/${event.id}`} className="legacy-btn legacy-btn-secondary">
               Cancel
             </Link>
-            <Link href="/events?deleted=preview" className="legacy-btn btn-danger">
-              Delete
-            </Link>
+            <form action={deleteEventAction.bind(null, event.id)}>
+              <button type="submit" className="legacy-btn btn-danger">
+                Delete
+              </button>
+            </form>
           </div>
           <p className="mt-5 text-sm leading-6 text-[#a1a1aa]">
-            Preview only. Database deletion will be added in the database phase.
+            Deletes from the database when a MySQL connection is configured.
           </p>
         </article>
       </section>

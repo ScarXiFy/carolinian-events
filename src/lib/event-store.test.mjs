@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   createEvent,
+  deleteEvent,
   getAllEvents,
   getEventByRouteId,
   getEventStaticParams,
@@ -164,6 +165,27 @@ test("updateEvent stays in preview mode when DATABASE_URL is missing", async () 
   );
 
   assert.deepEqual(updated, { mode: "sample", affectedRows: 0 });
+});
+
+test("deleteEvent deletes from MySQL when DATABASE_URL is configured", async () => {
+  const deleted = await deleteEvent(12, {
+    env: { DATABASE_URL: "mysql://root@localhost:3306/carolinian_events_db" },
+    writeDatabaseEvents: {
+      deleteEvent: async (url, id) => {
+        assert.equal(url, "mysql://root@localhost:3306/carolinian_events_db");
+        assert.equal(id, 12);
+        return { affectedRows: 1 };
+      },
+    },
+  });
+
+  assert.deepEqual(deleted, { mode: "database", affectedRows: 1 });
+});
+
+test("deleteEvent stays in preview mode when DATABASE_URL is missing", async () => {
+  const deleted = await deleteEvent(12, { env: {} });
+
+  assert.deepEqual(deleted, { mode: "sample", affectedRows: 0 });
 });
 
 test("event store reports read-only sample mode without database config", () => {

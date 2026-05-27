@@ -101,6 +101,30 @@ export async function updateEvent(
   };
 }
 
+export async function deleteEvent(
+  id,
+  {
+    env = process.env,
+    writeDatabaseEvents = writeMysqlEvents,
+  } = {},
+) {
+  const config = getDatabaseConfig(env);
+
+  if (!config.isConfigured) {
+    return {
+      mode: "sample",
+      affectedRows: 0,
+    };
+  }
+
+  const deleted = await writeDatabaseEvents.deleteEvent(config.url, Number(id));
+
+  return {
+    mode: "database",
+    affectedRows: deleted.affectedRows,
+  };
+}
+
 export function getEventStoreStatus(env = process.env) {
   const mode = getEventStoreMode(env);
 
