@@ -44,7 +44,7 @@ export function HeroOrbit({ events }: HeroOrbitProps) {
         ...config,
         radiusX,
         radiusY: radiusX * 0.55,
-        speed: reducedMotion ? 0 : config.speed,
+        speed: reducedMotion ? config.speed * 0.2 : config.speed,
       };
     });
 

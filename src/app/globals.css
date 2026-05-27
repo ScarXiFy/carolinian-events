@@ -606,12 +606,18 @@ body {
   .particle-field,
   .ambient-glow,
   .legacy-hero-content,
-  .orbit-core,
   .scroll-indicator,
   .mouse::before,
-  .section-header,
-  .marquee-track {
+  .section-header {
     animation: none;
+  }
+
+  .orbit-core {
+    animation-duration: 12s;
+  }
+
+  .marquee-track {
+    animation-duration: 120s;
   }
 }
 
