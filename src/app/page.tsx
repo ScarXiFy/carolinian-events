@@ -5,16 +5,38 @@ import {
   formatEventTime,
   getEventStats,
   getFeaturedEvents,
+  sampleEvents,
 } from "@/lib/events.mjs";
 import { getAllEvents } from "@/lib/event-store.mjs";
+import { HeroOrbit } from "./hero-orbit";
+
+const featureCards = [
+  {
+    icon: "01",
+    title: "Create & Customize",
+    body: "Launch events with beautiful landing pages, rich descriptions, and custom ticketing options effortlessly.",
+  },
+  {
+    icon: "02",
+    title: "Manage Attendees",
+    body: "Track RSVPs in real-time, scan digital tickets at the door, and communicate with guests easily.",
+  },
+  {
+    icon: "03",
+    title: "Live Analytics",
+    body: "Get powerful insights into attendance, engagement, and post-event feedback automatically.",
+  },
+];
 
 export default async function Home() {
   const events = await getAllEvents();
   const stats = getEventStats(events);
-  const featuredEvents = getFeaturedEvents(events, 5);
+  const featuredEvents = getFeaturedEvents(events.length ? events : sampleEvents, 5);
   const orbitCards = featuredEvents.map((event, index) => ({
-    event,
-    style: getOrbitStyle(index, featuredEvents.length),
+    id: event.id,
+    dateTime: `${formatEventDate(event)} at ${formatEventTime(event)}`,
+    eventName: event.eventName,
+    status: event.status,
     glowClass: getGlowClass(event.status, index),
   }));
 
@@ -68,41 +90,15 @@ export default async function Home() {
           </div>
         </div>
 
-        <div className="orbit-focal-point" aria-label="Featured event orbit">
-          <div className="orbit-rings" aria-hidden="true">
-            <div className="orbit-ring orbit-ring-green" />
-            <div className="orbit-ring orbit-ring-red" />
-            <div className="orbit-ring orbit-ring-blue" />
-          </div>
-          <div className="orbit-core" aria-hidden="true" />
-          {orbitCards.map(({ event, style, glowClass }) => (
-            <article
-              key={event.id}
-              className={`orbit-card ${glowClass}`}
-              style={style}
-            >
-              <div className="timeline-connector" aria-hidden="true" />
-              <p className="orbit-card-datetime">
-                {formatEventDate(event)} at {formatEventTime(event)}
-              </p>
-              <h2 className="orbit-card-title">{event.eventName}</h2>
-              <div className="flex items-center gap-3">
-                <span className="status-dot" aria-hidden="true" />
-                <span className="text-xs font-semibold text-[#a1a1aa]">
-                  {event.status}
-                </span>
-              </div>
-            </article>
-          ))}
-        </div>
+        <HeroOrbit events={orbitCards} />
 
         <div className="scroll-indicator" aria-hidden="true">
           <div className="mouse" />
         </div>
       </section>
 
-      <section id="features" className="relative z-10 bg-[#0a0a0a] px-[5%] py-24">
-        <div className="mx-auto max-w-[1200px] text-center">
+      <section id="features" className="legacy-features relative z-10 bg-[#0a0a0a] py-32">
+        <div className="section-header mx-auto max-w-[1200px] px-[5%] text-center">
           <h2 className="text-4xl font-extrabold tracking-normal">
             Seamless Management
           </h2>
@@ -111,29 +107,23 @@ export default async function Home() {
           </p>
         </div>
 
-        <div className="mx-auto mt-12 grid max-w-[1200px] gap-6 md:grid-cols-3">
-          {[
-            [
-              "Create and Customize",
-              "Launch campus events with clear descriptions, dates, organizers, and category details.",
-            ],
-            [
-              "Manage Attendees",
-              "Track status and prepare the system for future student registration flows.",
-            ],
-            [
-              "Live Analytics",
-              "Keep the total, upcoming, ongoing, and completed event counts visible.",
-            ],
-          ].map(([title, body]) => (
-            <article
-              key={title}
-              className="rounded-2xl border border-white/10 bg-[#111] p-8 shadow-[0_20px_40px_rgba(0,0,0,0.25)]"
-            >
-              <h3 className="text-xl font-bold">{title}</h3>
-              <p className="mt-4 leading-7 text-[#a1a1aa]">{body}</p>
-            </article>
-          ))}
+        <div className="marquee-container mt-12">
+          <div className="marquee-track">
+            {[0, 1].map((group) => (
+              <div className="marquee-content" key={group}>
+                {[...featureCards, ...featureCards].map((feature, index) => (
+                  <article
+                    key={`${group}-${feature.title}-${index}`}
+                    className="legacy-feature-card"
+                  >
+                    <div className="feature-icon">{feature.icon}</div>
+                    <h3>{feature.title}</h3>
+                    <p>{feature.body}</p>
+                  </article>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -174,22 +164,6 @@ export default async function Home() {
       </footer>
     </main>
   );
-}
-
-function getOrbitStyle(index: number, total: number) {
-  const ringX = [260, 320, 220, 280, 350][index % 5];
-  const ringY = [86, 112, 74, 96, 126][index % 5];
-  const angle = -55 + index * (360 / Math.max(total, 1));
-  const x = Math.cos((angle * Math.PI) / 180) * ringX;
-  const y = Math.sin((angle * Math.PI) / 180) * ringY;
-  const depth = Math.sin((angle * Math.PI) / 180);
-  const scale = 0.88 + (depth + 1) * 0.12;
-
-  return {
-    transform: `translate(${x}px, ${y}px) scale(${scale})`,
-    zIndex: Math.round((depth + 1) * 10),
-    opacity: 0.7 + (depth + 1) * 0.15,
-  };
 }
 
 function getGlowClass(status: string, index: number) {
