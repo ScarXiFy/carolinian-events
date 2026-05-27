@@ -23,6 +23,7 @@ type OrbitConfig = {
 
 export function HeroOrbit({ events }: HeroOrbitProps) {
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
+  const isPausedRef = useRef(false);
   const configs = useMemo(
     () =>
       events.map((_, index) => ({
@@ -59,7 +60,9 @@ export function HeroOrbit({ events }: HeroOrbitProps) {
           return;
         }
 
-        config.angle += config.speed;
+        if (!isPausedRef.current) {
+          config.angle += config.speed;
+        }
 
         const x = Math.cos(config.angle) * config.radiusX;
         const y = Math.sin(config.angle) * config.radiusY;
@@ -72,7 +75,7 @@ export function HeroOrbit({ events }: HeroOrbitProps) {
         card.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
         card.style.zIndex = String(zIndex);
         card.style.opacity = String(opacity);
-        card.style.filter = blur ? `blur(${blur}px)` : "none";
+        card.style.setProperty("--orbit-blur", `${blur}px`);
       });
 
       frameId = window.requestAnimationFrame(animateOrbit);
@@ -103,6 +106,19 @@ export function HeroOrbit({ events }: HeroOrbitProps) {
           }}
           className={`orbit-card ${event.glowClass}`}
           style={getInitialOrbitStyle(index, events.length)}
+          tabIndex={0}
+          onPointerEnter={() => {
+            isPausedRef.current = true;
+          }}
+          onPointerLeave={() => {
+            isPausedRef.current = false;
+          }}
+          onFocus={() => {
+            isPausedRef.current = true;
+          }}
+          onBlur={() => {
+            isPausedRef.current = false;
+          }}
         >
           <div className="timeline-connector" aria-hidden="true" />
           <div className="card-datetime">{event.dateTime}</div>
