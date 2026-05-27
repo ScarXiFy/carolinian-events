@@ -108,7 +108,7 @@ export default async function EventDetailPage(props: PageProps<"/events/[id]">) 
               <Link href={`/events/${event.id}/edit`} className="legacy-btn legacy-btn-secondary btn-sm">
                 Edit
               </Link>
-              <Link href={`/events/${event.id}`} className="legacy-btn btn-danger">
+              <Link href={`/events/${event.id}/delete`} className="legacy-btn btn-danger">
                 Delete
               </Link>
             </div>

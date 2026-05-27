@@ -225,6 +225,10 @@ export function getSelectWithCustomValue(options, value) {
   };
 }
 
+export function getDeleteConfirmationMessage(event) {
+  return `Are you sure you want to delete "${event.eventName}"? This action cannot be undone.`;
+}
+
 function compareCreatedAt(a, b) {
   const byCreatedAt = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   return byCreatedAt === 0 ? a.id - b.id : byCreatedAt;

@@ -141,7 +141,7 @@ export default async function EventsPage({
                       <Link href={`/events/${event.id}/edit`} className="action-edit">
                         Edit
                       </Link>
-                      <Link href="/events" className="action-delete">
+                      <Link href={`/events/${event.id}/delete`} className="action-delete">
                         Delete
                       </Link>
                     </td>

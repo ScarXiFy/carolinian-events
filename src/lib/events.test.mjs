@@ -6,6 +6,7 @@ import {
   CATEGORY_OPTIONS,
   LOCATION_OPTIONS,
   computeEventStatus,
+  getDeleteConfirmationMessage,
   getEventById,
   getSelectWithCustomValue,
   getEventStats,
@@ -116,4 +117,11 @@ test("getSelectWithCustomValue keeps blank create form values empty", () => {
     selectValue: "",
     customValue: "",
   });
+});
+
+test("getDeleteConfirmationMessage mirrors the legacy delete warning", () => {
+  assert.equal(
+    getDeleteConfirmationMessage({ eventName: "Proposal Hearing 2026" }),
+    'Are you sure you want to delete "Proposal Hearing 2026"? This action cannot be undone.',
+  );
 });
