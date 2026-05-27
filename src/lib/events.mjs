@@ -205,6 +205,13 @@ export function computeEventStatus(eventDate, eventTime, now = new Date()) {
 }
 
 export function getSelectWithCustomValue(options, value) {
+  if (!value) {
+    return {
+      selectValue: "",
+      customValue: "",
+    };
+  }
+
   if (options.includes(value)) {
     return {
       selectValue: value,

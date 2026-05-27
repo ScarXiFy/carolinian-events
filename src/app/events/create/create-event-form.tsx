@@ -29,10 +29,7 @@ export function CreateEventForm({
   initialValues,
   mode = "create",
 }: CreateEventFormProps) {
-  const initialLocation = getSelectWithCustomValue(
-    LOCATION_OPTIONS,
-    initialValues?.location ?? "",
-  );
+  const initialLocation = getSelectWithCustomValue(LOCATION_OPTIONS, initialValues?.location);
   const initialCategory = getSelectWithCustomValue(
     CATEGORY_OPTIONS,
     initialValues?.category ?? "Academic",
@@ -43,6 +40,11 @@ export function CreateEventForm({
   const [category, setCategory] = useState(initialCategory.selectValue);
   const [notice, setNotice] = useState("");
   const actionLabel = mode === "edit" ? "Save Changes" : "Create Event";
+  const groupClass = "mb-6";
+  const labelClass = "mb-2 block font-semibold text-[#a1a1aa]";
+  const controlClass =
+    "form-control w-full rounded-lg border border-[#222] bg-white/[0.03] px-4 py-3 text-base text-white outline-none transition focus:border-[#2a8c4f] focus:bg-white/[0.05] focus:ring-[3px] focus:ring-[#2a8c4f]/15";
+  const rowClass = "grid gap-6 md:grid-cols-2";
 
   const status = useMemo(
     () => computeEventStatus(eventDate, eventTime),
@@ -62,59 +64,59 @@ export function CreateEventForm({
     <form onSubmit={handleSubmit}>
       {notice ? <div className="alert alert-info">{notice}</div> : null}
 
-      <div className="form-group">
-        <label htmlFor="event_name">Event Name *</label>
+      <div className={groupClass}>
+        <label htmlFor="event_name" className={labelClass}>Event Name *</label>
         <input
           id="event_name"
           name="event_name"
-          className="form-control"
+          className={controlClass}
           defaultValue={initialValues?.eventName ?? ""}
           required
         />
       </div>
 
-      <div className="form-group">
-        <label htmlFor="organizer">Organizer *</label>
+      <div className={groupClass}>
+        <label htmlFor="organizer" className={labelClass}>Organizer *</label>
         <input
           id="organizer"
           name="organizer"
-          className="form-control"
+          className={controlClass}
           defaultValue={initialValues?.organizer ?? ""}
           required
         />
       </div>
 
-      <div className="form-group">
-        <label htmlFor="description">Description</label>
+      <div className={groupClass}>
+        <label htmlFor="description" className={labelClass}>Description</label>
         <textarea
           id="description"
           name="description"
-          className="form-control"
+          className={`${controlClass} min-h-28 resize-y`}
           rows={4}
           defaultValue={initialValues?.description ?? ""}
         />
       </div>
 
-      <div className="form-row">
-        <div className="form-group">
-          <label htmlFor="event_date">Event Date *</label>
+      <div className={rowClass}>
+        <div className={groupClass}>
+          <label htmlFor="event_date" className={labelClass}>Event Date *</label>
           <input
             id="event_date"
             name="event_date"
             type="date"
-            className="form-control"
+            className={controlClass}
             value={eventDate}
             onChange={(event) => setEventDate(event.target.value)}
             required
           />
         </div>
-        <div className="form-group">
-          <label htmlFor="event_time">Event Time *</label>
+        <div className={groupClass}>
+          <label htmlFor="event_time" className={labelClass}>Event Time *</label>
           <input
             id="event_time"
             name="event_time"
             type="time"
-            className="form-control"
+            className={controlClass}
             value={eventTime}
             onChange={(event) => setEventTime(event.target.value)}
             required
@@ -122,12 +124,12 @@ export function CreateEventForm({
         </div>
       </div>
 
-      <div className="form-group">
-        <label htmlFor="location_select">Location *</label>
+      <div className={groupClass}>
+        <label htmlFor="location_select" className={labelClass}>Location *</label>
         <select
           id="location_select"
           name="location_select"
-          className="form-control"
+          className={controlClass}
           value={location}
           onChange={(event) => setLocation(event.target.value)}
           required
@@ -145,7 +147,7 @@ export function CreateEventForm({
           <input
             id="location_other"
             name="location_other"
-            className="form-control other-input"
+            className={`${controlClass} other-input mt-3`}
             placeholder="Enter custom location"
             defaultValue={initialLocation.customValue}
             required
@@ -153,13 +155,13 @@ export function CreateEventForm({
         ) : null}
       </div>
 
-      <div className="form-row">
-        <div className="form-group">
-          <label htmlFor="category_select">Category</label>
+      <div className={rowClass}>
+        <div className={groupClass}>
+          <label htmlFor="category_select" className={labelClass}>Category</label>
           <select
             id="category_select"
             name="category_select"
-            className="form-control"
+            className={controlClass}
             value={category}
             onChange={(event) => setCategory(event.target.value)}
           >
@@ -173,7 +175,7 @@ export function CreateEventForm({
             <input
               id="category_other"
               name="category_other"
-              className="form-control other-input"
+              className={`${controlClass} other-input mt-3`}
               placeholder="Enter custom category"
               defaultValue={initialCategory.customValue}
               required
@@ -181,20 +183,22 @@ export function CreateEventForm({
           ) : null}
           <input type="hidden" id="category_final" name="category" value={category} />
         </div>
-        <div className="form-group">
-          <label htmlFor="status_display">Status</label>
+        <div className={groupClass}>
+          <label htmlFor="status_display" className={labelClass}>Status</label>
           <input
             id="status_display"
-            className="form-control"
+            className={`${controlClass} cursor-not-allowed text-[#a1a1aa]`}
             value={eventDate && eventTime ? status : "-"}
             readOnly
           />
           <input type="hidden" id="status" name="status" value={status} />
-          <small className="status-hint">Auto-set based on event date & time</small>
+          <small className="status-hint mt-2 block text-sm text-[#a1a1aa]">
+            Auto-set based on event date & time
+          </small>
         </div>
       </div>
 
-      <div className="form-actions">
+      <div className="form-actions mt-8 flex flex-col gap-4 sm:flex-row sm:justify-end">
         <Link href="/events" className="legacy-btn legacy-btn-secondary">
           Cancel
         </Link>

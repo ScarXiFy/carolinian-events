@@ -106,3 +106,14 @@ test("getSelectWithCustomValue resolves custom values as Other for edit forms", 
     customValue: "NCR Lab",
   });
 });
+
+test("getSelectWithCustomValue keeps blank create form values empty", () => {
+  assert.deepEqual(getSelectWithCustomValue(LOCATION_OPTIONS, ""), {
+    selectValue: "",
+    customValue: "",
+  });
+  assert.deepEqual(getSelectWithCustomValue(LOCATION_OPTIONS, undefined), {
+    selectValue: "",
+    customValue: "",
+  });
+});

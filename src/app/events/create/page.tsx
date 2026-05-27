@@ -25,9 +25,11 @@ export default function CreateEventPage() {
         </div>
       </nav>
 
-      <section className="form-container relative z-10">
-        <div className="form-card">
-          <h1>Create New Event</h1>
+      <section className="form-container relative z-10 mx-auto w-full max-w-[800px] px-[5%] pb-20 pt-[120px]">
+        <div className="form-card rounded-3xl border border-[#222] bg-[#111] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.4)] md:p-12">
+          <h1 className="mb-8 text-[2rem] font-extrabold tracking-normal">
+            Create New Event
+          </h1>
           <CreateEventForm />
         </div>
       </section>
