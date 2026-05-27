@@ -5,12 +5,13 @@ import {
   formatEventTime,
   getEventStats,
   getFeaturedEvents,
-  sampleEvents,
 } from "@/lib/events.mjs";
+import { getAllEvents } from "@/lib/event-store.mjs";
 
 export default function Home() {
-  const stats = getEventStats(sampleEvents);
-  const featuredEvents = getFeaturedEvents(sampleEvents, 5);
+  const events = getAllEvents();
+  const stats = getEventStats(events);
+  const featuredEvents = getFeaturedEvents(events, 5);
   const orbitCards = featuredEvents.map((event, index) => ({
     event,
     style: getOrbitStyle(index, featuredEvents.length),

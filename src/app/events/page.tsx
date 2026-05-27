@@ -5,8 +5,8 @@ import {
   formatEventDate,
   formatEventTime,
   getVisibleEvents,
-  sampleEvents,
 } from "@/lib/events.mjs";
+import { getAllEvents } from "@/lib/event-store.mjs";
 
 type EventSort = "date_desc" | "date_asc" | "name_asc" | "name_desc";
 type EventStatus = "Upcoming" | "Ongoing" | "Completed" | "Cancelled";
@@ -35,7 +35,7 @@ export default async function EventsPage({
   const sort = Object.values(EVENT_SORTS).includes(params.sort ?? EVENT_SORTS.DATE_DESC)
     ? params.sort
     : EVENT_SORTS.DATE_DESC;
-  const events = getVisibleEvents(sampleEvents, { search, sort });
+  const events = getVisibleEvents(getAllEvents(), { search, sort });
 
   return (
     <main className="legacy-home min-h-screen bg-[#050505] text-white">

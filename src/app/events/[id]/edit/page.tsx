@@ -2,17 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CreateEventForm } from "../../create/create-event-form";
-import { getEventById, sampleEvents } from "@/lib/events.mjs";
+import { getEventByRouteId, getEventStaticParams } from "@/lib/event-store.mjs";
 
 export function generateStaticParams() {
-  return sampleEvents.map((event) => ({
-    id: String(event.id),
-  }));
+  return getEventStaticParams();
 }
 
 export default async function EditEventPage(props: PageProps<"/events/[id]/edit">) {
   const { id } = await props.params;
-  const event = getEventById(sampleEvents, id);
+  const event = getEventByRouteId(id);
 
   if (!event) {
     notFound();

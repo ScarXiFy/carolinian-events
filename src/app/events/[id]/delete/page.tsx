@@ -5,19 +5,16 @@ import {
   formatEventDate,
   formatEventTime,
   getDeleteConfirmationMessage,
-  getEventById,
-  sampleEvents,
 } from "@/lib/events.mjs";
+import { getEventByRouteId, getEventStaticParams } from "@/lib/event-store.mjs";
 
 export function generateStaticParams() {
-  return sampleEvents.map((event) => ({
-    id: String(event.id),
-  }));
+  return getEventStaticParams();
 }
 
 export default async function DeleteEventPage(props: PageProps<"/events/[id]/delete">) {
   const { id } = await props.params;
-  const event = getEventById(sampleEvents, id);
+  const event = getEventByRouteId(id);
 
   if (!event) {
     notFound();

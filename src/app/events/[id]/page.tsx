@@ -5,9 +5,8 @@ import {
   formatCreatedDate,
   formatEventTime,
   formatFullEventDate,
-  getEventById,
-  sampleEvents,
 } from "@/lib/events.mjs";
+import { getEventByRouteId, getEventStaticParams } from "@/lib/event-store.mjs";
 
 type EventStatus = "Upcoming" | "Ongoing" | "Completed" | "Cancelled";
 
@@ -19,14 +18,12 @@ const statusStyles = {
 } satisfies Record<EventStatus, string>;
 
 export function generateStaticParams() {
-  return sampleEvents.map((event) => ({
-    id: String(event.id),
-  }));
+  return getEventStaticParams();
 }
 
 export default async function EventDetailPage(props: PageProps<"/events/[id]">) {
   const { id } = await props.params;
-  const event = getEventById(sampleEvents, id);
+  const event = getEventByRouteId(id);
 
   if (!event) {
     notFound();
