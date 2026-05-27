@@ -58,7 +58,7 @@ export default function Home() {
           </p>
 
           <div className="mt-12 flex flex-col items-start gap-6 pl-[10%] sm:flex-row">
-            <Link href="/events" className="legacy-btn legacy-btn-primary">
+            <Link href="/events/create" className="legacy-btn legacy-btn-primary">
               Create Event
             </Link>
             <Link href="/events" className="legacy-btn legacy-btn-secondary">
@@ -162,7 +162,7 @@ export default function Home() {
           <p className="mx-auto mt-4 max-w-xl text-[#a1a1aa]">
             Join hundreds of Carolinians managing their events seamlessly.
           </p>
-          <Link href="/events" className="legacy-btn legacy-btn-primary mt-8">
+          <Link href="/events/create" className="legacy-btn legacy-btn-primary mt-8">
             Get Started Now
           </Link>
         </div>

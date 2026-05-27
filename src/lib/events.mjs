@@ -5,6 +5,27 @@ export const EVENT_SORTS = {
   NAME_DESC: "name_desc",
 };
 
+export const LOCATION_OPTIONS = [
+  "Bunzel Building",
+  "Rigney Hall",
+  "LRC Building",
+  "SMED Building",
+  "PE Building",
+  "SAFAD Theatre",
+  "MR Hall",
+  "Basketball Court",
+  "Soccer Field",
+  "Other",
+];
+
+export const CATEGORY_OPTIONS = [
+  "Academic",
+  "Cultural",
+  "Sports",
+  "Social",
+  "Other",
+];
+
 export const sampleEvents = [
   {
     id: 1,
@@ -163,7 +184,35 @@ export function formatCreatedDate(event) {
   }).format(new Date(event.createdAt));
 }
 
+export function computeEventStatus(eventDate, eventTime, now = new Date()) {
+  if (!eventDate || !eventTime) {
+    return "Upcoming";
+  }
+
+  const eventDateTime = new Date(`${eventDate}T${eventTime}`);
+  const todayOnly = toDateOnly(now);
+  const eventDateOnly = toDateOnly(new Date(`${eventDate}T00:00:00`));
+
+  if (eventDateOnly < todayOnly) {
+    return "Completed";
+  }
+
+  if (eventDateOnly === todayOnly) {
+    return eventDateTime <= now ? "Completed" : "Ongoing";
+  }
+
+  return "Upcoming";
+}
+
 function compareCreatedAt(a, b) {
   const byCreatedAt = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   return byCreatedAt === 0 ? a.id - b.id : byCreatedAt;
+}
+
+function toDateOnly(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }

@@ -64,7 +64,7 @@ export default async function EventsPage({
           <h1 className="dashboard-title text-[2.5rem] font-extrabold leading-tight tracking-normal">
             Events Dashboard
           </h1>
-          <Link href="/events" className="legacy-btn legacy-btn-primary">
+          <Link href="/events/create" className="legacy-btn legacy-btn-primary">
             + Add New Event
           </Link>
         </div>
@@ -138,7 +138,7 @@ export default async function EventsPage({
                       <Link href={`/events/${event.id}`} className="action-view">
                         View
                       </Link>
-                      <Link href="/events" className="action-edit">
+                      <Link href={`/events/${event.id}`} className="action-edit">
                         Edit
                       </Link>
                       <Link href="/events" className="action-delete">

@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 
 import {
   EVENT_SORTS,
+  CATEGORY_OPTIONS,
+  LOCATION_OPTIONS,
+  computeEventStatus,
   getEventById,
   getEventStats,
   getFeaturedEvents,
@@ -71,4 +74,20 @@ test("getEventById returns undefined for invalid or missing ids", () => {
 
   assert.equal(getEventById(events, "missing"), undefined);
   assert.equal(getEventById(events, "99"), undefined);
+});
+
+test("legacy create form option lists include Other choices", () => {
+  assert.ok(LOCATION_OPTIONS.includes("Bunzel Building"));
+  assert.ok(LOCATION_OPTIONS.includes("Other"));
+  assert.ok(CATEGORY_OPTIONS.includes("Academic"));
+  assert.ok(CATEGORY_OPTIONS.includes("Other"));
+});
+
+test("computeEventStatus mirrors the legacy date and time status rules", () => {
+  const now = new Date("2026-05-27T12:00:00");
+
+  assert.equal(computeEventStatus("2026-05-26", "13:00", now), "Completed");
+  assert.equal(computeEventStatus("2026-05-27", "11:59", now), "Completed");
+  assert.equal(computeEventStatus("2026-05-27", "12:01", now), "Ongoing");
+  assert.equal(computeEventStatus("2026-05-28", "08:00", now), "Upcoming");
 });
