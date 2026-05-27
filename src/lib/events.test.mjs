@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   EVENT_SORTS,
+  getEventById,
   getEventStats,
   getFeaturedEvents,
   getVisibleEvents,
@@ -54,4 +55,20 @@ test("getFeaturedEvents returns the soonest events first", () => {
   ];
 
   assert.equal(getFeaturedEvents(events, 1)[0].eventName, "Sooner");
+});
+
+test("getEventById finds an event by numeric route id", () => {
+  const events = [
+    { id: 1, eventName: "Mock Presentation" },
+    { id: 2, eventName: "Proposal Hearing" },
+  ];
+
+  assert.equal(getEventById(events, "2").eventName, "Proposal Hearing");
+});
+
+test("getEventById returns undefined for invalid or missing ids", () => {
+  const events = [{ id: 1, eventName: "Mock Presentation" }];
+
+  assert.equal(getEventById(events, "missing"), undefined);
+  assert.equal(getEventById(events, "99"), undefined);
 });

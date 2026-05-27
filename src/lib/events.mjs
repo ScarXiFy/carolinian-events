@@ -122,6 +122,16 @@ export function getVisibleEvents(
   });
 }
 
+export function getEventById(events = sampleEvents, id) {
+  const numericId = Number(id);
+
+  if (!Number.isInteger(numericId)) {
+    return undefined;
+  }
+
+  return events.find((event) => event.id === numericId);
+}
+
 export function formatEventDate(event) {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -135,6 +145,22 @@ export function formatEventTime(event) {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(`${event.eventDate}T${event.eventTime}`));
+}
+
+export function formatFullEventDate(event) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(`${event.eventDate}T00:00:00`));
+}
+
+export function formatCreatedDate(event) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(event.createdAt));
 }
 
 function compareCreatedAt(a, b) {

@@ -135,7 +135,7 @@ export default async function EventsPage({
                       </span>
                     </td>
                     <td data-label="Actions" className="action-links">
-                      <Link href="/events" className="action-view">
+                      <Link href={`/events/${event.id}`} className="action-view">
                         View
                       </Link>
                       <Link href="/events" className="action-edit">
