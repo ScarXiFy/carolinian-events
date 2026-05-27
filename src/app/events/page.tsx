@@ -19,10 +19,10 @@ const sortLabels = {
 } satisfies Record<EventSort, string>;
 
 const statusStyles = {
-  Upcoming: "bg-emerald-100 text-emerald-800",
-  Ongoing: "bg-amber-100 text-amber-800",
-  Completed: "bg-zinc-200 text-zinc-700",
-  Cancelled: "bg-rose-100 text-rose-800",
+  Upcoming: "status-upcoming",
+  Ongoing: "status-ongoing",
+  Completed: "status-completed",
+  Cancelled: "status-cancelled",
 } satisfies Record<EventStatus, string>;
 
 export default async function EventsPage({
@@ -38,115 +38,118 @@ export default async function EventsPage({
   const events = getVisibleEvents(sampleEvents, { search, sort });
 
   return (
-    <main className="min-h-screen bg-[#f8fbf7] text-[#172113]">
-      <header className="border-b border-[#dfe7dc] bg-white">
-        <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-5">
-          <Link href="/" className="text-lg font-extrabold tracking-tight">
-            Carolinian<span className="text-[#b88a00]">Events</span>
-          </Link>
-          <Link
-            href="/"
-            className="rounded-md border border-[#dfe7dc] px-4 py-2 text-sm font-bold transition hover:bg-[#f4f7f1]"
-          >
-            Home
-          </Link>
-        </nav>
-      </header>
+    <main className="legacy-home min-h-screen bg-[#050505] text-white">
+      <div className="particle-field" aria-hidden="true" />
+      <div className="ambient-glow ambient-glow-green" aria-hidden="true" />
+      <div className="ambient-glow ambient-glow-gold" aria-hidden="true" />
 
-      <section className="mx-auto w-full max-w-6xl px-6 py-10">
-        <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#b88a00]">
-              Public dashboard
-            </p>
-            <h1 className="mt-3 text-4xl font-black tracking-normal sm:text-5xl">
+      <nav className="fixed left-0 top-0 z-50 flex w-full justify-center px-[5%] py-4 backdrop-blur-xl">
+        <div className="flex w-full max-w-[1200px] items-center justify-between">
+          <Link href="/" className="text-[1.4rem] font-extrabold tracking-normal">
+            Carolinian<span className="text-[#d4a843]">Events</span>
+          </Link>
+          <div className="flex items-center gap-8 text-sm font-bold">
+            <Link href="/" className="transition hover:text-[#d4a843]">
+              Home
+            </Link>
+            <Link href="/events" className="transition hover:text-[#d4a843]">
               Events Dashboard
-            </h1>
-            <p className="mt-3 max-w-2xl leading-7 text-[#52624d]">
-              Browse the migrated event list with the same search and sorting
-              behavior as the PHP dashboard.
-            </p>
+            </Link>
           </div>
-          <button
-            type="button"
-            disabled
-            className="min-h-11 rounded-md bg-[#204b22] px-5 text-sm font-extrabold text-white opacity-55"
-            title="Organizer creation comes in a later migration phase"
-          >
-            Add New Event
-          </button>
+        </div>
+      </nav>
+
+      <section className="relative z-10 mx-auto w-full max-w-[1600px] px-[5%] pb-20 pt-[120px]">
+        <div className="mb-10 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <h1 className="dashboard-title text-[2.5rem] font-extrabold leading-tight tracking-normal">
+            Events Dashboard
+          </h1>
+          <Link href="/events" className="legacy-btn legacy-btn-primary">
+            + Add New Event
+          </Link>
         </div>
 
-        <form className="mt-8 grid gap-3 rounded-lg border border-[#dfe7dc] bg-white p-4 md:grid-cols-[1fr_220px_auto]">
-          <input
-            type="search"
-            name="search"
-            defaultValue={search}
-            placeholder="Search events..."
-            className="min-h-11 rounded-md border border-[#cfd9cb] px-4 text-sm outline-none transition focus:border-[#204b22] focus:ring-2 focus:ring-[#204b22]/12"
-          />
-          <select
-            name="sort"
-            defaultValue={sort}
-            className="min-h-11 rounded-md border border-[#cfd9cb] px-4 text-sm font-semibold outline-none transition focus:border-[#204b22] focus:ring-2 focus:ring-[#204b22]/12"
-          >
-            {Object.entries(sortLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            className="min-h-11 rounded-md bg-[#f4c542] px-5 text-sm font-extrabold text-[#172113] transition hover:bg-[#ffd866]"
-          >
+        <form className="dashboard-controls mb-8 flex flex-col gap-4 md:flex-row md:items-center">
+          <div className="flex-1">
+            <input
+              type="search"
+              name="search"
+              defaultValue={search}
+              placeholder="Search events..."
+              className="dashboard-input w-full"
+            />
+          </div>
+          <div>
+            <select name="sort" defaultValue={sort} className="dashboard-select">
+              {Object.entries(sortLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button type="submit" className="legacy-btn legacy-btn-secondary">
             Apply
           </button>
         </form>
 
-        <div className="mt-6 overflow-hidden rounded-lg border border-[#dfe7dc] bg-white">
-          <div className="hidden grid-cols-[56px_1.2fr_1fr_1fr_0.75fr_0.75fr] gap-4 border-b border-[#dfe7dc] bg-[#edf3e9] px-5 py-4 text-sm font-extrabold text-[#52624d] lg:grid">
-            <span>#</span>
-            <span>Event Name</span>
-            <span>Date and Time</span>
-            <span>Location</span>
-            <span>Category</span>
-            <span>Status</span>
-          </div>
-          {events.length === 0 ? (
-            <p className="px-5 py-12 text-center font-semibold text-[#52624d]">
-              No events found.
-            </p>
-          ) : (
-            <div className="divide-y divide-[#dfe7dc]">
-              {events.map((event, index) => (
-                <article
-                  key={event.id}
-                  className="grid gap-3 px-5 py-5 lg:grid-cols-[56px_1.2fr_1fr_1fr_0.75fr_0.75fr] lg:items-center"
-                >
-                  <span className="hidden font-mono text-sm text-[#52624d] lg:block">
-                    {index + 1}
-                  </span>
-                  <div>
-                    <h2 className="font-extrabold text-[#172113]">{event.eventName}</h2>
-                    <p className="mt-1 text-sm text-[#52624d]">{event.organizer}</p>
-                  </div>
-                  <p className="text-sm leading-6 text-[#52624d]">
-                    <span className="font-bold text-[#172113]">{formatEventDate(event)}</span>
-                    <br />
-                    {formatEventTime(event)}
-                  </p>
-                  <p className="text-sm font-semibold text-[#52624d]">{event.location}</p>
-                  <p className="text-sm font-semibold text-[#52624d]">{event.category}</p>
-                  <span
-                    className={`w-fit rounded-full px-3 py-1 text-xs font-extrabold ${statusStyles[event.status as EventStatus]}`}
-                  >
-                    {event.status}
-                  </span>
-                </article>
-              ))}
-            </div>
-          )}
+        <div className="dashboard-table-shell">
+          <table className="events-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Event Name</th>
+                <th>Date &amp; Time</th>
+                <th>Location</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="empty-row">
+                    No events found.
+                  </td>
+                </tr>
+              ) : (
+                events.map((event, index) => (
+                  <tr key={event.id}>
+                    <td data-label="#">{index + 1}</td>
+                    <td data-label="Event Name" className="event-name-cell">
+                      {event.eventName}
+                    </td>
+                    <td data-label="Date & Time">
+                      {formatEventDate(event)}
+                      <br />
+                      <small className="time-muted">{formatEventTime(event)}</small>
+                    </td>
+                    <td data-label="Location">{event.location}</td>
+                    <td data-label="Category">{event.category}</td>
+                    <td data-label="Status">
+                      <span
+                        className={`status-badge ${statusStyles[event.status as EventStatus]}`}
+                      >
+                        {event.status}
+                      </span>
+                    </td>
+                    <td data-label="Actions" className="action-links">
+                      <Link href="/events" className="action-view">
+                        View
+                      </Link>
+                      <Link href="/events" className="action-edit">
+                        Edit
+                      </Link>
+                      <Link href="/events" className="action-delete">
+                        Delete
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
     </main>
