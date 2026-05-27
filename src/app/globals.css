@@ -606,21 +606,6 @@ body {
   .particle-field,
   .ambient-glow,
   .legacy-hero-content,
-<<<<<<< HEAD
-  .scroll-indicator,
-  .mouse::before,
-  .section-header {
-    animation: none;
-  }
-
-  .orbit-core {
-    animation-duration: 12s;
-  }
-
-  .marquee-track {
-    animation-duration: 120s;
-  }
-=======
   .orbit-core,
   .scroll-indicator,
   .mouse::before,
@@ -628,7 +613,6 @@ body {
   .marquee-track {
     animation: none;
   }
->>>>>>> a8b3d01 ([enricode-PC][Updated] animate legacy home UI)
 }
 
 .dashboard-title {
