@@ -26,8 +26,6 @@ const ORBIT_SPEED_MULTIPLIER = 3;
 export function HeroOrbit({ events }: HeroOrbitProps) {
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
   const isPausedRef = useRef(false);
-  const mouseTargetRef = useRef({ x: 0, y: 0 });
-  const mouseCurrentRef = useRef({ x: 0, y: 0 });
   const configs = useMemo(
     () =>
       events.map((_, index) => ({
@@ -56,27 +54,7 @@ export function HeroOrbit({ events }: HeroOrbitProps) {
 
     let frameId = 0;
 
-    const updateMouseTarget = (event: MouseEvent) => {
-      if (mobile) {
-        return;
-      }
-
-      mouseTargetRef.current = {
-        x: (event.clientX - window.innerWidth / 2) / (window.innerWidth / 2),
-        y: (event.clientY - window.innerHeight / 2) / (window.innerHeight / 2),
-      };
-    };
-
-    const resetMouseTarget = () => {
-      mouseTargetRef.current = { x: 0, y: 0 };
-    };
-
     function animateOrbit() {
-      mouseCurrentRef.current.x +=
-        (mouseTargetRef.current.x - mouseCurrentRef.current.x) * 0.08;
-      mouseCurrentRef.current.y +=
-        (mouseTargetRef.current.y - mouseCurrentRef.current.y) * 0.08;
-
       runtimeConfigs.forEach((config, index) => {
         const card = cardRefs.current[index];
 
@@ -96,11 +74,8 @@ export function HeroOrbit({ events }: HeroOrbitProps) {
         const zIndex = x < -100 && !mobile ? 15 : Math.floor(depth * 10) + 20;
         const blur = depth < -0.5 ? Math.abs(depth) * 1.5 : 0;
         const frontness = (depth + 1) / 2;
-        const parallaxStrength = (reducedMotion ? 6 : 14) + frontness * (reducedMotion ? 8 : 24);
-        const parallaxX = mouseCurrentRef.current.x * parallaxStrength;
-        const parallaxY = mouseCurrentRef.current.y * parallaxStrength * 0.72;
 
-        card.style.transform = `translate(${x + parallaxX}px, ${y + parallaxY}px) scale(${scale})`;
+        card.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
         card.style.zIndex = String(zIndex);
         card.style.opacity = String(opacity);
         card.style.setProperty("--orbit-blur", `${blur}px`);
@@ -111,13 +86,9 @@ export function HeroOrbit({ events }: HeroOrbitProps) {
     }
 
     animateOrbit();
-    window.addEventListener("mousemove", updateMouseTarget);
-    window.addEventListener("mouseleave", resetMouseTarget);
 
     return () => {
       window.cancelAnimationFrame(frameId);
-      window.removeEventListener("mousemove", updateMouseTarget);
-      window.removeEventListener("mouseleave", resetMouseTarget);
     };
   }, [configs]);
 
@@ -180,10 +151,16 @@ function getInitialOrbitStyle(index: number, total: number) {
   const scale = 0.85 + depth * 0.15;
 
   return {
-    transform: `translate(${x}px, ${y}px) scale(${scale})`,
-    zIndex: Math.floor(depth * 10) + 20,
-    opacity: 0.5 + (depth + 1) * 0.25,
+    transform: `translate(${formatOrbitNumber(x)}px, ${formatOrbitNumber(
+      y,
+    )}px) scale(${formatOrbitNumber(scale, 6)})`,
+    zIndex: String(Math.floor(depth * 10) + 20),
+    opacity: formatOrbitNumber(0.5 + (depth + 1) * 0.25, 6),
   };
+}
+
+function formatOrbitNumber(value: number, digits = 3) {
+  return value.toFixed(digits).replace(/\.?0+$/, "");
 }
 
 function getRingStyle(index: number) {

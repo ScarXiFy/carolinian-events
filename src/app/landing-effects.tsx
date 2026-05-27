@@ -17,7 +17,6 @@ export function LandingEffects() {
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const hero = document.getElementById("parallax-container");
     const navbar = document.getElementById("navbar");
     const parallaxWrappers = document.querySelectorAll<HTMLElement>(".parallax-wrapper");
     const revealTargets = document.querySelectorAll<HTMLElement>(".reveal");
@@ -99,20 +98,17 @@ export function LandingEffects() {
 
       const x = event.clientX - window.innerWidth / 2;
       const y = event.clientY - window.innerHeight / 2;
-      const motionScale = reducedMotion.matches ? 0.35 : 1;
-      const rotateY = Math.max(-8, Math.min(8, x * 0.01)) * motionScale;
-      const rotateX = Math.max(-6, Math.min(6, y * -0.01)) * motionScale;
 
       parallaxWrappers.forEach((wrapper) => {
         const speed = Number(wrapper.dataset.speed ?? "0");
         const translateScale = reducedMotion.matches ? 0.35 : 1;
-        wrapper.style.transform = `translate3d(${x * speed * translateScale}px, ${y * speed * translateScale}px, 0) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+        wrapper.style.transform = `translate3d(${x * speed * translateScale}px, ${y * speed * translateScale}px, 0)`;
       });
     };
 
     const resetParallax = () => {
       parallaxWrappers.forEach((wrapper) => {
-        wrapper.style.transform = "translate3d(0px, 0px, 0) rotateX(0deg) rotateY(0deg)";
+        wrapper.style.transform = "translate3d(0px, 0px, 0)";
       });
     };
 
@@ -214,8 +210,6 @@ export function LandingEffects() {
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseleave", clearMouse);
     window.addEventListener("resize", handleResize);
-    hero?.addEventListener("mousemove", handleParallaxMove);
-    hero?.addEventListener("mouseleave", resetParallax);
 
     return () => {
       window.cancelAnimationFrame(frameId);
@@ -223,8 +217,6 @@ export function LandingEffects() {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseleave", clearMouse);
       window.removeEventListener("resize", handleResize);
-      hero?.removeEventListener("mousemove", handleParallaxMove);
-      hero?.removeEventListener("mouseleave", resetParallax);
       revealObserver.disconnect();
     };
   }, []);

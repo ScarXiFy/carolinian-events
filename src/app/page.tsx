@@ -33,12 +33,12 @@ export default async function Home() {
   const events = await getAllEvents();
   const stats = getEventStats(events);
   const featuredEvents = getFeaturedEvents(events.length ? events : sampleEvents, 5);
-  const orbitCards = featuredEvents.map((event, index) => ({
+  const orbitCards = featuredEvents.map((event) => ({
     id: event.id,
     dateTime: `${formatEventDate(event)} at ${formatEventTime(event)}`,
     eventName: event.eventName,
     status: event.status,
-    glowClass: getGlowClass(event.status, index),
+    glowClass: getGlowClass(event.status),
   }));
 
   return (
@@ -151,7 +151,7 @@ export default async function Home() {
   );
 }
 
-function getGlowClass(status: string, index: number) {
+function getGlowClass(status: string) {
   if (status === "Completed") {
     return "orbit-glow-red";
   }
@@ -160,5 +160,5 @@ function getGlowClass(status: string, index: number) {
     return "orbit-glow-green";
   }
 
-  return index % 2 === 0 ? "orbit-glow-blue" : "orbit-glow-green";
+  return "orbit-glow-blue";
 }
