@@ -1,0 +1,80 @@
+-- Carolinian Events Management System
+-- Clean MySQL schema snapshot for the Next.js migration.
+-- Source reference: C:\xampp\htdocs\Carolinian-Events-Management-System\database\schema.sql
+
+CREATE DATABASE IF NOT EXISTS carolinian_events_db
+    DEFAULT CHARACTER SET utf8mb4
+    DEFAULT COLLATE utf8mb4_unicode_ci;
+
+USE carolinian_events_db;
+
+CREATE TABLE IF NOT EXISTS events (
+    id          INT(11)      NOT NULL AUTO_INCREMENT,
+    event_name  VARCHAR(255) NOT NULL,
+    organizer   VARCHAR(255) NOT NULL,
+    description TEXT         NOT NULL,
+    event_date  DATE         NOT NULL,
+    event_time  TIME         NOT NULL,
+    location    VARCHAR(255) NOT NULL,
+    category    ENUM('Academic', 'Cultural', 'Sports', 'Social', 'Other')
+                             NOT NULL DEFAULT 'Academic',
+    status      ENUM('Upcoming', 'Ongoing', 'Completed', 'Cancelled')
+                             NOT NULL DEFAULT 'Upcoming',
+    created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO events
+    (event_name, organizer, description, event_date, event_time, location, category, status)
+VALUES
+    (
+        'Mock Presentation',
+        'GROUP F',
+        'A practice presentation session for CPE students to rehearse and refine their project demonstrations before the final defense.',
+        '2026-05-05',
+        '14:00:00',
+        'NCR Lab',
+        'Academic',
+        'Completed'
+    ),
+    (
+        'Proposal Hearing 2026',
+        'CPE Department',
+        'Annual thesis and capstone proposal hearing for 3rd year Computer Engineering students. Present your project proposals to the panel.',
+        '2026-05-08',
+        '15:30:00',
+        'Bunzel Building',
+        'Academic',
+        'Completed'
+    ),
+    (
+        'Carolinian Week 2026',
+        'USC Student Council',
+        'The annual week-long celebration of Carolinian culture featuring sports tournaments, talent shows, food fairs, and community outreach programs.',
+        '2026-06-15',
+        '08:00:00',
+        'USC Main Campus',
+        'Cultural',
+        'Upcoming'
+    ),
+    (
+        'Intramurals 2026',
+        'USC Athletics',
+        'University-wide intramural sports competition. Events include basketball, volleyball, badminton, table tennis, and track and field.',
+        '2026-04-20',
+        '07:30:00',
+        'USC Gymnasium',
+        'Sports',
+        'Completed'
+    ),
+    (
+        'Tech Talk: AI in Engineering',
+        'CPE Society',
+        'A guest lecture exploring the latest advancements in Artificial Intelligence and how they are reshaping Computer Engineering.',
+        '2026-06-22',
+        '13:00:00',
+        'Engineering Auditorium',
+        'Academic',
+        'Upcoming'
+    );

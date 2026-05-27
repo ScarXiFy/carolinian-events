@@ -1,0 +1,45 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+
+import {
+  getDatabaseConfig,
+  getEventStoreMode,
+  requireSupportedDatabaseUrl,
+} from "./database-config.mjs";
+
+test("getDatabaseConfig falls back to sample data when DATABASE_URL is blank", () => {
+  assert.deepEqual(getDatabaseConfig({}), {
+    isConfigured: false,
+    provider: "sample",
+    url: "",
+  });
+
+  assert.deepEqual(getDatabaseConfig({ DATABASE_URL: "   " }), {
+    isConfigured: false,
+    provider: "sample",
+    url: "",
+  });
+});
+
+test("getDatabaseConfig accepts MySQL style database URLs", () => {
+  assert.deepEqual(getDatabaseConfig({ DATABASE_URL: "mysql://root@localhost:3306/carolinian_events_db" }), {
+    isConfigured: true,
+    provider: "mysql",
+    url: "mysql://root@localhost:3306/carolinian_events_db",
+  });
+});
+
+test("requireSupportedDatabaseUrl rejects unsupported database providers", () => {
+  assert.throws(
+    () => requireSupportedDatabaseUrl("postgres://user:pass@localhost:5432/events"),
+    /Only MySQL-compatible DATABASE_URL values are supported/,
+  );
+});
+
+test("getEventStoreMode describes the active read source", () => {
+  assert.equal(getEventStoreMode({}), "sample");
+  assert.equal(
+    getEventStoreMode({ DATABASE_URL: "mysql://root@localhost:3306/carolinian_events_db" }),
+    "database-ready",
+  );
+});
