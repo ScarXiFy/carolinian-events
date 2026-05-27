@@ -23,11 +23,13 @@ type EventFormInitialValues = {
 type CreateEventFormProps = {
   initialValues?: EventFormInitialValues;
   mode?: "create" | "edit";
+  formAction?: (formData: FormData) => void | Promise<void>;
 };
 
 export function CreateEventForm({
   initialValues,
   mode = "create",
+  formAction,
 }: CreateEventFormProps) {
   const initialLocation = getSelectWithCustomValue(LOCATION_OPTIONS, initialValues?.location);
   const initialCategory = getSelectWithCustomValue(
@@ -51,7 +53,7 @@ export function CreateEventForm({
     [eventDate, eventTime],
   );
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handlePreviewSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setNotice(
       mode === "edit"
@@ -61,7 +63,7 @@ export function CreateEventForm({
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form action={formAction} onSubmit={formAction ? undefined : handlePreviewSubmit}>
       {notice ? <div className="alert alert-info">{notice}</div> : null}
 
       <div className={groupClass}>

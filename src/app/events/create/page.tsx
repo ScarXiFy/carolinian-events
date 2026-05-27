@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { createEventAction } from "./actions";
 import { CreateEventForm } from "./create-event-form";
 
 export default function CreateEventPage() {
@@ -30,7 +31,7 @@ export default function CreateEventPage() {
           <h1 className="mb-8 text-[2rem] font-extrabold tracking-normal">
             Create New Event
           </h1>
-          <CreateEventForm />
+          <CreateEventForm formAction={createEventAction} />
         </div>
       </section>
     </main>

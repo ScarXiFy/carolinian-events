@@ -1,6 +1,6 @@
 import { getEventById, sampleEvents } from "./events.mjs";
 import { getDatabaseConfig, getEventStoreMode } from "./database-config.mjs";
-import { readMysqlEvents } from "./mysql-events.mjs";
+import { readMysqlEvents, writeMysqlEvents } from "./mysql-events.mjs";
 
 const legacyEventRows = sampleEvents.map((event) => ({
   id: event.id,
@@ -52,9 +52,35 @@ export async function getEventStaticParams(options) {
   }));
 }
 
-export function getEventStoreStatus(env = process.env) {
+export async function createEvent(
+  input,
+  {
+    env = process.env,
+    writeDatabaseEvents = writeMysqlEvents,
+  } = {},
+) {
+  const config = getDatabaseConfig(env);
+
+  if (!config.isConfigured) {
+    return {
+      mode: "sample",
+      id: null,
+    };
+  }
+
+  const created = await writeDatabaseEvents.createEvent(config.url, input);
+
   return {
-    mode: getEventStoreMode(env),
-    isReadOnly: true,
+    mode: "database",
+    id: created.id,
+  };
+}
+
+export function getEventStoreStatus(env = process.env) {
+  const mode = getEventStoreMode(env);
+
+  return {
+    mode,
+    isReadOnly: mode !== "database-ready",
   };
 }
