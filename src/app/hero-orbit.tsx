@@ -21,6 +21,8 @@ type OrbitConfig = {
   speed: number;
 };
 
+const ORBIT_SPEED_MULTIPLIER = 1.8;
+
 export function HeroOrbit({ events }: HeroOrbitProps) {
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
   const isPausedRef = useRef(false);
@@ -46,7 +48,7 @@ export function HeroOrbit({ events }: HeroOrbitProps) {
         ...config,
         radiusX,
         radiusY: radiusX * 0.55,
-        speed: reducedMotion ? config.speed * 0.35 : config.speed,
+        speed: config.speed * (reducedMotion ? 0.35 : ORBIT_SPEED_MULTIPLIER),
       };
     });
 

@@ -127,7 +127,7 @@ export default async function Home() {
             ["Completed", stats.completed],
           ].map(([label, value], index) => (
             <div key={label} className={`stat-item reveal stagger-${index + 1}`}>
-              <h3>{value}</h3>
+              <h3 data-count-to={value}>{value}</h3>
               <p>{label}</p>
             </div>
           ))}

@@ -19,6 +19,7 @@ export function LandingEffects() {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const hero = document.getElementById("parallax-container");
     const navbar = document.getElementById("navbar");
+    const orbitSystem = document.querySelector<HTMLElement>(".orbit-focal-point");
     const parallaxWrappers = document.querySelectorAll<HTMLElement>(".parallax-wrapper");
     const revealTargets = document.querySelectorAll<HTMLElement>(".reveal");
     const canvas = canvasRef.current;
@@ -32,6 +33,7 @@ export function LandingEffects() {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add("active");
+            animateStatsIn(entry.target);
             observer.unobserve(entry.target);
           }
         });
@@ -45,6 +47,52 @@ export function LandingEffects() {
       navbar?.classList.toggle("scrolled", window.scrollY > 50);
     };
 
+    function animateStatValue(element: HTMLElement) {
+      const target = Number(element.dataset.countTo ?? element.textContent ?? "0");
+
+      if (!Number.isFinite(target)) {
+        return;
+      }
+
+      if (reducedMotion.matches) {
+        element.textContent = String(target);
+        return;
+      }
+
+      const duration = 900;
+      const start = performance.now();
+      element.textContent = "0";
+
+      const tick = (timestamp: number) => {
+        const progress = Math.min((timestamp - start) / duration, 1);
+        const eased = 1 - (1 - progress) ** 3;
+        element.textContent = String(Math.round(target * eased));
+
+        if (progress < 1) {
+          window.requestAnimationFrame(tick);
+        }
+      };
+
+      window.requestAnimationFrame(tick);
+    }
+
+    function animateStatsIn(target: Element) {
+      const statItem = target.closest(".stat-item") ?? target;
+
+      if (!(statItem instanceof HTMLElement)) {
+        return;
+      }
+
+      statItem.querySelectorAll<HTMLElement>("[data-count-to]").forEach((element) => {
+        if (element.dataset.counted === "true") {
+          return;
+        }
+
+        element.dataset.counted = "true";
+        animateStatValue(element);
+      });
+    }
+
     const handleParallaxMove = (event: MouseEvent) => {
       if (window.innerWidth < 968 || reducedMotion.matches) {
         return;
@@ -52,18 +100,27 @@ export function LandingEffects() {
 
       const x = event.clientX - window.innerWidth / 2;
       const y = event.clientY - window.innerHeight / 2;
+      const rotateY = Math.max(-4, Math.min(4, x * 0.006));
+      const rotateX = Math.max(-3, Math.min(3, y * -0.006));
 
       parallaxWrappers.forEach((wrapper) => {
         const speed = Number(wrapper.dataset.speed ?? "0");
         wrapper.style.animation = "none";
-        wrapper.style.transform = `translate(${x * speed}px, ${y * speed}px)`;
+        wrapper.style.transform = `translate3d(${x * speed}px, ${y * speed}px, 0) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
       });
+
+      if (orbitSystem) {
+        orbitSystem.style.transform = `translate3d(${x * -0.01}px, ${y * -0.008}px, 0) rotateX(${rotateX * -0.6}deg) rotateY(${rotateY * -0.6}deg)`;
+      }
     };
 
     const resetParallax = () => {
       parallaxWrappers.forEach((wrapper) => {
-        wrapper.style.transform = "translate(0px, 0px)";
+        wrapper.style.transform = "translate3d(0px, 0px, 0) rotateX(0deg) rotateY(0deg)";
       });
+      if (orbitSystem) {
+        orbitSystem.style.transform = "translate3d(0px, 0px, 0) rotateX(0deg) rotateY(0deg)";
+      }
     };
 
     function initParticles() {
