@@ -1,0 +1,57 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+
+import {
+  EVENT_SORTS,
+  getEventStats,
+  getFeaturedEvents,
+  getVisibleEvents,
+} from "./events.mjs";
+
+test("getEventStats counts the legacy dashboard status groups", () => {
+  const events = [
+    { status: "Upcoming" },
+    { status: "Ongoing" },
+    { status: "Completed" },
+    { status: "Cancelled" },
+    { status: "Upcoming" },
+  ];
+
+  assert.deepEqual(getEventStats(events), {
+    total: 5,
+    upcoming: 2,
+    ongoing: 1,
+    completed: 1,
+  });
+});
+
+test("getVisibleEvents searches event names and locations", () => {
+  const events = [
+    { eventName: "Proposal Hearing", location: "Bunzel Building", createdAt: "2026-05-01T00:00:00.000Z", id: 1 },
+    { eventName: "Tech Talk", location: "Engineering Auditorium", createdAt: "2026-05-02T00:00:00.000Z", id: 2 },
+  ];
+
+  const visible = getVisibleEvents(events, { search: "bunzel", sort: "date_desc" });
+
+  assert.equal(visible.length, 1);
+  assert.equal(visible[0].eventName, "Proposal Hearing");
+});
+
+test("getVisibleEvents sorts by legacy dashboard options", () => {
+  const events = [
+    { id: 1, eventName: "B Event", location: "Main", createdAt: "2026-05-01T00:00:00.000Z" },
+    { id: 2, eventName: "A Event", location: "Main", createdAt: "2026-05-02T00:00:00.000Z" },
+  ];
+
+  assert.equal(getVisibleEvents(events, { sort: EVENT_SORTS.NAME_ASC })[0].eventName, "A Event");
+  assert.equal(getVisibleEvents(events, { sort: EVENT_SORTS.DATE_DESC })[0].id, 2);
+});
+
+test("getFeaturedEvents returns the soonest events first", () => {
+  const events = [
+    { eventName: "Later", eventDate: "2026-06-01", eventTime: "10:00:00" },
+    { eventName: "Sooner", eventDate: "2026-05-01", eventTime: "10:00:00" },
+  ];
+
+  assert.equal(getFeaturedEvents(events, 1)[0].eventName, "Sooner");
+});
