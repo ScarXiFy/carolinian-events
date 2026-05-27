@@ -7,6 +7,8 @@ import {
   formatFullEventDate,
 } from "@/lib/events.mjs";
 import { getEventByRouteId, getEventStaticParams } from "@/lib/event-store.mjs";
+import { getEventFlashMessage } from "@/lib/flash-message.mjs";
+import { EventFlash } from "../event-flash";
 
 type EventStatus = "Upcoming" | "Ongoing" | "Completed" | "Cancelled";
 
@@ -21,9 +23,15 @@ export function generateStaticParams() {
   return getEventStaticParams();
 }
 
-export default async function EventDetailPage(props: PageProps<"/events/[id]">) {
+export default async function EventDetailPage(
+  props: PageProps<"/events/[id]"> & {
+    searchParams: Promise<{ created?: string; updated?: string }>;
+  },
+) {
   const { id } = await props.params;
+  const params = await props.searchParams;
   const event = await getEventByRouteId(id);
+  const flashMessage = getEventFlashMessage(params);
 
   if (!event) {
     notFound();
@@ -55,6 +63,8 @@ export default async function EventDetailPage(props: PageProps<"/events/[id]">) 
         <Link href="/events" className="legacy-btn legacy-btn-secondary mb-8">
           Back to Dashboard
         </Link>
+
+        <EventFlash message={flashMessage} />
 
         <article className="event-detail-card">
           <header className="event-detail-header">

@@ -7,6 +7,8 @@ import {
   getVisibleEvents,
 } from "@/lib/events.mjs";
 import { getAllEvents } from "@/lib/event-store.mjs";
+import { getEventFlashMessage } from "@/lib/flash-message.mjs";
+import { EventFlash } from "./event-flash";
 
 type EventSort = "date_desc" | "date_asc" | "name_asc" | "name_desc";
 type EventStatus = "Upcoming" | "Ongoing" | "Completed" | "Cancelled";
@@ -28,7 +30,12 @@ const statusStyles = {
 export default async function EventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; sort?: EventSort }>;
+  searchParams: Promise<{
+    search?: string;
+    sort?: EventSort;
+    created?: string;
+    deleted?: string;
+  }>;
 }) {
   const params = await searchParams;
   const search = params.search ?? "";
@@ -36,6 +43,7 @@ export default async function EventsPage({
     ? params.sort
     : EVENT_SORTS.DATE_DESC;
   const events = getVisibleEvents(await getAllEvents(), { search, sort });
+  const flashMessage = getEventFlashMessage(params);
 
   return (
     <main className="legacy-home min-h-screen bg-[#050505] text-white">
@@ -68,6 +76,8 @@ export default async function EventsPage({
             + Add New Event
           </Link>
         </div>
+
+        <EventFlash message={flashMessage} />
 
         <form className="dashboard-controls mb-8 flex flex-col gap-4 md:flex-row md:items-center">
           <div className="flex-1">
