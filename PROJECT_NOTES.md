@@ -1,13 +1,3 @@
-# Project Notes & AI Collaboration Guide
-
-> This file serves as the single source of truth for bugs, features, and rules
-> that any AI assistant (Claude, Codex, Gemini, etc.) should read before touching this project.
-> Keep it updated as the project evolves.
-
----
-
-## 0. AI — Read This First
-
 Before making any changes, you must:
 
 1. Read and understand the full contents of this file.
@@ -16,9 +6,7 @@ Before making any changes, you must:
 4. Follow all rules in Section 4 without exception.
 5. Do not generate code, modify files, or suggest refactors until you have done steps 1–3.
 
----
-
-## 1. Bugs to Fix & Features to Implement
+Bugs to Fix & Features to Implement
 
 1. In the events dashboard page:
 
@@ -42,30 +30,23 @@ admin approves organizer requests. The flow would be: user signs up as student, 
 | Manage all events | no | no | yes |
 | Approve organizers | no | no | yes |
 
-
 - When users logged in with GitHub, it won't display in the supabase, i tried it myself
 
 - so as much as possible, make some changes in the database, login & signup form
 
----
-
-## 2. Rules & Constraints
+Rules & Constraints
 
 These are non-negotiable. Follow them exactly.
 
-### Commit Format
+Commit Format
 
-```
+
 [branch][Action] Brief description
 
 Actions: Added / Updated / Removed / Fixed / Refactored / Chore
 Example: [main] Fixed form validation on event creation page
-```
 
-### What NOT to Touch
 
-```
+What NOT to Touch
+
 Files, folders, or logic that should not be modified unless explicitly told to.
-```
-
----
