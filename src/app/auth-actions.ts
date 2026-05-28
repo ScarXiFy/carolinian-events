@@ -2,7 +2,7 @@
 
 import { signIn, signOut } from "@/auth";
 import { AuthError } from "next-auth";
-import { createUser, getUserByEmail } from "@/lib/mysql-users.mjs";
+import { createUser, getUserByEmail } from "@/lib/db-users.mjs";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 

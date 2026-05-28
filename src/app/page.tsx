@@ -14,6 +14,8 @@ import { auth } from "@/auth";
 import { SiteNavbar } from "@/components/site-navbar";
 import { getCreateEventHref } from "@/lib/auth-navigation";
 
+export const dynamic = "force-dynamic";
+
 const featureCards = [
   {
     iconCodePoint: 10024,

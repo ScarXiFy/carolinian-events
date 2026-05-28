@@ -29,10 +29,18 @@ test("getDatabaseConfig accepts MySQL style database URLs", () => {
   });
 });
 
+test("getDatabaseConfig accepts Postgres style database URLs", () => {
+  assert.deepEqual(getDatabaseConfig({ DATABASE_URL: "postgresql://postgres.example:secret@localhost:5432/postgres" }), {
+    isConfigured: true,
+    provider: "postgres",
+    url: "postgresql://postgres.example:secret@localhost:5432/postgres",
+  });
+});
+
 test("requireSupportedDatabaseUrl rejects unsupported database providers", () => {
   assert.throws(
-    () => requireSupportedDatabaseUrl("postgres://user:pass@localhost:5432/events"),
-    /Only MySQL-compatible DATABASE_URL values are supported/,
+    () => requireSupportedDatabaseUrl("sqlite://events.db"),
+    /Only MySQL and Postgres DATABASE_URL values are supported/,
   );
 });
 
@@ -40,6 +48,10 @@ test("getEventStoreMode describes the active read source", () => {
   assert.equal(getEventStoreMode({}), "sample");
   assert.equal(
     getEventStoreMode({ DATABASE_URL: "mysql://root@localhost:3306/carolinian_events_db" }),
+    "database-ready",
+  );
+  assert.equal(
+    getEventStoreMode({ DATABASE_URL: "postgresql://postgres.example:secret@localhost:5432/postgres" }),
     "database-ready",
   );
 });

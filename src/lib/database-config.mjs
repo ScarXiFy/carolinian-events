@@ -1,4 +1,5 @@
 const MYSQL_PROTOCOLS = new Set(["mysql:", "mysql2:", "mariadb:"]);
+const POSTGRES_PROTOCOLS = new Set(["postgres:", "postgresql:"]);
 
 export function getDatabaseConfig(env = process.env) {
   const url = (env.DATABASE_URL ?? "").trim();
@@ -15,9 +16,23 @@ export function getDatabaseConfig(env = process.env) {
 
   return {
     isConfigured: true,
-    provider: "mysql",
+    provider: getDatabaseProvider(url),
     url,
   };
+}
+
+export function getDatabaseProvider(url) {
+  const parsed = new URL(url);
+
+  if (MYSQL_PROTOCOLS.has(parsed.protocol)) {
+    return "mysql";
+  }
+
+  if (POSTGRES_PROTOCOLS.has(parsed.protocol)) {
+    return "postgres";
+  }
+
+  return "unsupported";
 }
 
 export function requireSupportedDatabaseUrl(url) {
@@ -29,8 +44,8 @@ export function requireSupportedDatabaseUrl(url) {
     throw new Error("DATABASE_URL must be a valid database connection URL.");
   }
 
-  if (!MYSQL_PROTOCOLS.has(parsed.protocol)) {
-    throw new Error("Only MySQL-compatible DATABASE_URL values are supported right now.");
+  if (!MYSQL_PROTOCOLS.has(parsed.protocol) && !POSTGRES_PROTOCOLS.has(parsed.protocol)) {
+    throw new Error("Only MySQL and Postgres DATABASE_URL values are supported.");
   }
 }
 

@@ -1,6 +1,7 @@
 import { getEventById, sampleEvents } from "./events.mjs";
 import { getDatabaseConfig, getEventStoreMode } from "./database-config.mjs";
 import { readMysqlEvents, writeMysqlEvents } from "./mysql-events.mjs";
+import { readPostgresEvents, writePostgresEvents } from "./postgres-events.mjs";
 
 const legacyEventRows = sampleEvents.map((event) => ({
   id: event.id,
@@ -37,12 +38,15 @@ export function mapLegacyEventRow(row) {
 
 export async function getAllEvents({
   env = process.env,
-  readDatabaseEvents = readMysqlEvents,
+  readDatabaseEvents,
+  readMysqlEvents: mysqlReader = readMysqlEvents,
+  readPostgresEvents: postgresReader = readPostgresEvents,
 } = {}) {
   const config = getDatabaseConfig(env);
-  const rows = config.isConfigured
-    ? await readDatabaseEvents(config.url)
-    : legacyEventRows;
+  const activeReader =
+    readDatabaseEvents ??
+    (config.provider === "postgres" ? postgresReader : mysqlReader);
+  const rows = config.isConfigured ? await activeReader(config.url) : legacyEventRows;
 
   return rows.map(mapLegacyEventRow);
 }
@@ -52,16 +56,22 @@ export async function getEventByRouteId(id, options) {
 }
 
 export async function getEventStaticParams(options) {
-  return (await getAllEvents(options)).map((event) => ({
-    id: String(event.id),
-  }));
+  try {
+    return (await getAllEvents(options)).map((event) => ({
+      id: String(event.id),
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export async function createEvent(
   input,
   {
     env = process.env,
-    writeDatabaseEvents = writeMysqlEvents,
+    writeDatabaseEvents,
+    writeMysqlEvents: mysqlWriter = writeMysqlEvents,
+    writePostgresEvents: postgresWriter = writePostgresEvents,
   } = {},
 ) {
   const config = getDatabaseConfig(env);
@@ -73,7 +83,10 @@ export async function createEvent(
     };
   }
 
-  const created = await writeDatabaseEvents.createEvent(config.url, input);
+  const activeWriter =
+    writeDatabaseEvents ??
+    (config.provider === "postgres" ? postgresWriter : mysqlWriter);
+  const created = await activeWriter.createEvent(config.url, input);
 
   return {
     mode: "database",
@@ -86,7 +99,9 @@ export async function updateEvent(
   input,
   {
     env = process.env,
-    writeDatabaseEvents = writeMysqlEvents,
+    writeDatabaseEvents,
+    writeMysqlEvents: mysqlWriter = writeMysqlEvents,
+    writePostgresEvents: postgresWriter = writePostgresEvents,
   } = {},
 ) {
   const config = getDatabaseConfig(env);
@@ -98,7 +113,10 @@ export async function updateEvent(
     };
   }
 
-  const updated = await writeDatabaseEvents.updateEvent(config.url, Number(id), input);
+  const activeWriter =
+    writeDatabaseEvents ??
+    (config.provider === "postgres" ? postgresWriter : mysqlWriter);
+  const updated = await activeWriter.updateEvent(config.url, Number(id), input);
 
   return {
     mode: "database",
@@ -110,7 +128,9 @@ export async function deleteEvent(
   id,
   {
     env = process.env,
-    writeDatabaseEvents = writeMysqlEvents,
+    writeDatabaseEvents,
+    writeMysqlEvents: mysqlWriter = writeMysqlEvents,
+    writePostgresEvents: postgresWriter = writePostgresEvents,
   } = {},
 ) {
   const config = getDatabaseConfig(env);
@@ -122,7 +142,10 @@ export async function deleteEvent(
     };
   }
 
-  const deleted = await writeDatabaseEvents.deleteEvent(config.url, Number(id));
+  const activeWriter =
+    writeDatabaseEvents ??
+    (config.provider === "postgres" ? postgresWriter : mysqlWriter);
+  const deleted = await activeWriter.deleteEvent(config.url, Number(id));
 
   return {
     mode: "database",

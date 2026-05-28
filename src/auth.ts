@@ -9,7 +9,7 @@ import {
   getUserByEmail,
   getUserByGithubId,
   getUserByGoogleId,
-} from "@/lib/mysql-users.mjs";
+} from "@/lib/db-users.mjs";
 
 /*
 Google OAuth setup required before enabling live Google login:

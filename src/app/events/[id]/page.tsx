@@ -168,7 +168,7 @@ export default async function EventDetailPage(
 }
 
 async function isEventParticipant(eventId: number, userId: string) {
-  const { getEventParticipants } = await import("@/lib/mysql-users.mjs");
+  const { getEventParticipants } = await import("@/lib/db-users.mjs");
   const participants = await getEventParticipants(eventId);
 
   return participants.includes(userId);
