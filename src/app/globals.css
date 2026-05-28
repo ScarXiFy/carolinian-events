@@ -426,42 +426,6 @@ body {
   animation-range: entry 5% cover 35%;
 }
 
-.marquee-container {
-  overflow: hidden;
-  width: 100%;
-  mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    black 10%,
-    black 90%,
-    transparent 100%
-  );
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    black 10%,
-    black 90%,
-    transparent 100%
-  );
-}
-
-.marquee-track {
-  display: flex;
-  width: max-content;
-  animation: scroll-left 45s linear infinite;
-  will-change: transform;
-}
-
-.marquee-track:hover {
-  animation-play-state: paused;
-}
-
-.marquee-content {
-  display: flex;
-  gap: 2rem;
-  padding-right: 2rem;
-}
-
 .legacy-feature-card {
   width: 380px;
   flex-shrink: 0;
@@ -655,11 +619,6 @@ body {
     height: 560px;
   }
 
-  .marquee-content {
-    gap: 1rem;
-    padding-right: 1rem;
-  }
-
   .legacy-feature-card {
     width: 300px;
     padding: 2.25rem 1.75rem;
@@ -682,9 +641,6 @@ body {
     animation-duration: 3.5s;
   }
 
-  .marquee-track {
-    animation-duration: 120s;
-  }
 }
 
 #particleCanvas {
@@ -942,6 +898,7 @@ body {
   z-index: 10;
   background: var(--legacy-bg-surface);
   padding: 8rem 0;
+  scroll-margin-top: 96px;
 }
 
 .legacy-home .section-header {
@@ -961,13 +918,13 @@ body {
   font-size: 1.1rem;
 }
 
-.legacy-home .marquee-container {
-  position: relative;
+.legacy-home .features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  max-width: 860px;
   width: 100%;
-  overflow: hidden;
-  padding: 2rem 0;
-  mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
-  -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+  margin: 0 auto;
 }
 
 .legacy-home .card {
@@ -1008,6 +965,12 @@ body {
 
 .legacy-home .card p {
   color: var(--legacy-muted);
+}
+
+.legacy-home .features-grid .card {
+  flex-shrink: 1;
+  width: 100%;
+  min-width: 0;
 }
 
 .legacy-home .stats {
@@ -1277,6 +1240,12 @@ body {
     right: 50%;
     z-index: -1;
     opacity: 0.3;
+  }
+}
+
+@media (max-width: 640px) {
+  .legacy-home .features-grid {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -27,6 +27,11 @@ const featureCards = [
     title: "Live Analytics",
     body: "Get powerful insights into attendance, engagement, and post-event feedback automatically.",
   },
+  {
+    iconCodePoint: 128276,
+    title: "Smart Notifications",
+    body: "Keep attendees informed with automated reminders, updates, and post-event follow-ups.",
+  },
 ];
 
 export default async function Home() {
@@ -54,7 +59,7 @@ export default async function Home() {
           </Link>
           <div className="nav-links">
             <Link href="/">Home</Link>
-            <Link href="#features">Features</Link>
+            <a href="#features">Features</a>
             <Link href="/events">Events Dashboard</Link>
           </div>
         </div>
@@ -96,25 +101,16 @@ export default async function Home() {
           <p>Everything you need to run successful campus events</p>
         </div>
 
-        <div className="marquee-container reveal">
-          <div className="marquee-track">
-            {[0, 1].map((group) => (
-              <div className="marquee-content" key={group}>
-                {[...featureCards, ...featureCards].map((feature, index) => (
-                  <article
-                    key={`${group}-${feature.title}-${index}`}
-                    className="card"
-                  >
-                    <div className="icon" aria-hidden="true">
-                      {String.fromCodePoint(feature.iconCodePoint)}
-                    </div>
-                    <h3>{feature.title}</h3>
-                    <p>{feature.body}</p>
-                  </article>
-                ))}
+        <div className="features-grid reveal">
+          {featureCards.map((feature) => (
+            <article key={feature.title} className="card">
+              <div className="icon" aria-hidden="true">
+                {String.fromCodePoint(feature.iconCodePoint)}
               </div>
-            ))}
-          </div>
+              <h3>{feature.title}</h3>
+              <p>{feature.body}</p>
+            </article>
+          ))}
         </div>
       </section>
 
