@@ -72,6 +72,8 @@ export function CreateEventForm({
   const rowClass = "grid gap-5 md:grid-cols-2";
   const selectTriggerClass =
     "min-h-12 w-full justify-between rounded-lg border-[#222] bg-white/[0.03] px-4 py-3 text-base text-white shadow-none outline-none transition focus:border-[#2a8c4f] focus:ring-[#2a8c4f]/25 data-placeholder:text-white/45";
+  const timeInputClass =
+    "min-h-12 rounded-xl border-[#253044] bg-[#121927] px-4 py-3 text-base font-semibold text-white shadow-none outline-none transition [color-scheme:dark] focus-visible:border-[#2a8c4f] focus-visible:ring-[#2a8c4f]/25";
 
   const status = useMemo(
     () => computeEventStatus(eventDate, eventTime),
@@ -191,20 +193,33 @@ export function CreateEventForm({
           </Popover>
         </Field>
 
-        <Field>
-          <FieldLabel htmlFor="event_time" className={labelClass}>
-            Event Time <span className="text-[#d4a843]">*</span>
-          </FieldLabel>
-          <Input
-            id="event_time"
-            name="event_time"
-            type="time"
-            className={controlClass}
-            value={eventTime}
-            onChange={(event) => setEventTime(event.target.value)}
-            required
-          />
-        </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field>
+            <FieldLabel htmlFor="event_time" className={labelClass}>
+              Start Time <span className="text-[#d4a843]">*</span>
+            </FieldLabel>
+            <Input
+              id="event_time"
+              name="event_time"
+              type="time"
+              className={timeInputClass}
+              value={eventTime}
+              onChange={(event) => setEventTime(event.target.value)}
+              required
+            />
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="event_end_time" className={labelClass}>
+              End Time
+            </FieldLabel>
+            <Input
+              id="event_end_time"
+              type="time"
+              className={timeInputClass}
+            />
+          </Field>
+        </div>
       </div>
 
       <Field>

@@ -50,6 +50,17 @@
 
 body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  overflow-y: scroll !important;
+}
+
+body[data-scroll-locked] {
+  overflow: visible !important;
+  overflow-y: scroll !important;
+}
+
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
 }
 
 .legacy-home {
