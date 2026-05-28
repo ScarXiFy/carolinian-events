@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CalendarDays, Clock, MapPin } from "lucide-react";
 
 import {
   formatCreatedDate,
@@ -37,6 +38,12 @@ export default async function EventDetailPage(
     notFound();
   }
 
+  const formattedEndTime = event.eventEndTime
+    ? new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(
+        new Date(`${event.eventDate}T${event.eventEndTime}`),
+      )
+    : null;
+
   return (
     <main className="legacy-home min-h-screen bg-[#050505] text-white">
       <div className="particle-field" aria-hidden="true" />
@@ -61,43 +68,56 @@ export default async function EventDetailPage(
 
       <section className="relative z-10 mx-auto w-full max-w-[1200px] px-[5%] pb-20 pt-[120px]">
         <Link href="/events" className="legacy-btn legacy-btn-secondary mb-8">
-          Back to Dashboard
+          ← Back to Dashboard
         </Link>
 
         <EventFlash message={flashMessage} />
 
         <article className="event-detail-card">
           <header className="event-detail-header">
-            <h1>{event.eventName}</h1>
-            <span
-              className={`status-badge detail-badge ${statusStyles[event.status as EventStatus]}`}
-            >
-              {event.status}
-            </span>
+            {/* #4 — inline flex row: title + badge (no more position:absolute) */}
+            <div className="event-detail-title-row">
+              <h1>{event.eventName}</h1>
+              <span
+                className={`status-badge detail-badge ${statusStyles[event.status as EventStatus]}`}
+              >
+                {event.status}
+              </span>
+            </div>
 
+            {/* #2 — icon meta pills */}
             <div className="event-meta">
-              <div className="meta-item">
-                <span aria-hidden="true">Date</span>
-                {formatFullEventDate(event)}
+              <div className="meta-pill">
+                <CalendarDays size={13} aria-hidden="true" />
+                <span className="meta-pill-label">Date</span>
+                <span className="meta-pill-value">{formatFullEventDate(event)}</span>
               </div>
-              <div className="meta-item">
-                <span aria-hidden="true">Time</span>
-                {formatEventTime(event)}
+              <div className="meta-pill">
+                <Clock size={13} aria-hidden="true" />
+                <span className="meta-pill-label">Time</span>
+                <span className="meta-pill-value">
+                  {formatEventTime(event)}
+                  {formattedEndTime ? ` – ${formattedEndTime}` : ""}
+                </span>
               </div>
-              <div className="meta-item">
-                <span aria-hidden="true">Place</span>
-                {event.location}
+              <div className="meta-pill">
+                <MapPin size={13} aria-hidden="true" />
+                <span className="meta-pill-label">Place</span>
+                <span className="meta-pill-value">{event.location}</span>
               </div>
             </div>
           </header>
 
+          {/* #3 — sidebar body layout: description (main) + organizer/category (sidebar) */}
           <div className="event-detail-body">
-            <section className="event-section">
-              <h2>Description</h2>
-              <p>{event.description || "No description provided."}</p>
-            </section>
+            <div className="event-detail-main">
+              <section className="event-section">
+                <h2>Description</h2>
+                <p>{event.description || "No description provided."}</p>
+              </section>
+            </div>
 
-            <div className="event-detail-grid">
+            <aside className="event-detail-sidebar">
               <section className="event-section">
                 <h2>Organizer</h2>
                 <p>{event.organizer}</p>
@@ -106,9 +126,10 @@ export default async function EventDetailPage(
                 <h2>Category</h2>
                 <p>{event.category}</p>
               </section>
-            </div>
+            </aside>
           </div>
 
+          {/* #6 — footer elevation handled in CSS */}
           <footer className="event-detail-footer">
             <p>Added on {formatCreatedDate(event)}</p>
             <div className="action-group">

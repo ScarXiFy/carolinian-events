@@ -665,7 +665,8 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .particle-field,
   .ambient-glow,
-  .section-header {
+  .section-header,
+  .event-detail-card {
     animation: none;
   }
 
@@ -1527,11 +1528,23 @@ html {
 }
 
 .event-detail-card {
+  position: relative;
   overflow: hidden;
   border: 1px solid #222222;
   border-radius: 24px;
   background: var(--legacy-card);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  animation: fade-up-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.event-detail-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #1b6b3a 30%, #d4a843 70%, transparent);
+  z-index: 1;
+  pointer-events: none;
 }
 
 .event-detail-header {
@@ -1541,44 +1554,102 @@ html {
   padding: 3rem;
 }
 
+.event-detail-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
 .event-detail-header h1 {
-  margin-bottom: 1rem;
-  padding-right: 120px;
   font-size: 2.5rem;
   font-weight: 800;
   line-height: 1.2;
 }
 
 .detail-badge {
-  position: absolute;
-  right: 3rem;
-  top: 3rem;
+  flex-shrink: 0;
   padding: 0.5rem 1rem;
   font-size: 0.9rem;
+  transition: box-shadow 0.3s ease;
+}
+
+.detail-badge.status-upcoming {
+  box-shadow: 0 0 14px rgba(49, 130, 206, 0.45);
+}
+
+.detail-badge.status-ongoing {
+  box-shadow: 0 0 14px rgba(45, 106, 79, 0.5);
+}
+
+.detail-badge.status-completed {
+  box-shadow: 0 0 14px rgba(229, 62, 62, 0.4);
+}
+
+.detail-badge.status-cancelled {
+  box-shadow: 0 0 14px rgba(161, 161, 170, 0.3);
 }
 
 .event-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.5rem;
-  color: var(--legacy-muted);
+  gap: 0.625rem;
 }
 
-.meta-item {
-  display: flex;
+.meta-pill {
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.4rem 0.9rem;
+  color: var(--legacy-accent);
 }
 
-.meta-item span {
-  color: var(--legacy-accent);
-  font-size: 0.75rem;
+.meta-pill-label {
+  font-size: 0.65rem;
   font-weight: 800;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.meta-pill-value {
+  color: #e4e4e7;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 .event-detail-body {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 2rem;
   padding: 3rem;
+  align-items: start;
+}
+
+.event-detail-main {
+  min-width: 0;
+}
+
+.event-detail-sidebar {
+  min-width: 0;
+  border: 1px solid #222222;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.event-detail-sidebar .event-section {
+  margin-bottom: 0;
+  padding: 1.5rem;
+  border-bottom: 1px solid #222222;
+}
+
+.event-detail-sidebar .event-section:last-child {
+  border-bottom: none;
 }
 
 .event-section {
@@ -1588,8 +1659,9 @@ html {
 .event-section h2 {
   margin-bottom: 0.75rem;
   color: var(--legacy-accent);
-  font-size: 1rem;
+  font-size: 0.75rem;
   font-weight: 800;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
@@ -1609,9 +1681,11 @@ html {
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
-  border-top: 1px solid #222222;
-  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.025);
   padding: 1.5rem 3rem;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .event-detail-footer p {
@@ -1838,19 +1912,21 @@ select.form-control {
   }
 
   .event-detail-header,
-  .event-detail-body,
   .event-detail-footer {
     padding: 1.5rem;
   }
 
-  .event-detail-header h1 {
-    padding-right: 0;
-    font-size: 2rem;
+  .event-detail-body {
+    grid-template-columns: 1fr;
+    padding: 1.5rem;
   }
 
-  .detail-badge {
-    position: static;
-    margin-bottom: 1rem;
+  .event-detail-header h1 {
+    font-size: 1.85rem;
+  }
+
+  .event-detail-title-row {
+    gap: 1rem;
   }
 
   .event-detail-grid {
@@ -1861,6 +1937,10 @@ select.form-control {
   .event-detail-footer {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .meta-pill {
+    padding: 0.35rem 0.75rem;
   }
 
   .form-card {
