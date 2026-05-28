@@ -66,14 +66,14 @@ export function CreateEventForm({
   const [category, setCategory] = useState(initialCategory.selectValue);
   const [notice, setNotice] = useState("");
   const actionLabel = mode === "edit" ? "Save Changes" : "Create Event";
-  const labelClass = "text-sm font-semibold text-white/70 tracking-wide";
+  const labelClass = "create-event-label";
   const controlClass =
-    "min-h-12 rounded-lg border-[#222] bg-white/[0.03] px-4 py-3 text-base text-white shadow-none outline-none transition placeholder:text-white/35 focus-visible:border-[#2a8c4f] focus-visible:ring-[#2a8c4f]/25";
-  const rowClass = "grid gap-5 md:grid-cols-2";
+    "create-event-control min-h-12 rounded-lg border-[#222] bg-white/[0.03] px-4 py-3 text-base text-white shadow-none outline-none transition placeholder:text-white/35 focus-visible:border-[#2a8c4f] focus-visible:ring-[#2a8c4f]/25";
+  const rowClass = "grid gap-6 md:grid-cols-2";
   const selectTriggerClass =
-    "min-h-12 w-full justify-between rounded-lg border-[#222] bg-white/[0.03] px-4 py-3 text-base text-white shadow-none outline-none transition focus:border-[#2a8c4f] focus:ring-[#2a8c4f]/25 data-placeholder:text-white/45";
+    "create-event-control min-h-12 w-full justify-between rounded-lg border-[#222] bg-white/[0.03] px-4 py-3 text-base text-white shadow-none outline-none transition focus:border-[#2a8c4f] focus:ring-[#2a8c4f]/25 data-placeholder:text-white/45";
   const timeInputClass =
-    "min-h-12 rounded-xl border-[#253044] bg-[#121927] px-4 py-3 text-base font-semibold text-white shadow-none outline-none transition [color-scheme:dark] focus-visible:border-[#2a8c4f] focus-visible:ring-[#2a8c4f]/25";
+    "create-event-control min-h-12 rounded-lg border-[#222] bg-white/[0.03] px-4 py-3 text-base text-white shadow-none outline-none transition [color-scheme:dark] focus-visible:border-[#2a8c4f] focus-visible:ring-[#2a8c4f]/25";
 
   const status = useMemo(
     () => computeEventStatus(eventDate, eventTime),
@@ -103,13 +103,13 @@ export function CreateEventForm({
   return (
     <form
       action={formAction}
-      className="space-y-6"
+      className="create-event-form space-y-7"
       onSubmit={formAction ? undefined : handlePreviewSubmit}
     >
       {notice ? <div className="alert alert-info">{notice}</div> : null}
 
       <div className={rowClass}>
-        <Field>
+        <Field className="gap-2.5">
           <FieldLabel htmlFor="event_name" className={labelClass}>
             Event Name <span className="text-[#d4a843]">*</span>
           </FieldLabel>
@@ -122,7 +122,7 @@ export function CreateEventForm({
           />
         </Field>
 
-        <Field>
+        <Field className="gap-2.5">
           <FieldLabel htmlFor="organizer" className={labelClass}>
             Organizer <span className="text-[#d4a843]">*</span>
           </FieldLabel>
@@ -136,7 +136,7 @@ export function CreateEventForm({
         </Field>
       </div>
 
-      <Field>
+      <Field className="gap-2.5">
         <FieldLabel htmlFor="description" className={labelClass}>Description</FieldLabel>
         <Textarea
           id="description"
@@ -148,7 +148,7 @@ export function CreateEventForm({
       </Field>
 
       <div className={rowClass}>
-        <Field>
+        <Field className="gap-2.5">
           <FieldLabel htmlFor="event_date" className={labelClass}>
             Event Date <span className="text-[#d4a843]">*</span>
           </FieldLabel>
@@ -157,6 +157,7 @@ export function CreateEventForm({
             name="event_date"
             className="sr-only"
             tabIndex={-1}
+            aria-label="Event Date"
             value={eventDate}
             onChange={(event) => setEventDate(event.target.value)}
             required
@@ -166,7 +167,7 @@ export function CreateEventForm({
               <Button
                 type="button"
                 variant="outline"
-                className={`${controlClass} h-auto w-full justify-between text-left font-semibold hover:bg-white/[0.05] hover:text-white`}
+                className={`${controlClass} h-auto w-full justify-between text-left font-semibold hover:bg-white/5 hover:text-white`}
               >
                 <span className={selectedDate ? "text-white" : "text-white/45"}>
                   {selectedDate ? format(selectedDate, "dd/MM/yyyy") : "dd/mm/yyyy"}
@@ -193,8 +194,8 @@ export function CreateEventForm({
           </Popover>
         </Field>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field>
+        <div className="grid gap-6 sm:grid-cols-2">
+          <Field className="gap-2.5">
             <FieldLabel htmlFor="event_time" className={labelClass}>
               Start Time <span className="text-[#d4a843]">*</span>
             </FieldLabel>
@@ -209,7 +210,7 @@ export function CreateEventForm({
             />
           </Field>
 
-          <Field>
+          <Field className="gap-2.5">
             <FieldLabel htmlFor="event_end_time" className={labelClass}>
               End Time
             </FieldLabel>
@@ -222,7 +223,7 @@ export function CreateEventForm({
         </div>
       </div>
 
-      <Field>
+      <Field className="gap-2.5">
         <FieldLabel htmlFor="location_select" className={labelClass}>
           Location <span className="text-[#d4a843]">*</span>
         </FieldLabel>
@@ -262,7 +263,7 @@ export function CreateEventForm({
       </Field>
 
       <div className={rowClass}>
-        <Field>
+        <Field className="gap-2.5">
           <FieldLabel htmlFor="category_select" className={labelClass}>Category</FieldLabel>
           <Select
             name="category_select"
@@ -299,7 +300,7 @@ export function CreateEventForm({
           <input type="hidden" id="category_final" name="category" value={category} />
         </Field>
 
-        <Field>
+        <Field className="gap-2.5">
           <FieldLabel htmlFor="status_display" className={labelClass}>Status</FieldLabel>
           <div className="relative">
             <Input
@@ -320,17 +321,17 @@ export function CreateEventForm({
         </Field>
       </div>
 
-      <div className="form-actions mt-8 flex flex-col gap-4 sm:flex-row sm:justify-end">
+      <div className="create-event-actions form-actions mt-10 flex flex-col-reverse gap-3 sm:mt-8 sm:flex-row sm:justify-end sm:gap-4">
         <Button
           asChild
           variant="ghost"
-          className="h-auto rounded-full px-6 py-3 text-sm font-semibold text-white/50 hover:bg-transparent hover:text-white"
+          className="legacy-btn legacy-btn-secondary h-auto px-6 py-3 text-sm font-semibold"
         >
           <Link href="/events">Cancel</Link>
         </Button>
         <Button
           type="submit"
-          className="h-auto rounded-full bg-[#d4a843] px-8 py-3 text-sm font-bold text-black shadow-[0_0_20px_rgba(212,168,67,0.25)] transition hover:bg-[#c49933] hover:shadow-[0_0_28px_rgba(212,168,67,0.4)]"
+          className="legacy-btn legacy-btn-primary h-auto px-8 py-3 text-sm font-bold"
         >
           {actionLabel}
         </Button>

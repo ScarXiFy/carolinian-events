@@ -5,7 +5,7 @@ import { CreateEventForm } from "./create-event-form";
 
 export default function CreateEventPage() {
   return (
-    <main className="legacy-home min-h-screen bg-[#050505] text-white">
+    <main className="legacy-home create-event-page min-h-screen bg-[#050505] text-white">
       <div className="particle-field" aria-hidden="true" />
       <div className="ambient-glow ambient-glow-green" aria-hidden="true" />
       <div className="ambient-glow ambient-glow-gold" aria-hidden="true" />
@@ -23,9 +23,9 @@ export default function CreateEventPage() {
         </div>
       </nav>
 
-      <section className="form-container relative z-10 mx-auto w-full !max-w-[900px] px-[5%] pb-20 pt-[120px]">
-        <div className="form-card rounded-3xl border border-[#222] bg-[#111] !p-8 shadow-[0_20px_40px_rgba(0,0,0,0.4)] md:!p-14">
-          <h1 className="mb-8 text-[2rem] font-extrabold tracking-normal">
+      <section className="create-event-shell relative z-10 mx-auto w-full max-w-5xl px-4 pb-16 pt-28 sm:px-6 sm:pb-20 sm:pt-32 lg:px-8">
+        <div className="create-event-card mx-auto w-full max-w-3xl rounded-3xl border border-[#222] bg-[#111]/95 p-6 shadow-[0_20px_40px_rgba(0,0,0,0.4)] sm:p-8 lg:p-10">
+          <h1 className="mb-6 text-[2rem] font-extrabold tracking-normal sm:mb-8">
             Create New Event
           </h1>
           <CreateEventForm formAction={createEventAction} />
