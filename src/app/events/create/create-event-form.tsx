@@ -44,6 +44,7 @@ type EventFormInitialValues = {
   location?: string;
   category?: string;
   participantLimit?: number;
+  eventImagePath?: string | null;
 };
 
 type CreateEventFormProps = {
@@ -328,7 +329,7 @@ export function CreateEventForm({
 
       <Field className="gap-2.5">
         <FieldLabel htmlFor="participant_limit" className={labelClass}>
-          Participant Limit (Optional)
+          Max Participants <span className="text-[#d4a843]">*</span>
         </FieldLabel>
         <Input
           id="participant_limit"
@@ -337,8 +338,32 @@ export function CreateEventForm({
           min="1"
           className={controlClass}
           defaultValue={initialValues?.participantLimit ?? ""}
-          placeholder="Leave blank for no limit"
+          placeholder="Example: 80"
+          required
         />
+      </Field>
+
+      <Field className="gap-2.5">
+        <FieldLabel htmlFor="event_image" className={labelClass}>
+          Event Image {mode === "create" ? <span className="text-[#d4a843]">*</span> : null}
+        </FieldLabel>
+        <Input
+          id="event_image"
+          name="event_image"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className={`${controlClass} file:mr-4 file:rounded-md file:border-0 file:bg-[#d4a843] file:px-3 file:py-2 file:text-sm file:font-bold file:text-black`}
+          required={mode === "create"}
+        />
+        {initialValues?.eventImagePath ? (
+          <FieldDescription className="status-hint text-sm text-[#a1a1aa]">
+            Upload a new image only if you want to replace the current poster.
+          </FieldDescription>
+        ) : (
+          <FieldDescription className="status-hint text-sm text-[#a1a1aa]">
+            JPG, PNG, WebP, or GIF. Maximum size is 2 MB.
+          </FieldDescription>
+        )}
       </Field>
 
       <div className="create-event-actions form-actions mt-8 flex flex-col-reverse gap-3 sm:mt-6 sm:flex-row sm:justify-end sm:gap-4">

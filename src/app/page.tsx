@@ -11,6 +11,10 @@ import { getAllEvents } from "@/lib/event-store.mjs";
 import { HeroOrbit } from "./hero-orbit";
 import { LandingEffects } from "./landing-effects";
 import { auth } from "@/auth";
+import { SiteNavbar } from "@/components/site-navbar";
+import { getCreateEventHref } from "@/lib/auth-navigation";
+
+export const dynamic = "force-dynamic";
 
 const featureCards = [
   {
@@ -48,6 +52,7 @@ export default async function Home() {
   }));
 
   const session = await auth();
+  const createEventHref = getCreateEventHref(session);
 
   return (
     <main className="legacy-home">
@@ -55,18 +60,7 @@ export default async function Home() {
       <div className="ambient-glow glow-green" aria-hidden="true" />
       <div className="ambient-glow glow-gold" aria-hidden="true" />
 
-      <nav className="navbar" id="navbar">
-        <div className="nav-container">
-          <Link href="/" className="brand">
-            Carolinian<span>Events</span>
-          </Link>
-          <div className="nav-links">
-            <Link href="/">Home</Link>
-            <a href="#features">Features</a>
-            <Link href="/events">Events Dashboard</Link>
-          </div>
-        </div>
-      </nav>
+      <SiteNavbar />
 
       <header className="hero" id="parallax-container">
         <div className="hero-content parallax-wrapper" data-speed="0.02">
@@ -82,7 +76,7 @@ export default async function Home() {
           </p>
 
           <div className="cta-group">
-            <Link href={session ? "/events/create" : "/login"} className="btn btn-glass-primary">
+            <Link href={createEventHref} className="btn btn-glass-primary">
               Create Event
             </Link>
             <Link href="/events" className="btn btn-glass-secondary">
@@ -137,7 +131,7 @@ export default async function Home() {
         <div className="cta-box reveal">
           <h2>Ready to host your next big event?</h2>
           <p>Join hundreds of Carolinians managing their events seamlessly.</p>
-          <Link href="/events/create" className="btn btn-primary">
+          <Link href={createEventHref} className="btn btn-primary">
             Get Started Now
           </Link>
         </div>

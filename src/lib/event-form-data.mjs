@@ -1,6 +1,6 @@
 import { computeEventStatus } from "./events.mjs";
 
-export function parseEventFormData(formData, now = new Date()) {
+export function parseEventFormData(formData, now = new Date(), options = {}) {
   const eventDate = getFormValue(formData, "event_date");
   const eventTime = getFormValue(formData, "event_time");
   const eventEndTime = getFormValue(formData, "event_end_time");
@@ -15,7 +15,8 @@ export function parseEventFormData(formData, now = new Date()) {
     location: getSelectOrOtherValue(formData, "location_select", "location_other"),
     category: getSelectOrOtherValue(formData, "category_select", "category_other"),
     status: computeEventStatus(eventDate, eventTime, eventEndTime, now),
-    participantLimit: getParticipantLimit(formData),
+    participantLimit: getParticipantLimit(formData, options),
+    imageFile: getImageFile(formData, options),
   };
 }
 
@@ -33,14 +34,43 @@ function getSelectOrOtherValue(formData, selectKey, otherKey) {
   return selected;
 }
 
-function getParticipantLimit(formData) {
+function getParticipantLimit(formData, options = {}) {
   const rawValue = getFormValue(formData, "participant_limit");
 
   if (!rawValue) {
+    if (options.requireParticipantLimit) {
+      throw new Error("Max participants must be a positive whole number.");
+    }
+
     return null;
   }
 
   const parsedValue = Number.parseInt(rawValue, 10);
 
-  return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : null;
+  if (!Number.isInteger(parsedValue) || parsedValue <= 0 || String(parsedValue) !== rawValue) {
+    throw new Error("Max participants must be a positive whole number.");
+  }
+
+  return parsedValue;
+}
+
+function getImageFile(formData, options = {}) {
+  const file = formData.get("event_image");
+  const hasFile =
+    file &&
+    typeof file === "object" &&
+    "name" in file &&
+    "size" in file &&
+    file.name &&
+    file.size > 0;
+
+  if (!hasFile) {
+    if (options.requireImage) {
+      throw new Error("Event image is required.");
+    }
+
+    return null;
+  }
+
+  return file;
 }

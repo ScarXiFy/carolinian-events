@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255),
     role ENUM('Student', 'Organizer') DEFAULT 'Student',
     github_id VARCHAR(255) UNIQUE,
+    google_id VARCHAR(255) UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -20,3 +21,5 @@ CREATE TABLE IF NOT EXISTS event_participants (
 );
 
 ALTER TABLE events ADD COLUMN IF NOT EXISTS participant_limit INT DEFAULT NULL;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS event_image_path VARCHAR(255) DEFAULT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255) UNIQUE;

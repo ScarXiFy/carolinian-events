@@ -1,13 +1,13 @@
 const EVENTS_QUERY =
-  "SELECT e.id, e.event_name, e.organizer, e.description, e.event_date, e.event_time, e.event_end_time, e.location, e.category, e.status, e.created_at, e.participant_limit, (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) as participant_count FROM events e ORDER BY e.created_at DESC, e.id DESC";
+  "SELECT e.id, e.event_name, e.organizer, e.description, e.event_date, e.event_time, e.event_end_time, e.location, e.category, e.status, e.created_at, e.participant_limit, e.event_image_path, (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) as participant_count FROM events e ORDER BY e.created_at DESC, e.id DESC";
 const LEGACY_EVENTS_QUERY =
   "SELECT id, event_name, organizer, description, event_date, event_time, location, category, status, created_at FROM events ORDER BY created_at DESC, id DESC";
 const CREATE_EVENT_QUERY =
-  "INSERT INTO events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+  "INSERT INTO events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 const LEGACY_CREATE_EVENT_QUERY =
   "INSERT INTO events (event_name, organizer, description, event_date, event_time, location, category, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 const UPDATE_EVENT_QUERY =
-  "UPDATE events SET event_name = ?, organizer = ?, description = ?, event_date = ?, event_time = ?, event_end_time = ?, location = ?, category = ?, status = ?, participant_limit = ? WHERE id = ?";
+  "UPDATE events SET event_name = ?, organizer = ?, description = ?, event_date = ?, event_time = ?, event_end_time = ?, location = ?, category = ?, status = ?, participant_limit = ?, event_image_path = COALESCE(?, event_image_path) WHERE id = ?";
 const LEGACY_UPDATE_EVENT_QUERY =
   "UPDATE events SET event_name = ?, organizer = ?, description = ?, event_date = ?, event_time = ?, location = ?, category = ?, status = ? WHERE id = ?";
 const DELETE_EVENT_QUERY = "DELETE FROM events WHERE id = ?";
@@ -25,6 +25,7 @@ export function normalizeMysqlEventRow(row) {
     created_at: normalizeDateTime(row.created_at),
     participant_limit: row.participant_limit ?? null,
     participant_count: row.participant_count ?? 0,
+    event_image_path: row.event_image_path ?? null,
   };
 }
 
@@ -80,7 +81,11 @@ export function createMysqlEventReader({ createConnection = createMysqlConnectio
           error.code === "ER_BAD_FIELD_ERROR"
         ) {
           [rows] = await connection.query(LEGACY_EVENTS_QUERY);
-          rows = rows.map((row) => ({ ...row, event_end_time: null }));
+          rows = rows.map((row) => ({
+            ...row,
+            event_end_time: null,
+            event_image_path: null,
+          }));
         } else {
           throw error;
         }
@@ -215,6 +220,7 @@ function getEventValues(input) {
     input.category,
     input.status,
     input.participantLimit || null,
+    input.eventImagePath || null,
   ];
 }
 

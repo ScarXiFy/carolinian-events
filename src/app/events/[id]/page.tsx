@@ -11,6 +11,7 @@ import { getEventByRouteId, getEventStaticParams } from "@/lib/event-store.mjs";
 import { getEventFlashMessage } from "@/lib/flash-message.mjs";
 import { EventFlash } from "../event-flash";
 import { auth } from "@/auth";
+import { SiteNavbar } from "@/components/site-navbar";
 import { JoinEventButton } from "./join-button";
 
 type EventStatus = "Upcoming" | "Ongoing" | "Completed" | "Cancelled";
@@ -67,21 +68,7 @@ export default async function EventDetailPage(
       <div className="ambient-glow ambient-glow-green" aria-hidden="true" />
       <div className="ambient-glow ambient-glow-gold" aria-hidden="true" />
 
-      <nav className="fixed left-0 top-0 z-50 flex w-full justify-center px-[5%] py-4 backdrop-blur-xl">
-        <div className="flex w-full max-w-[1200px] items-center justify-between">
-          <Link href="/" className="text-[1.4rem] font-extrabold tracking-normal">
-            Carolinian<span className="text-[#d4a843]">Events</span>
-          </Link>
-          <div className="flex items-center gap-8 text-sm font-bold">
-            <Link href="/" className="transition hover:text-[#d4a843]">
-              Home
-            </Link>
-            <Link href="/events" className="transition hover:text-[#d4a843]">
-              Events Dashboard
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <SiteNavbar showUserMenu />
 
       <section className="relative z-10 mx-auto w-full max-w-[1200px] px-[5%] pb-20 pt-[120px]">
         <Link href="/events" className="legacy-btn legacy-btn-secondary mb-8">
@@ -181,7 +168,7 @@ export default async function EventDetailPage(
 }
 
 async function isEventParticipant(eventId: number, userId: string) {
-  const { getEventParticipants } = await import("@/lib/mysql-users.mjs");
+  const { getEventParticipants } = await import("@/lib/db-users.mjs");
   const participants = await getEventParticipants(eventId);
 
   return participants.includes(userId);

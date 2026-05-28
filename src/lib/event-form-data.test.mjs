@@ -15,8 +15,25 @@ test("parseEventFormData maps create form fields to an event input", () => {
   formData.set("category_select", "Academic");
   formData.set("status", "Completed");
   formData.set("participant_limit", "80");
+  formData.set(
+    "event_image",
+    new File(["fake image"], "poster.png", { type: "image/png" }),
+  );
 
-  assert.deepEqual(parseEventFormData(formData, new Date("2026-06-01T08:00:00")), {
+  const parsed = parseEventFormData(formData, new Date("2026-06-01T08:00:00"));
+
+  assert.deepEqual(
+    {
+      ...parsed,
+      imageFile: parsed.imageFile
+        ? {
+            name: parsed.imageFile.name,
+            type: parsed.imageFile.type,
+            size: parsed.imageFile.size,
+          }
+        : null,
+    },
+    {
     eventName: "Research Colloquium",
     organizer: "CPE Department",
     description: "Project sharing.",
@@ -27,6 +44,11 @@ test("parseEventFormData maps create form fields to an event input", () => {
     category: "Academic",
     status: "Upcoming",
     participantLimit: 80,
+    imageFile: {
+      name: "poster.png",
+      type: "image/png",
+      size: 10,
+    },
   });
 });
 
@@ -48,4 +70,24 @@ test("parseEventFormData uses custom Other fields", () => {
   assert.equal(parsed.category, "Research");
   assert.equal(parsed.status, "Ongoing");
   assert.equal(parsed.participantLimit, null);
+  assert.equal(parsed.imageFile, null);
+});
+
+test("parseEventFormData rejects invalid participant limits when required", () => {
+  const formData = new FormData();
+  formData.set("participant_limit", "0");
+
+  assert.throws(
+    () => parseEventFormData(formData, new Date(), { requireParticipantLimit: true }),
+    /Max participants must be a positive whole number/,
+  );
+});
+
+test("parseEventFormData rejects missing image uploads when required", () => {
+  const formData = new FormData();
+
+  assert.throws(
+    () => parseEventFormData(formData, new Date(), { requireImage: true }),
+    /Event image is required/,
+  );
 });

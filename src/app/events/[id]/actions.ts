@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { writeMysqlEvents, readMysqlEvents } from "@/lib/mysql-events.mjs";
+import { writePostgresEvents, readPostgresEvents } from "@/lib/postgres-events.mjs";
 import { getDatabaseConfig } from "@/lib/database-config.mjs";
 import { revalidatePath } from "next/cache";
 
@@ -19,9 +20,11 @@ export async function joinEvent(eventId: number) {
 
   const config = getDatabaseConfig();
   if (!config.isConfigured) return { error: "Database not configured." };
+  const readEvents = config.provider === "postgres" ? readPostgresEvents : readMysqlEvents;
+  const writeEvents = config.provider === "postgres" ? writePostgresEvents : writeMysqlEvents;
 
   // Check limits
-  const events = await readMysqlEvents(config.url) as EventWithParticipants[];
+  const events = await readEvents(config.url) as EventWithParticipants[];
   const event = events.find((candidate) => candidate.id === eventId);
 
   if (!event) return { error: "Event not found" };
@@ -34,7 +37,7 @@ export async function joinEvent(eventId: number) {
   }
 
   try {
-    await writeMysqlEvents.joinEvent(config.url, eventId, session.user.id);
+    await writeEvents.joinEvent(config.url, eventId, session.user.id);
     revalidatePath(`/events/${eventId}`);
     revalidatePath(`/events`);
     return { success: true };
@@ -52,9 +55,10 @@ export async function leaveEvent(eventId: number) {
 
   const config = getDatabaseConfig();
   if (!config.isConfigured) return { error: "Database not configured." };
+  const writeEvents = config.provider === "postgres" ? writePostgresEvents : writeMysqlEvents;
 
   try {
-    await writeMysqlEvents.leaveEvent(config.url, eventId, session.user.id);
+    await writeEvents.leaveEvent(config.url, eventId, session.user.id);
     revalidatePath(`/events/${eventId}`);
     revalidatePath(`/events`);
     return { success: true };

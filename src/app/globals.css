@@ -803,6 +803,83 @@ html {
   display: none;
 }
 
+.legacy-home .navbar-user-menu {
+  position: relative;
+}
+
+.legacy-home .navbar-user-menu summary {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  cursor: pointer;
+  list-style: none;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.legacy-home .navbar-user-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.legacy-home .navbar-user-menu summary:hover {
+  border-color: rgba(212, 168, 67, 0.65);
+  background: rgba(212, 168, 67, 0.12);
+  color: var(--legacy-accent);
+}
+
+.legacy-home .navbar-user-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.75rem);
+  min-width: 180px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(13, 17, 16, 0.98);
+  padding: 0.75rem;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.42);
+}
+
+.legacy-home .navbar-user-dropdown p {
+  max-width: 160px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.legacy-home .navbar-user-dropdown button {
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.65rem 0.75rem;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.legacy-home .navbar-user-dropdown button:hover {
+  background: rgba(212, 168, 67, 0.16);
+  color: var(--legacy-accent);
+}
+
 .legacy-home .ambient-glow {
   position: fixed;
   z-index: 0;
@@ -1579,11 +1656,6 @@ html {
   color: var(--legacy-accent);
 }
 
-.events-dashboard-bell {
-  color: #d9c8a4;
-  stroke-width: 1.8;
-}
-
 .events-dashboard-shell {
   position: relative;
   z-index: 10;
@@ -1914,8 +1986,7 @@ html {
   gap: 0.55rem;
 }
 
-.event-view-button,
-.event-icon-button {
+.event-view-button {
   display: inline-flex;
   min-height: 44px;
   align-items: center;
@@ -1935,20 +2006,10 @@ html {
   font-weight: 650;
 }
 
-.event-icon-button {
-  width: 44px;
-}
-
-.event-view-button:hover,
-.event-icon-button:hover {
+.event-view-button:hover {
   background: rgba(212, 168, 67, 0.18);
   color: var(--legacy-accent);
   transform: translateY(-1px);
-}
-
-.event-delete-button:hover {
-  background: rgba(229, 62, 62, 0.18);
-  color: #fc8181;
 }
 
 .events-empty-card {
@@ -2035,10 +2096,6 @@ html {
     justify-content: center;
     gap: 1.2rem;
     font-size: 0.9rem;
-  }
-
-  .events-dashboard-bell {
-    display: none;
   }
 
   .events-dashboard-shell {
