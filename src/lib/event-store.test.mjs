@@ -20,10 +20,13 @@ test("mapLegacyEventRow converts legacy database fields to app event fields", ()
     description: "Project research sharing.",
     event_date: "2026-07-01",
     event_time: "09:30:00",
+    event_end_time: "11:30:00",
     location: "Bunzel Building",
     category: "Academic",
     status: "Upcoming",
     created_at: "2026-06-01T08:00:00.000Z",
+    participant_limit: 80,
+    participant_count: 12,
   };
 
   assert.deepEqual(mapLegacyEventRow(row), {
@@ -33,10 +36,13 @@ test("mapLegacyEventRow converts legacy database fields to app event fields", ()
     description: "Project research sharing.",
     eventDate: "2026-07-01",
     eventTime: "09:30:00",
+    eventEndTime: "11:30:00",
     location: "Bunzel Building",
     category: "Academic",
     status: "Upcoming",
     createdAt: "2026-06-01T08:00:00.000Z",
+    participantLimit: 80,
+    participantCount: 12,
   });
 });
 
@@ -61,10 +67,13 @@ test("event store reads MySQL rows when DATABASE_URL is configured", async () =>
           description: "Loaded from MySQL.",
           event_date: "2026-07-10",
           event_time: "11:00:00",
+          event_end_time: "13:00:00",
           location: "Engineering Auditorium",
           category: "Academic",
           status: "Upcoming",
           created_at: "2026-07-01T08:00:00.000Z",
+          participant_limit: null,
+          participant_count: 0,
         },
       ];
     },
@@ -72,6 +81,8 @@ test("event store reads MySQL rows when DATABASE_URL is configured", async () =>
 
   assert.equal(events.length, 1);
   assert.equal(events[0].eventName, "Database Event");
+  assert.equal(events[0].participantLimit, null);
+  assert.equal(events[0].participantCount, 0);
 });
 
 test("createEvent writes to MySQL when DATABASE_URL is configured", async () => {
@@ -82,6 +93,7 @@ test("createEvent writes to MySQL when DATABASE_URL is configured", async () => 
       description: "Project sharing.",
       eventDate: "2026-07-01",
       eventTime: "09:30",
+      eventEndTime: "11:30",
       location: "Bunzel Building",
       category: "Academic",
       status: "Upcoming",
@@ -109,6 +121,7 @@ test("createEvent stays in preview mode when DATABASE_URL is missing", async () 
       description: "Project sharing.",
       eventDate: "2026-07-01",
       eventTime: "09:30",
+      eventEndTime: "11:30",
       location: "Bunzel Building",
       category: "Academic",
       status: "Upcoming",
@@ -128,6 +141,7 @@ test("updateEvent writes to MySQL when DATABASE_URL is configured", async () => 
       description: "Updated details.",
       eventDate: "2026-07-01",
       eventTime: "09:30",
+      eventEndTime: "11:30",
       location: "Bunzel Building",
       category: "Academic",
       status: "Upcoming",
@@ -157,6 +171,7 @@ test("updateEvent stays in preview mode when DATABASE_URL is missing", async () 
       description: "Updated details.",
       eventDate: "2026-07-01",
       eventTime: "09:30",
+      eventEndTime: "11:30",
       location: "Bunzel Building",
       category: "Academic",
       status: "Upcoming",

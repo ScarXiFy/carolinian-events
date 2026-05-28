@@ -9,6 +9,7 @@ const legacyEventRows = sampleEvents.map((event) => ({
   description: event.description,
   event_date: event.eventDate,
   event_time: event.eventTime,
+  event_end_time: event.eventEndTime ?? null,
   location: event.location,
   category: event.category,
   status: event.status,
@@ -23,10 +24,13 @@ export function mapLegacyEventRow(row) {
     description: row.description,
     eventDate: row.event_date,
     eventTime: row.event_time,
+    eventEndTime: row.event_end_time ?? "",
     location: row.location,
     category: row.category,
     status: row.status,
     createdAt: row.created_at,
+    participantLimit: row.participant_limit ?? null,
+    participantCount: row.participant_count ?? 0,
   };
 }
 

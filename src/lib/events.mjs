@@ -35,6 +35,7 @@ export const sampleEvents = [
       "A practice presentation session for CPE students to rehearse and refine their project demonstrations before the final defense.",
     eventDate: "2026-05-05",
     eventTime: "14:00:00",
+    eventEndTime: "16:00:00",
     location: "NCR Lab",
     category: "Academic",
     status: "Completed",
@@ -48,6 +49,7 @@ export const sampleEvents = [
       "Annual thesis and capstone proposal hearing for 3rd year Computer Engineering students. Present your project proposals to the panel.",
     eventDate: "2026-05-08",
     eventTime: "15:30:00",
+    eventEndTime: "17:00:00",
     location: "Bunzel Building",
     category: "Academic",
     status: "Completed",
@@ -61,6 +63,7 @@ export const sampleEvents = [
       "The annual week-long celebration of Carolinian culture featuring sports tournaments, talent shows, food fairs, and community outreach programs.",
     eventDate: "2026-06-15",
     eventTime: "08:00:00",
+    eventEndTime: "10:00:00",
     location: "USC Main Campus",
     category: "Cultural",
     status: "Upcoming",
@@ -74,6 +77,7 @@ export const sampleEvents = [
       "University-wide intramural sports competition. Events include basketball, volleyball, badminton, table tennis, and track and field.",
     eventDate: "2026-04-20",
     eventTime: "07:30:00",
+    eventEndTime: "11:30:00",
     location: "USC Gymnasium",
     category: "Sports",
     status: "Completed",
@@ -87,6 +91,7 @@ export const sampleEvents = [
       "A guest lecture exploring the latest advancements in Artificial Intelligence and how they are reshaping Computer Engineering.",
     eventDate: "2026-06-22",
     eventTime: "13:00:00",
+    eventEndTime: "15:00:00",
     location: "Engineering Auditorium",
     category: "Academic",
     status: "Upcoming",
@@ -184,24 +189,23 @@ export function formatCreatedDate(event) {
   }).format(new Date(event.createdAt));
 }
 
-export function computeEventStatus(eventDate, eventTime, now = new Date()) {
-  if (!eventDate || !eventTime) {
+export function computeEventStatus(eventDate, eventTime, eventEndTime, now = new Date()) {
+  if (!eventDate || !eventTime || !eventEndTime) {
     return "Upcoming";
   }
 
-  const eventDateTime = new Date(`${eventDate}T${eventTime}`);
-  const todayOnly = toDateOnly(now);
-  const eventDateOnly = toDateOnly(new Date(`${eventDate}T00:00:00`));
+  const startDateTime = new Date(`${eventDate}T${eventTime}`);
+  const endDateTime = new Date(`${eventDate}T${eventEndTime}`);
 
-  if (eventDateOnly < todayOnly) {
+  if (now < startDateTime) {
+    return "Upcoming";
+  }
+
+  if (now > endDateTime) {
     return "Completed";
   }
 
-  if (eventDateOnly === todayOnly) {
-    return eventDateTime <= now ? "Completed" : "Ongoing";
-  }
-
-  return "Upcoming";
+  return "Ongoing";
 }
 
 export function getSelectWithCustomValue(options, value) {
@@ -234,10 +238,3 @@ function compareCreatedAt(a, b) {
   return byCreatedAt === 0 ? a.id - b.id : byCreatedAt;
 }
 
-function toDateOnly(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}

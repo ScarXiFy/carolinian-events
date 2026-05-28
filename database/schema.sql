@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS events (
     description TEXT         NOT NULL,
     event_date  DATE         NOT NULL,
     event_time  TIME         NOT NULL,
+    event_end_time TIME      NULL,
     location    VARCHAR(255) NOT NULL,
     category    ENUM('Academic', 'Cultural', 'Sports', 'Social', 'Other')
                              NOT NULL DEFAULT 'Academic',
@@ -26,7 +27,7 @@ CREATE TABLE IF NOT EXISTS events (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO events
-    (event_name, organizer, description, event_date, event_time, location, category, status)
+    (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status)
 VALUES
     (
         'Mock Presentation',
@@ -34,6 +35,7 @@ VALUES
         'A practice presentation session for CPE students to rehearse and refine their project demonstrations before the final defense.',
         '2026-05-05',
         '14:00:00',
+        '16:00:00',
         'NCR Lab',
         'Academic',
         'Completed'
@@ -44,6 +46,7 @@ VALUES
         'Annual thesis and capstone proposal hearing for 3rd year Computer Engineering students. Present your project proposals to the panel.',
         '2026-05-08',
         '15:30:00',
+        '17:00:00',
         'Bunzel Building',
         'Academic',
         'Completed'
@@ -54,6 +57,7 @@ VALUES
         'The annual week-long celebration of Carolinian culture featuring sports tournaments, talent shows, food fairs, and community outreach programs.',
         '2026-06-15',
         '08:00:00',
+        '10:00:00',
         'USC Main Campus',
         'Cultural',
         'Upcoming'
@@ -64,6 +68,7 @@ VALUES
         'University-wide intramural sports competition. Events include basketball, volleyball, badminton, table tennis, and track and field.',
         '2026-04-20',
         '07:30:00',
+        '11:30:00',
         'USC Gymnasium',
         'Sports',
         'Completed'
@@ -74,6 +79,7 @@ VALUES
         'A guest lecture exploring the latest advancements in Artificial Intelligence and how they are reshaping Computer Engineering.',
         '2026-06-22',
         '13:00:00',
+        '15:00:00',
         'Engineering Auditorium',
         'Academic',
         'Upcoming'

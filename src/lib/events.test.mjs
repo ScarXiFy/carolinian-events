@@ -85,13 +85,14 @@ test("legacy create form option lists include Other choices", () => {
   assert.ok(CATEGORY_OPTIONS.includes("Other"));
 });
 
-test("computeEventStatus mirrors the legacy date and time status rules", () => {
+test("computeEventStatus uses start and end times for event windows", () => {
   const now = new Date("2026-05-27T12:00:00");
 
-  assert.equal(computeEventStatus("2026-05-26", "13:00", now), "Completed");
-  assert.equal(computeEventStatus("2026-05-27", "11:59", now), "Completed");
-  assert.equal(computeEventStatus("2026-05-27", "12:01", now), "Ongoing");
-  assert.equal(computeEventStatus("2026-05-28", "08:00", now), "Upcoming");
+  assert.equal(computeEventStatus("2026-05-26", "13:00", "14:00", now), "Completed");
+  assert.equal(computeEventStatus("2026-05-27", "11:00", "11:59", now), "Completed");
+  assert.equal(computeEventStatus("2026-05-27", "11:30", "12:30", now), "Ongoing");
+  assert.equal(computeEventStatus("2026-05-28", "08:00", "09:00", now), "Upcoming");
+  assert.equal(computeEventStatus("2026-05-28", "08:00", "", now), "Upcoming");
 });
 
 test("getSelectWithCustomValue resolves preset values for edit forms", () => {

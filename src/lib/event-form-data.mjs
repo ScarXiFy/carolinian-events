@@ -3,6 +3,7 @@ import { computeEventStatus } from "./events.mjs";
 export function parseEventFormData(formData, now = new Date()) {
   const eventDate = getFormValue(formData, "event_date");
   const eventTime = getFormValue(formData, "event_time");
+  const eventEndTime = getFormValue(formData, "event_end_time");
 
   return {
     eventName: getFormValue(formData, "event_name"),
@@ -10,9 +11,11 @@ export function parseEventFormData(formData, now = new Date()) {
     description: getFormValue(formData, "description"),
     eventDate,
     eventTime,
+    eventEndTime,
     location: getSelectOrOtherValue(formData, "location_select", "location_other"),
     category: getSelectOrOtherValue(formData, "category_select", "category_other"),
-    status: computeEventStatus(eventDate, eventTime, now),
+    status: computeEventStatus(eventDate, eventTime, eventEndTime, now),
+    participantLimit: getParticipantLimit(formData),
   };
 }
 
@@ -28,4 +31,16 @@ function getSelectOrOtherValue(formData, selectKey, otherKey) {
   }
 
   return selected;
+}
+
+function getParticipantLimit(formData) {
+  const rawValue = getFormValue(formData, "participant_limit");
+
+  if (!rawValue) {
+    return null;
+  }
+
+  const parsedValue = Number.parseInt(rawValue, 10);
+
+  return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : null;
 }
