@@ -40,6 +40,7 @@ type EventFormInitialValues = {
   description?: string;
   eventDate?: string;
   eventTime?: string;
+  eventEndTime?: string;
   location?: string;
   category?: string;
 };
@@ -62,6 +63,7 @@ export function CreateEventForm({
   );
   const [eventDate, setEventDate] = useState(initialValues?.eventDate ?? "");
   const [eventTime, setEventTime] = useState(initialValues?.eventTime ?? "");
+  const [eventEndTime, setEventEndTime] = useState(initialValues?.eventEndTime ?? "");
   const [location, setLocation] = useState(initialLocation.selectValue);
   const [category, setCategory] = useState(initialCategory.selectValue);
   const [notice, setNotice] = useState("");
@@ -76,8 +78,8 @@ export function CreateEventForm({
     "create-event-control min-h-12 rounded-lg border-[#222] bg-white/[0.03] px-4 py-3 text-base text-white shadow-none outline-none transition [color-scheme:dark] focus-visible:border-[#2a8c4f] focus-visible:ring-[#2a8c4f]/25";
 
   const status = useMemo(
-    () => computeEventStatus(eventDate, eventTime),
-    [eventDate, eventTime],
+    () => computeEventStatus(eventDate, eventTime, eventEndTime),
+    [eventDate, eventTime, eventEndTime],
   );
   const selectedDate = useMemo(
     () => (eventDate ? new Date(`${eventDate}T00:00:00`) : undefined),
@@ -103,7 +105,7 @@ export function CreateEventForm({
   return (
     <form
       action={formAction}
-      className="create-event-form space-y-7"
+      className="create-event-form space-y-6"
       onSubmit={formAction ? undefined : handlePreviewSubmit}
     >
       {notice ? <div className="alert alert-info">{notice}</div> : null}
@@ -147,7 +149,7 @@ export function CreateEventForm({
         />
       </Field>
 
-      <div className={rowClass}>
+      <div className="grid gap-6 md:grid-cols-3">
         <Field className="gap-2.5">
           <FieldLabel htmlFor="event_date" className={labelClass}>
             Event Date <span className="text-[#d4a843]">*</span>
@@ -194,33 +196,35 @@ export function CreateEventForm({
           </Popover>
         </Field>
 
-        <div className="grid gap-6 sm:grid-cols-2">
-          <Field className="gap-2.5">
-            <FieldLabel htmlFor="event_time" className={labelClass}>
-              Start Time <span className="text-[#d4a843]">*</span>
-            </FieldLabel>
-            <Input
-              id="event_time"
-              name="event_time"
-              type="time"
-              className={timeInputClass}
-              value={eventTime}
-              onChange={(event) => setEventTime(event.target.value)}
-              required
-            />
-          </Field>
+        <Field className="gap-2.5">
+          <FieldLabel htmlFor="event_time" className={labelClass}>
+            Start Time <span className="text-[#d4a843]">*</span>
+          </FieldLabel>
+          <Input
+            id="event_time"
+            name="event_time"
+            type="time"
+            className={timeInputClass}
+            value={eventTime}
+            onChange={(event) => setEventTime(event.target.value)}
+            required
+          />
+        </Field>
 
-          <Field className="gap-2.5">
-            <FieldLabel htmlFor="event_end_time" className={labelClass}>
-              End Time
-            </FieldLabel>
-            <Input
-              id="event_end_time"
-              type="time"
-              className={timeInputClass}
-            />
-          </Field>
-        </div>
+        <Field className="gap-2.5">
+          <FieldLabel htmlFor="event_end_time" className={labelClass}>
+            End Time <span className="text-[#d4a843]">*</span>
+          </FieldLabel>
+          <Input
+            id="event_end_time"
+            name="event_end_time"
+            type="time"
+            className={timeInputClass}
+            value={eventEndTime}
+            onChange={(event) => setEventEndTime(event.target.value)}
+            required
+          />
+        </Field>
       </div>
 
       <Field className="gap-2.5">
@@ -321,7 +325,7 @@ export function CreateEventForm({
         </Field>
       </div>
 
-      <div className="create-event-actions form-actions mt-10 flex flex-col-reverse gap-3 sm:mt-8 sm:flex-row sm:justify-end sm:gap-4">
+      <div className="create-event-actions form-actions mt-8 flex flex-col-reverse gap-3 sm:mt-6 sm:flex-row sm:justify-end sm:gap-4">
         <Button
           asChild
           variant="ghost"

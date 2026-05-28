@@ -53,6 +53,7 @@ export default async function EditEventPage(props: PageProps<"/events/[id]/edit"
               description: event.description,
               eventDate: event.eventDate,
               eventTime: event.eventTime.slice(0, 5),
+              eventEndTime: event.eventEndTime?.slice(0, 5) ?? "",
               location: event.location,
               category: event.category,
             }}

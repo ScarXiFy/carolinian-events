@@ -14,7 +14,7 @@ import {
 test("getEventsQuery selects legacy event fields in dashboard order", () => {
   assert.equal(
     getEventsQuery(),
-    "SELECT id, event_name, organizer, description, event_date, event_time, location, category, status, created_at FROM events ORDER BY created_at DESC, id DESC",
+    "SELECT id, event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, created_at FROM events ORDER BY created_at DESC, id DESC",
   );
 });
 
@@ -26,6 +26,7 @@ test("normalizeMysqlEventRow serializes Date values for app formatting", () => {
     description: "Annual celebration.",
     event_date: new Date("2026-06-15T00:00:00.000Z"),
     event_time: "08:00:00",
+    event_end_time: "10:00:00",
     location: "USC Main Campus",
     category: "Cultural",
     status: "Upcoming",
@@ -39,6 +40,7 @@ test("normalizeMysqlEventRow serializes Date values for app formatting", () => {
     description: "Annual celebration.",
     event_date: "2026-06-15",
     event_time: "08:00:00",
+    event_end_time: "10:00:00",
     location: "USC Main Campus",
     category: "Cultural",
     status: "Upcoming",
@@ -62,6 +64,7 @@ test("createMysqlEventReader reads rows through an injected connection", async (
               description: "Practice session.",
               event_date: "2026-05-05",
               event_time: "14:00:00",
+              event_end_time: "16:00:00",
               location: "NCR Lab",
               category: "Academic",
               status: "Completed",
@@ -94,19 +97,21 @@ test("event write statements use parameterized SQL", () => {
     description: "Project sharing.",
     eventDate: "2026-07-01",
     eventTime: "09:30",
+    eventEndTime: "11:30",
     location: "Bunzel Building",
     category: "Academic",
     status: "Upcoming",
   };
 
   assert.deepEqual(getCreateEventStatement(input), {
-    sql: "INSERT INTO events (event_name, organizer, description, event_date, event_time, location, category, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    sql: "INSERT INTO events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
     values: [
       "Research Colloquium",
       "CPE Department",
       "Project sharing.",
       "2026-07-01",
       "09:30",
+      "11:30",
       "Bunzel Building",
       "Academic",
       "Upcoming",
@@ -114,13 +119,14 @@ test("event write statements use parameterized SQL", () => {
   });
 
   assert.deepEqual(getUpdateEventStatement(9, input), {
-    sql: "UPDATE events SET event_name = ?, organizer = ?, description = ?, event_date = ?, event_time = ?, location = ?, category = ?, status = ? WHERE id = ?",
+    sql: "UPDATE events SET event_name = ?, organizer = ?, description = ?, event_date = ?, event_time = ?, event_end_time = ?, location = ?, category = ?, status = ? WHERE id = ?",
     values: [
       "Research Colloquium",
       "CPE Department",
       "Project sharing.",
       "2026-07-01",
       "09:30",
+      "11:30",
       "Bunzel Building",
       "Academic",
       "Upcoming",
@@ -159,6 +165,7 @@ test("createMysqlEventWriter executes write operations through an injected conne
       description: "Project sharing.",
       eventDate: "2026-07-01",
       eventTime: "09:30",
+      eventEndTime: "11:30",
       location: "Bunzel Building",
       category: "Academic",
       status: "Upcoming",
@@ -173,6 +180,7 @@ test("createMysqlEventWriter executes write operations through an injected conne
       description: "Updated.",
       eventDate: "2026-07-01",
       eventTime: "09:30",
+      eventEndTime: "11:30",
       location: "Bunzel Building",
       category: "Academic",
       status: "Upcoming",
