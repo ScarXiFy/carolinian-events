@@ -5,11 +5,9 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
-  KeyRound,
   Loader2,
   Lock,
   Mail,
-  ShieldCheck,
   User,
 } from "lucide-react";
 import Link from "next/link";
@@ -85,8 +83,6 @@ export function SignupForm({
   className,
   ...props
 }: React.ComponentProps<"div"> & { isGoogleConfigured?: boolean }) {
-  const [isOrganizer, setIsOrganizer] = useState(false);
-  const [showSecretKey, setShowSecretKey] = useState(false);
   const [error, action, isPending] = useActionState<AuthActionState, FormData>(
     async (_prevState, formData) => signup(formData),
     null,
@@ -186,76 +182,10 @@ export function SignupForm({
                 />
               </div>
 
-              <Field>
-                <label
-                  htmlFor="isOrganizer"
-                  className="flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 transition hover:border-[#d4a843]/40 hover:bg-[#d4a843]/8"
-                >
-                  <input
-                    type="checkbox"
-                    id="isOrganizer"
-                    name="isOrganizer"
-                    className="mt-1 size-4 rounded border-white/20 bg-black/30 accent-[#d4a843]"
-                    checked={isOrganizer}
-                    onChange={(event) => setIsOrganizer(event.target.checked)}
-                    disabled={isPending}
-                  />
-                  <span className="flex min-w-0 flex-1 gap-3">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#d4a843]/12 text-[#f1d37a]">
-                      <ShieldCheck className="size-5" aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-bold text-white">
-                        I am an organizer
-                      </span>
-                      <span className="mt-1 block text-sm leading-5 text-white/55">
-                        Unlock event creation and management tools with your
-                        organizer key.
-                      </span>
-                    </span>
-                  </span>
-                </label>
-              </Field>
-
-              {isOrganizer ? (
-                <Field>
-                  <FieldLabel htmlFor="secretKey" className="text-white/88">
-                    Organizer secret key
-                  </FieldLabel>
-                  <div className="relative">
-                    <KeyRound
-                      className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-white/42"
-                      aria-hidden="true"
-                    />
-                    <Input
-                      id="secretKey"
-                      name="secretKey"
-                      type={showSecretKey ? "text" : "password"}
-                      placeholder="Ask admin for the key"
-                      autoComplete="off"
-                      required={isOrganizer}
-                      disabled={isPending}
-                      className={cn(fieldClass, "pr-12")}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowSecretKey((current) => !current)}
-                      className="absolute right-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-lg text-white/52 transition hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#2a8c4f]/25"
-                      aria-label={showSecretKey ? "Hide organizer secret key" : "Show organizer secret key"}
-                    >
-                      {showSecretKey ? (
-                        <EyeOff className="size-4" aria-hidden="true" />
-                      ) : (
-                        <Eye className="size-4" aria-hidden="true" />
-                      )}
-                    </button>
-                  </div>
-                  <FieldDescription className="text-white/52">
-                    Required only for approved student organizations and event
-                    staff.
-                  </FieldDescription>
-                </Field>
-              ) : null}
+              <p className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-sm leading-5 text-white/62">
+                New accounts start as Student. You can request organizer access
+                from your account menu after signing in.
+              </p>
 
               <Field className="pt-1">
                 <button

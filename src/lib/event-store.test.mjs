@@ -28,6 +28,7 @@ test("mapLegacyEventRow converts legacy database fields to app event fields", ()
     participant_limit: 80,
     participant_count: 12,
     event_image_path: "/uploads/events/poster.png",
+    created_by_user_id: "usr_1",
   };
 
   assert.deepEqual(mapLegacyEventRow(row), {
@@ -45,6 +46,7 @@ test("mapLegacyEventRow converts legacy database fields to app event fields", ()
     participantLimit: 80,
     participantCount: 12,
     eventImagePath: "/uploads/events/poster.png",
+    createdByUserId: "usr_1",
   });
 });
 

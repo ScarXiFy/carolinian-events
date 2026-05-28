@@ -3,6 +3,8 @@ import { UserCircle } from "lucide-react";
 
 import { auth } from "@/auth";
 import { logout } from "@/app/auth-actions";
+import { requestOrganizerAccess } from "@/app/account-actions";
+import { canApproveOrganizers, ROLES } from "@/lib/permissions.mjs";
 
 type SiteNavbarProps = {
   showUserMenu?: boolean;
@@ -11,6 +13,7 @@ type SiteNavbarProps = {
 export async function SiteNavbar({ showUserMenu = false }: SiteNavbarProps) {
   const session = await auth();
   const userName = session?.user?.name || session?.user?.email || "Account";
+  const role = session?.user?.role || ROLES.STUDENT;
 
   return (
     <nav className="navbar" id="navbar">
@@ -29,6 +32,15 @@ export async function SiteNavbar({ showUserMenu = false }: SiteNavbarProps) {
               </summary>
               <div className="navbar-user-dropdown">
                 <p>{userName}</p>
+                <span className="navbar-user-role">{role}</span>
+                {canApproveOrganizers(role) ? (
+                  <Link href="/admin">Admin</Link>
+                ) : null}
+                {role === ROLES.STUDENT ? (
+                  <form action={requestOrganizerAccess}>
+                    <button type="submit">Request organizer access</button>
+                  </form>
+                ) : null}
                 <form action={logout}>
                   <button type="submit">Log out</button>
                 </form>

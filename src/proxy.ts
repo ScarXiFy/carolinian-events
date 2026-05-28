@@ -1,9 +1,10 @@
 import { auth } from "@/auth";
+import { canApproveOrganizers, canCreateEvents } from "@/lib/permissions.mjs";
 import { NextResponse } from "next/server";
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
-  const isOrganizer = req.auth?.user?.role === "Organizer";
+  const role = req.auth?.user?.role;
   const { pathname } = req.nextUrl;
 
   const isAuthRoute = pathname === "/login" || pathname === "/signup";
@@ -11,6 +12,7 @@ export default auth((req) => {
     pathname.startsWith("/events/create") ||
     /^\/events\/[^/]+\/edit/.test(pathname) ||
     /^\/events\/[^/]+\/delete/.test(pathname);
+  const isAdminRoute = pathname.startsWith("/admin");
 
   if (isAuthRoute) {
     if (isLoggedIn) {
@@ -20,12 +22,16 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
-  if (isProtectedActionRoute) {
+  if (isProtectedActionRoute || isAdminRoute) {
     if (!isLoggedIn) {
       return NextResponse.redirect(new URL("/login", req.nextUrl));
     }
 
-    if (!isOrganizer) {
+    if (isProtectedActionRoute && !canCreateEvents(role)) {
+      return NextResponse.redirect(new URL("/events", req.nextUrl));
+    }
+
+    if (isAdminRoute && !canApproveOrganizers(role)) {
       return NextResponse.redirect(new URL("/events", req.nextUrl));
     }
   }

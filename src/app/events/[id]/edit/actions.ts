@@ -6,8 +6,9 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { parseEventFormData } from "@/lib/event-form-data.mjs";
 import { saveEventImageFile } from "@/lib/event-image-upload.mjs";
-import { updateEvent } from "@/lib/event-store.mjs";
+import { getEventByRouteId, updateEvent } from "@/lib/event-store.mjs";
 import { EVENTS_PATH, LOGIN_PATH } from "@/lib/auth-navigation";
+import { canManageEvent } from "@/lib/permissions.mjs";
 
 export async function updateEventAction(id: number, formData: FormData) {
   const session = await auth();
@@ -16,7 +17,9 @@ export async function updateEventAction(id: number, formData: FormData) {
     redirect(LOGIN_PATH);
   }
 
-  if (session.user?.role !== "Organizer") {
+  const event = await getEventByRouteId(id);
+
+  if (!canManageEvent(session.user?.role, session.user.id, event)) {
     redirect(EVENTS_PATH);
   }
 

@@ -28,10 +28,11 @@ test("Postgres event write statements use numbered parameters", () => {
     status: "Upcoming",
     participantLimit: 80,
     eventImagePath: "/uploads/events/poster.png",
+    createdByUserId: "usr_1",
   };
 
   assert.deepEqual(getPostgresCreateEventStatement(input), {
-    sql: "insert into events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning id",
+    sql: "insert into events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path, created_by_user_id) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) returning id",
     values: [
       "Research Colloquium",
       "CPE Department",
@@ -44,6 +45,7 @@ test("Postgres event write statements use numbered parameters", () => {
       "Upcoming",
       80,
       "/uploads/events/poster.png",
+      "usr_1",
     ],
   });
 

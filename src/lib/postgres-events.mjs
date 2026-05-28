@@ -1,7 +1,7 @@
 const POSTGRES_EVENTS_QUERY =
-  "select e.id, e.event_name, e.organizer, e.description, e.event_date, e.event_time, e.event_end_time, e.location, e.category, e.status, e.created_at, e.participant_limit, e.event_image_path, (select count(*)::int from event_participants where event_id = e.id) as participant_count from events e order by e.created_at desc, e.id desc";
+  "select e.id, e.event_name, e.organizer, e.description, e.event_date, e.event_time, e.event_end_time, e.location, e.category, e.status, e.created_at, e.participant_limit, e.event_image_path, e.created_by_user_id, (select count(*)::int from event_participants where event_id = e.id) as participant_count from events e order by e.created_at desc, e.id desc";
 const POSTGRES_CREATE_EVENT_QUERY =
-  "insert into events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning id";
+  "insert into events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path, created_by_user_id) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) returning id";
 const POSTGRES_UPDATE_EVENT_QUERY =
   "update events set event_name = $1, organizer = $2, description = $3, event_date = $4, event_time = $5, event_end_time = $6, location = $7, category = $8, status = $9, participant_limit = $10, event_image_path = coalesce($11, event_image_path) where id = $12";
 const POSTGRES_DELETE_EVENT_QUERY = "delete from events where id = $1";
@@ -17,7 +17,7 @@ export function getPostgresEventsQuery() {
 export function getPostgresCreateEventStatement(input) {
   return {
     sql: POSTGRES_CREATE_EVENT_QUERY,
-    values: getEventValues(input),
+    values: getCreateEventValues(input),
   };
 }
 
@@ -110,6 +110,10 @@ function getEventValues(input) {
     input.participantLimit || null,
     input.eventImagePath || null,
   ];
+}
+
+function getCreateEventValues(input) {
+  return [...getEventValues(input), input.createdByUserId || null];
 }
 
 function normalizePostgresEventRow(row) {

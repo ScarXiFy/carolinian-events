@@ -3,6 +3,7 @@
 import { signIn, signOut } from "@/auth";
 import { AuthError } from "next-auth";
 import { createUser, getUserByEmail } from "@/lib/db-users.mjs";
+import { getDefaultUserRole } from "@/lib/auth-roles.mjs";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 
@@ -44,8 +45,6 @@ export async function signup(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   const confirmPassword = String(formData.get("confirm-password") ?? "");
-  const isOrganizer = formData.get("isOrganizer") === "on";
-  const secretKey = String(formData.get("secretKey") ?? "");
 
   if (!email || !password || !name) {
     return { error: "Missing fields" };
@@ -53,10 +52,6 @@ export async function signup(formData: FormData) {
 
   if (password !== confirmPassword) {
     return { error: "Passwords do not match" };
-  }
-
-  if (isOrganizer && (!process.env.ORGANIZER_SECRET || secretKey !== process.env.ORGANIZER_SECRET)) {
-    return { error: "Invalid organizer secret key" };
   }
 
   const existing = await getUserByEmail(email);
@@ -70,7 +65,7 @@ export async function signup(formData: FormData) {
     name,
     email,
     passwordHash: hash,
-    role: isOrganizer ? "Organizer" : "Student",
+    role: getDefaultUserRole(email, process.env),
   });
 
   try {

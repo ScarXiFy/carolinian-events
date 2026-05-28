@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
+import { auth } from "@/auth";
 import { SiteNavbar } from "@/components/site-navbar";
 import {
   formatEventDate,
@@ -8,6 +9,8 @@ import {
   getDeleteConfirmationMessage,
 } from "@/lib/events.mjs";
 import { getEventByRouteId, getEventStaticParams } from "@/lib/event-store.mjs";
+import { EVENTS_PATH, LOGIN_PATH } from "@/lib/auth-navigation";
+import { canManageEvent } from "@/lib/permissions.mjs";
 import { deleteEventAction } from "./actions";
 
 export function generateStaticParams() {
@@ -20,6 +23,16 @@ export default async function DeleteEventPage(props: PageProps<"/events/[id]/del
 
   if (!event) {
     notFound();
+  }
+
+  const session = await auth();
+
+  if (!session) {
+    redirect(LOGIN_PATH);
+  }
+
+  if (!canManageEvent(session.user?.role, session.user.id, event)) {
+    redirect(EVENTS_PATH);
   }
 
   return (

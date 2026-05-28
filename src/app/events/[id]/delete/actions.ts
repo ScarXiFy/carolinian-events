@@ -3,9 +3,24 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { deleteEvent } from "@/lib/event-store.mjs";
+import { auth } from "@/auth";
+import { EVENTS_PATH, LOGIN_PATH } from "@/lib/auth-navigation";
+import { canManageEvent } from "@/lib/permissions.mjs";
+import { deleteEvent, getEventByRouteId } from "@/lib/event-store.mjs";
 
 export async function deleteEventAction(id: number) {
+  const session = await auth();
+
+  if (!session) {
+    redirect(LOGIN_PATH);
+  }
+
+  const event = await getEventByRouteId(id);
+
+  if (!canManageEvent(session.user?.role, session.user.id, event)) {
+    redirect(EVENTS_PATH);
+  }
+
   const result = await deleteEvent(id);
 
   revalidatePath("/");
