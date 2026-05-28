@@ -31,6 +31,7 @@ export function mapLegacyEventRow(row) {
     createdAt: row.created_at,
     participantLimit: row.participant_limit ?? null,
     participantCount: row.participant_count ?? 0,
+    eventImagePath: row.event_image_path ?? null,
   };
 }
 

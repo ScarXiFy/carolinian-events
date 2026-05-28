@@ -1,13 +1,10 @@
 import Link from "next/link";
 import {
   ArrowUpDown,
-  Bell,
   ExternalLink,
   MapPin,
-  Pencil,
   Plus,
   Search,
-  Trash2,
 } from "lucide-react";
 
 import {
@@ -18,6 +15,9 @@ import {
 } from "@/lib/events.mjs";
 import { getAllEvents } from "@/lib/event-store.mjs";
 import { getEventFlashMessage } from "@/lib/flash-message.mjs";
+import { auth } from "@/auth";
+import { SiteNavbar } from "@/components/site-navbar";
+import { getCreateEventHref } from "@/lib/auth-navigation";
 import {
   Pagination,
   PaginationContent,
@@ -71,6 +71,8 @@ export default async function EventsPage({
   const pageStart = (currentPage - 1) * EVENTS_PER_PAGE;
   const pageEvents = events.slice(pageStart, pageStart + EVENTS_PER_PAGE);
   const flashMessage = getEventFlashMessage(params);
+  const session = await auth();
+  const createEventHref = getCreateEventHref(session);
 
   return (
     <main className="legacy-home events-dashboard-page min-h-screen bg-[#050505] text-white">
@@ -78,21 +80,12 @@ export default async function EventsPage({
       <div className="ambient-glow ambient-glow-green" aria-hidden="true" />
       <div className="ambient-glow ambient-glow-gold" aria-hidden="true" />
 
-      <nav className="events-dashboard-nav">
-        <Link href="/" className="events-dashboard-brand">
-          Carolinian<span>Events</span>
-        </Link>
-        <div className="events-dashboard-links">
-          <Link href="/">Home</Link>
-          <Link href="/events">Events Dashboard</Link>
-          <Bell className="events-dashboard-bell" aria-hidden="true" />
-        </div>
-      </nav>
+      <SiteNavbar showUserMenu />
 
       <section className="events-dashboard-shell">
         <div className="events-dashboard-heading">
           <h1>Events Dashboard</h1>
-          <Link href="/events/create" className="events-add-button">
+          <Link href={createEventHref} className="events-add-button">
             <Plus size={18} aria-hidden="true" />
             Add New Event
           </Link>
@@ -133,7 +126,7 @@ export default async function EventsPage({
           <div className="events-empty-card">
             <h2>No events found</h2>
             <p>Try a different search term or create a new campus event.</p>
-            <Link href="/events/create">Create Event</Link>
+            <Link href={createEventHref}>Create Event</Link>
           </div>
         ) : (
           <div className="events-card-grid">
@@ -178,20 +171,6 @@ export default async function EventsPage({
                     <Link href={`/events/${event.id}`} className="event-view-button">
                       View
                       <ExternalLink size={15} aria-hidden="true" />
-                    </Link>
-                    <Link
-                      href={`/events/${event.id}/edit`}
-                      className="event-icon-button"
-                      aria-label={`Edit ${event.eventName}`}
-                    >
-                      <Pencil size={16} aria-hidden="true" />
-                    </Link>
-                    <Link
-                      href={`/events/${event.id}/delete`}
-                      className="event-icon-button event-delete-button"
-                      aria-label={`Delete ${event.eventName}`}
-                    >
-                      <Trash2 size={16} aria-hidden="true" />
                     </Link>
                   </div>
                 </div>

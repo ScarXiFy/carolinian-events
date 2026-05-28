@@ -27,6 +27,7 @@ test("mapLegacyEventRow converts legacy database fields to app event fields", ()
     created_at: "2026-06-01T08:00:00.000Z",
     participant_limit: 80,
     participant_count: 12,
+    event_image_path: "/uploads/events/poster.png",
   };
 
   assert.deepEqual(mapLegacyEventRow(row), {
@@ -43,6 +44,7 @@ test("mapLegacyEventRow converts legacy database fields to app event fields", ()
     createdAt: "2026-06-01T08:00:00.000Z",
     participantLimit: 80,
     participantCount: 12,
+    eventImagePath: "/uploads/events/poster.png",
   });
 });
 
@@ -74,6 +76,7 @@ test("event store reads MySQL rows when DATABASE_URL is configured", async () =>
           created_at: "2026-07-01T08:00:00.000Z",
           participant_limit: null,
           participant_count: 0,
+          event_image_path: null,
         },
       ];
     },

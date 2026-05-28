@@ -1,6 +1,6 @@
 "use server";
 
-import { signIn } from "@/auth";
+import { signIn, signOut } from "@/auth";
 import { AuthError } from "next-auth";
 import { createUser, getUserByEmail } from "@/lib/mysql-users.mjs";
 import bcrypt from "bcryptjs";
@@ -25,6 +25,18 @@ export async function login(formData: FormData) {
 
 export async function githubLogin() {
   await signIn("github", { redirectTo: "/events" });
+}
+
+export async function googleLogin() {
+  if (!process.env.AUTH_GOOGLE_ID || !process.env.AUTH_GOOGLE_SECRET) {
+    return { error: "Google login is not configured yet." };
+  }
+
+  await signIn("google", { redirectTo: "/events" });
+}
+
+export async function logout() {
+  await signOut({ redirectTo: "/" });
 }
 
 export async function signup(formData: FormData) {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { SiteNavbar } from "@/components/site-navbar";
 import {
   formatEventDate,
   formatEventTime,
@@ -27,21 +28,7 @@ export default async function DeleteEventPage(props: PageProps<"/events/[id]/del
       <div className="ambient-glow ambient-glow-green" aria-hidden="true" />
       <div className="ambient-glow ambient-glow-gold" aria-hidden="true" />
 
-      <nav className="fixed left-0 top-0 z-50 flex w-full justify-center px-[5%] py-4 backdrop-blur-xl">
-        <div className="flex w-full max-w-[1200px] items-center justify-between">
-          <Link href="/" className="text-[1.4rem] font-extrabold tracking-normal">
-            Carolinian<span className="text-[#d4a843]">Events</span>
-          </Link>
-          <div className="flex items-center gap-8 text-sm font-bold">
-            <Link href="/" className="transition hover:text-[#d4a843]">
-              Home
-            </Link>
-            <Link href="/events" className="transition hover:text-[#d4a843]">
-              Events Dashboard
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <SiteNavbar showUserMenu />
 
       <section className="relative z-10 flex min-h-screen items-center justify-center px-[5%] py-[120px]">
         <article className="w-full max-w-[440px] scale-100 rounded-3xl border border-[#222] bg-[#111] p-8 text-center shadow-[0_25px_60px_rgba(0,0,0,0.6)] md:p-12">

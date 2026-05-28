@@ -21,13 +21,15 @@ CREATE TABLE IF NOT EXISTS events (
                              NOT NULL DEFAULT 'Academic',
     status      ENUM('Upcoming', 'Ongoing', 'Completed', 'Cancelled')
                              NOT NULL DEFAULT 'Upcoming',
+    participant_limit INT     DEFAULT NULL,
+    event_image_path VARCHAR(255) DEFAULT NULL,
     created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO events
-    (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status)
+    (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path)
 VALUES
     (
         'Mock Presentation',
@@ -38,7 +40,9 @@ VALUES
         '16:00:00',
         'NCR Lab',
         'Academic',
-        'Completed'
+        'Completed',
+        80,
+        NULL
     ),
     (
         'Proposal Hearing 2026',
@@ -49,7 +53,9 @@ VALUES
         '17:00:00',
         'Bunzel Building',
         'Academic',
-        'Completed'
+        'Completed',
+        120,
+        NULL
     ),
     (
         'Carolinian Week 2026',
@@ -60,7 +66,9 @@ VALUES
         '10:00:00',
         'USC Main Campus',
         'Cultural',
-        'Upcoming'
+        'Upcoming',
+        300,
+        NULL
     ),
     (
         'Intramurals 2026',
@@ -71,7 +79,9 @@ VALUES
         '11:30:00',
         'USC Gymnasium',
         'Sports',
-        'Completed'
+        'Completed',
+        200,
+        NULL
     ),
     (
         'Tech Talk: AI in Engineering',
@@ -82,5 +92,7 @@ VALUES
         '15:00:00',
         'Engineering Auditorium',
         'Academic',
-        'Upcoming'
+        'Upcoming',
+        100,
+        NULL
     );
