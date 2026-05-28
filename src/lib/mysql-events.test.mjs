@@ -14,7 +14,7 @@ import {
 test("getEventsQuery selects legacy event fields in dashboard order", () => {
   assert.equal(
     getEventsQuery(),
-    "SELECT id, event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, created_at FROM events ORDER BY created_at DESC, id DESC",
+    "SELECT e.id, e.event_name, e.organizer, e.description, e.event_date, e.event_time, e.event_end_time, e.location, e.category, e.status, e.created_at, e.participant_limit, (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) as participant_count FROM events e ORDER BY e.created_at DESC, e.id DESC",
   );
 });
 
@@ -31,6 +31,8 @@ test("normalizeMysqlEventRow serializes Date values for app formatting", () => {
     category: "Cultural",
     status: "Upcoming",
     created_at: new Date("2026-05-03T08:00:00.000Z"),
+    participant_limit: 120,
+    participant_count: 18,
   };
 
   assert.deepEqual(normalizeMysqlEventRow(row), {
@@ -45,6 +47,8 @@ test("normalizeMysqlEventRow serializes Date values for app formatting", () => {
     category: "Cultural",
     status: "Upcoming",
     created_at: "2026-05-03T08:00:00.000Z",
+    participant_limit: 120,
+    participant_count: 18,
   });
 });
 
@@ -101,10 +105,11 @@ test("event write statements use parameterized SQL", () => {
     location: "Bunzel Building",
     category: "Academic",
     status: "Upcoming",
+    participantLimit: 80,
   };
 
   assert.deepEqual(getCreateEventStatement(input), {
-    sql: "INSERT INTO events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    sql: "INSERT INTO events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     values: [
       "Research Colloquium",
       "CPE Department",
@@ -115,11 +120,12 @@ test("event write statements use parameterized SQL", () => {
       "Bunzel Building",
       "Academic",
       "Upcoming",
+      80,
     ],
   });
 
   assert.deepEqual(getUpdateEventStatement(9, input), {
-    sql: "UPDATE events SET event_name = ?, organizer = ?, description = ?, event_date = ?, event_time = ?, event_end_time = ?, location = ?, category = ?, status = ? WHERE id = ?",
+    sql: "UPDATE events SET event_name = ?, organizer = ?, description = ?, event_date = ?, event_time = ?, event_end_time = ?, location = ?, category = ?, status = ?, participant_limit = ? WHERE id = ?",
     values: [
       "Research Colloquium",
       "CPE Department",
@@ -130,6 +136,7 @@ test("event write statements use parameterized SQL", () => {
       "Bunzel Building",
       "Academic",
       "Upcoming",
+      80,
       9,
     ],
   });
@@ -169,6 +176,7 @@ test("createMysqlEventWriter executes write operations through an injected conne
       location: "Bunzel Building",
       category: "Academic",
       status: "Upcoming",
+      participantLimit: 80,
     },
   );
   const updated = await writer.updateEvent(
@@ -184,6 +192,7 @@ test("createMysqlEventWriter executes write operations through an injected conne
       location: "Bunzel Building",
       category: "Academic",
       status: "Upcoming",
+      participantLimit: 80,
     },
   );
   const deleted = await writer.deleteEvent(

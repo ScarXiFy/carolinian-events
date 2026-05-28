@@ -14,6 +14,7 @@ test("parseEventFormData maps create form fields to an event input", () => {
   formData.set("location_select", "Bunzel Building");
   formData.set("category_select", "Academic");
   formData.set("status", "Completed");
+  formData.set("participant_limit", "80");
 
   assert.deepEqual(parseEventFormData(formData, new Date("2026-06-01T08:00:00")), {
     eventName: "Research Colloquium",
@@ -25,6 +26,7 @@ test("parseEventFormData maps create form fields to an event input", () => {
     location: "Bunzel Building",
     category: "Academic",
     status: "Upcoming",
+    participantLimit: 80,
   });
 });
 
@@ -45,4 +47,5 @@ test("parseEventFormData uses custom Other fields", () => {
   assert.equal(parsed.location, "NCR Lab");
   assert.equal(parsed.category, "Research");
   assert.equal(parsed.status, "Ongoing");
+  assert.equal(parsed.participantLimit, null);
 });

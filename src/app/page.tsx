@@ -10,6 +10,7 @@ import {
 import { getAllEvents } from "@/lib/event-store.mjs";
 import { HeroOrbit } from "./hero-orbit";
 import { LandingEffects } from "./landing-effects";
+import { auth } from "@/auth";
 
 const featureCards = [
   {
@@ -46,6 +47,8 @@ export default async function Home() {
     glowClass: getGlowClass(event.status),
   }));
 
+  const session = await auth();
+
   return (
     <main className="legacy-home">
       <LandingEffects />
@@ -79,7 +82,7 @@ export default async function Home() {
           </p>
 
           <div className="cta-group">
-            <Link href="/events/create" className="btn btn-glass-primary">
+            <Link href={session ? "/events/create" : "/login"} className="btn btn-glass-primary">
               Create Event
             </Link>
             <Link href="/events" className="btn btn-glass-secondary">

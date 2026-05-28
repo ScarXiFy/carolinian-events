@@ -29,6 +29,8 @@ export function mapLegacyEventRow(row) {
     category: row.category,
     status: row.status,
     createdAt: row.created_at,
+    participantLimit: row.participant_limit ?? null,
+    participantCount: row.participant_count ?? 0,
   };
 }
 

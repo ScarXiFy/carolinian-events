@@ -17,6 +17,10 @@ export default async function EditEventPage(props: PageProps<"/events/[id]/edit"
     notFound();
   }
 
+  const eventWithParticipants = event as typeof event & {
+    participantLimit: number | null;
+  };
+
   return (
     <main className="legacy-home min-h-screen bg-[#050505] text-white">
       <div className="particle-field" aria-hidden="true" />
@@ -46,16 +50,17 @@ export default async function EditEventPage(props: PageProps<"/events/[id]/edit"
           </h1>
           <CreateEventForm
             mode="edit"
-            formAction={updateEventAction.bind(null, event.id)}
+            formAction={updateEventAction.bind(null, eventWithParticipants.id)}
             initialValues={{
-              eventName: event.eventName,
-              organizer: event.organizer,
-              description: event.description,
-              eventDate: event.eventDate,
-              eventTime: event.eventTime.slice(0, 5),
-              eventEndTime: event.eventEndTime?.slice(0, 5) ?? "",
-              location: event.location,
-              category: event.category,
+              eventName: eventWithParticipants.eventName,
+              organizer: eventWithParticipants.organizer,
+              description: eventWithParticipants.description,
+              eventDate: eventWithParticipants.eventDate,
+              eventTime: eventWithParticipants.eventTime.slice(0, 5),
+              eventEndTime: eventWithParticipants.eventEndTime?.slice(0, 5) ?? "",
+              location: eventWithParticipants.location,
+              category: eventWithParticipants.category,
+              participantLimit: eventWithParticipants.participantLimit ?? undefined,
             }}
           />
         </div>

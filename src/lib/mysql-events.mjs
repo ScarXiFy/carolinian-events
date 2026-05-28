@@ -1,13 +1,13 @@
 const EVENTS_QUERY =
-  "SELECT id, event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, created_at FROM events ORDER BY created_at DESC, id DESC";
+  "SELECT e.id, e.event_name, e.organizer, e.description, e.event_date, e.event_time, e.event_end_time, e.location, e.category, e.status, e.created_at, e.participant_limit, (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) as participant_count FROM events e ORDER BY e.created_at DESC, e.id DESC";
 const LEGACY_EVENTS_QUERY =
   "SELECT id, event_name, organizer, description, event_date, event_time, location, category, status, created_at FROM events ORDER BY created_at DESC, id DESC";
 const CREATE_EVENT_QUERY =
-  "INSERT INTO events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+  "INSERT INTO events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 const LEGACY_CREATE_EVENT_QUERY =
   "INSERT INTO events (event_name, organizer, description, event_date, event_time, location, category, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 const UPDATE_EVENT_QUERY =
-  "UPDATE events SET event_name = ?, organizer = ?, description = ?, event_date = ?, event_time = ?, event_end_time = ?, location = ?, category = ?, status = ? WHERE id = ?";
+  "UPDATE events SET event_name = ?, organizer = ?, description = ?, event_date = ?, event_time = ?, event_end_time = ?, location = ?, category = ?, status = ?, participant_limit = ? WHERE id = ?";
 const LEGACY_UPDATE_EVENT_QUERY =
   "UPDATE events SET event_name = ?, organizer = ?, description = ?, event_date = ?, event_time = ?, location = ?, category = ?, status = ? WHERE id = ?";
 const DELETE_EVENT_QUERY = "DELETE FROM events WHERE id = ?";
@@ -23,6 +23,8 @@ export function normalizeMysqlEventRow(row) {
     event_time: normalizeTimeOnly(row.event_time),
     event_end_time: normalizeOptionalTimeOnly(row.event_end_time),
     created_at: normalizeDateTime(row.created_at),
+    participant_limit: row.participant_limit ?? null,
+    participant_count: row.participant_count ?? 0,
   };
 }
 
@@ -148,6 +150,25 @@ export function createMysqlEventWriter({ createConnection = createMysqlConnectio
         affectedRows: result.affectedRows,
       };
     },
+    async joinEvent(url, eventId, userId) {
+      const connection = await createConnection(url);
+      try {
+        await connection.execute("INSERT INTO event_participants (event_id, user_id) VALUES (?, ?)", [eventId, userId]);
+      } catch(e) {
+        if (e.code === 'ER_DUP_ENTRY') return; // already joined
+        throw e;
+      } finally {
+        await connection.end();
+      }
+    },
+    async leaveEvent(url, eventId, userId) {
+      const connection = await createConnection(url);
+      try {
+        await connection.execute("DELETE FROM event_participants WHERE event_id = ? AND user_id = ?", [eventId, userId]);
+      } finally {
+        await connection.end();
+      }
+    }
   };
 }
 
@@ -193,6 +214,7 @@ function getEventValues(input) {
     input.location,
     input.category,
     input.status,
+    input.participantLimit || null,
   ];
 }
 

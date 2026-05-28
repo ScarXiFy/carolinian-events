@@ -15,6 +15,7 @@ export function parseEventFormData(formData, now = new Date()) {
     location: getSelectOrOtherValue(formData, "location_select", "location_other"),
     category: getSelectOrOtherValue(formData, "category_select", "category_other"),
     status: computeEventStatus(eventDate, eventTime, eventEndTime, now),
+    participantLimit: getParticipantLimit(formData),
   };
 }
 
@@ -30,4 +31,16 @@ function getSelectOrOtherValue(formData, selectKey, otherKey) {
   }
 
   return selected;
+}
+
+function getParticipantLimit(formData) {
+  const rawValue = getFormValue(formData, "participant_limit");
+
+  if (!rawValue) {
+    return null;
+  }
+
+  const parsedValue = Number.parseInt(rawValue, 10);
+
+  return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : null;
 }

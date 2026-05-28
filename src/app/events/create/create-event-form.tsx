@@ -43,6 +43,7 @@ type EventFormInitialValues = {
   eventEndTime?: string;
   location?: string;
   category?: string;
+  participantLimit?: number;
 };
 
 type CreateEventFormProps = {
@@ -324,6 +325,21 @@ export function CreateEventForm({
           </FieldDescription>
         </Field>
       </div>
+
+      <Field className="gap-2.5">
+        <FieldLabel htmlFor="participant_limit" className={labelClass}>
+          Participant Limit (Optional)
+        </FieldLabel>
+        <Input
+          id="participant_limit"
+          name="participant_limit"
+          type="number"
+          min="1"
+          className={controlClass}
+          defaultValue={initialValues?.participantLimit ?? ""}
+          placeholder="Leave blank for no limit"
+        />
+      </Field>
 
       <div className="create-event-actions form-actions mt-8 flex flex-col-reverse gap-3 sm:mt-6 sm:flex-row sm:justify-end sm:gap-4">
         <Button

@@ -25,6 +25,8 @@ test("mapLegacyEventRow converts legacy database fields to app event fields", ()
     category: "Academic",
     status: "Upcoming",
     created_at: "2026-06-01T08:00:00.000Z",
+    participant_limit: 80,
+    participant_count: 12,
   };
 
   assert.deepEqual(mapLegacyEventRow(row), {
@@ -39,6 +41,8 @@ test("mapLegacyEventRow converts legacy database fields to app event fields", ()
     category: "Academic",
     status: "Upcoming",
     createdAt: "2026-06-01T08:00:00.000Z",
+    participantLimit: 80,
+    participantCount: 12,
   });
 });
 
@@ -68,6 +72,8 @@ test("event store reads MySQL rows when DATABASE_URL is configured", async () =>
           category: "Academic",
           status: "Upcoming",
           created_at: "2026-07-01T08:00:00.000Z",
+          participant_limit: null,
+          participant_count: 0,
         },
       ];
     },
@@ -75,6 +81,8 @@ test("event store reads MySQL rows when DATABASE_URL is configured", async () =>
 
   assert.equal(events.length, 1);
   assert.equal(events[0].eventName, "Database Event");
+  assert.equal(events[0].participantLimit, null);
+  assert.equal(events[0].participantCount, 0);
 });
 
 test("createEvent writes to MySQL when DATABASE_URL is configured", async () => {
