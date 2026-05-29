@@ -11,7 +11,7 @@ import { getAllEvents } from "@/lib/event-store.mjs";
 import { HeroOrbit } from "./hero-orbit";
 import { LandingEffects } from "./landing-effects";
 import { auth } from "@/auth";
-import { SiteNavbar } from "@/components/site-navbar";
+import { SiteNavbarServer } from "@/components/site-navbar-server";
 import { getCreateEventHref } from "@/lib/auth-navigation";
 
 export const dynamic = "force-dynamic";
@@ -60,7 +60,7 @@ export default async function Home() {
       <div className="ambient-glow glow-green" aria-hidden="true" />
       <div className="ambient-glow glow-gold" aria-hidden="true" />
 
-      <SiteNavbar />
+      <SiteNavbarServer />
 
       <header className="hero" id="parallax-container">
         <div className="hero-content parallax-wrapper" data-speed="0.02">

@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { AlertCircle, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import Link from "next/link";
 
-import { githubLogin, googleLogin, login } from "@/app/auth-actions";
+import { githubLogin, login } from "@/app/auth-actions";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Field,
@@ -24,10 +24,9 @@ const fieldClass =
   "min-h-12 rounded-xl border-white/10 bg-white/[0.045] px-11 py-3 text-base text-white shadow-none outline-none transition placeholder:text-white/34 focus-visible:border-[#2a8c4f] focus-visible:ring-[#2a8c4f]/25 disabled:opacity-60";
 
 export function LoginForm({
-  isGoogleConfigured = false,
   className,
   ...props
-}: React.ComponentProps<"div"> & { isGoogleConfigured?: boolean }) {
+}: React.ComponentProps<"div">) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, action, isPending] = useActionState<AuthActionState, FormData>(
     async (_prevState, formData) => login(formData),
@@ -57,23 +56,6 @@ export function LoginForm({
                   />
                 </svg>
                 Login with GitHub
-              </button>
-
-              <button
-                type="button"
-                onClick={() => googleLogin()}
-                disabled={isPending || !isGoogleConfigured}
-                title={
-                  isGoogleConfigured
-                    ? "Login with Google"
-                    : "Google OAuth credentials are not configured yet."
-                }
-                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] px-4 py-3 text-sm font-bold text-white transition hover:border-[#2a8c4f]/70 hover:bg-[#2a8c4f]/18 hover:text-[#b9f5cc] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#2a8c4f]/25 disabled:pointer-events-none disabled:opacity-45"
-              >
-                <span className="flex size-4 items-center justify-center rounded-full bg-white text-xs font-black text-[#111]">
-                  G
-                </span>
-                {isGoogleConfigured ? "Login with Google" : "Google login unavailable"}
               </button>
 
               <FieldSeparator className="-my-1 text-white/42 *:data-[slot=field-separator-content]:bg-[#0d1110]">

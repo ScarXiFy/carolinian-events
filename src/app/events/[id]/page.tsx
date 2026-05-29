@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { CalendarDays, Clock, MapPin } from "lucide-react";
 
@@ -11,7 +12,7 @@ import { getEventByRouteId, getEventStaticParams } from "@/lib/event-store.mjs";
 import { getEventFlashMessage } from "@/lib/flash-message.mjs";
 import { EventFlash } from "../event-flash";
 import { auth } from "@/auth";
-import { SiteNavbar } from "@/components/site-navbar";
+import { SiteNavbarServer } from "@/components/site-navbar-server";
 import { JoinEventButton } from "./join-button";
 import { canJoinEvents, canManageEvent } from "@/lib/permissions.mjs";
 
@@ -45,6 +46,7 @@ export default async function EventDetailPage(
   const eventWithParticipants = event as typeof event & {
     participantLimit: number | null;
     participantCount: number;
+    eventImagePath: string | null;
   };
 
   const formattedEndTime = eventWithParticipants.eventEndTime
@@ -73,7 +75,7 @@ export default async function EventDetailPage(
       <div className="ambient-glow ambient-glow-green" aria-hidden="true" />
       <div className="ambient-glow ambient-glow-gold" aria-hidden="true" />
 
-      <SiteNavbar showUserMenu />
+      <SiteNavbarServer showUserMenu />
 
       <section className="relative z-10 mx-auto w-full max-w-[1200px] px-[5%] pb-20 pt-[120px]">
         <Link href="/events" className="legacy-btn legacy-btn-secondary mb-8">
@@ -84,7 +86,7 @@ export default async function EventDetailPage(
 
         <article className="event-detail-card">
           <header className="event-detail-header">
-            {/* #4 — inline flex row: title + badge (no more position:absolute) */}
+            {/* Title row: event name + status badge */}
             <div className="event-detail-title-row">
               <h1>{eventWithParticipants.eventName}</h1>
               <span
@@ -94,7 +96,7 @@ export default async function EventDetailPage(
               </span>
             </div>
 
-            {/* #2 — icon meta pills */}
+            {/* Meta pills */}
             <div className="event-meta">
               <div className="meta-pill">
                 <CalendarDays size={13} aria-hidden="true" />
@@ -117,7 +119,33 @@ export default async function EventDetailPage(
             </div>
           </header>
 
-          {/* #3 — sidebar body layout: description (main) + organizer/category (sidebar) */}
+          {/* Event image — real image if available, styled placeholder otherwise */}
+          <div className="event-detail-image-wrapper">
+            {eventWithParticipants.eventImagePath ? (
+              <Image
+                src={eventWithParticipants.eventImagePath}
+                alt={`${eventWithParticipants.eventName} event banner`}
+                fill
+                className="object-cover"
+                priority
+                sizes="(max-width: 1200px) 100vw, 1200px"
+              />
+            ) : (
+              <div
+                className={`event-detail-image-placeholder ${getDetailMediaClass(
+                  eventWithParticipants.category,
+                  eventWithParticipants.status,
+                )}`}
+                aria-hidden="true"
+              >
+                <div className="event-media-orb" />
+                <div className="event-media-lines" />
+                <div className="event-media-label">{eventWithParticipants.category}</div>
+              </div>
+            )}
+          </div>
+
+          {/* Body: description + sidebar */}
           <div className="event-detail-body">
             <div className="event-detail-main">
               <section className="event-section">
@@ -147,15 +175,18 @@ export default async function EventDetailPage(
             </aside>
           </div>
 
-          {/* #6 — footer elevation handled in CSS */}
+          {/* Footer: actions */}
           <footer className="event-detail-footer">
             <p>Added on {formatCreatedDate(eventWithParticipants)}</p>
             <div className="action-group">
+              {/* Students/Organizers who don't manage this event */}
               {canJoinThisEvent && (
                 <JoinEventButton eventId={eventWithParticipants.id} isJoined={isJoined} isFull={isFull} />
               )}
+              {/* Managers (organizer/admin): Join Event left of Edit */}
               {canManageThisEvent && (
                 <>
+                  <JoinEventButton eventId={eventWithParticipants.id} isJoined={isJoined} isFull={isFull} />
                   <Link href={`/events/${eventWithParticipants.id}/edit`} className="legacy-btn legacy-btn-secondary btn-sm">
                     Edit
                   </Link>
@@ -177,4 +208,26 @@ async function isEventParticipant(eventId: number, userId: string) {
   const participants = await getEventParticipants(eventId);
 
   return participants.includes(userId);
+}
+
+function getDetailMediaClass(category: string, status: string) {
+  const value = `${category} ${status}`.toLowerCase();
+
+  if (value.includes("thesis") || value.includes("academic")) {
+    return "event-media-academic";
+  }
+
+  if (value.includes("verification") || value.includes("tech")) {
+    return "event-media-tech";
+  }
+
+  if (value.includes("social") || value.includes("cultural")) {
+    return "event-media-social";
+  }
+
+  if (value.includes("sports")) {
+    return "event-media-sports";
+  }
+
+  return "event-media-default";
 }

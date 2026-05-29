@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import { SiteNavbar } from "@/components/site-navbar";
+import { SiteNavbarServer } from "@/components/site-navbar-server";
 import { EVENTS_PATH, LOGIN_PATH } from "@/lib/auth-navigation";
 import { listPendingOrganizerRequests } from "@/lib/db-users.mjs";
 import { canApproveOrganizers } from "@/lib/permissions.mjs";
@@ -37,7 +37,7 @@ export default async function AdminPage() {
       <div className="ambient-glow ambient-glow-green" aria-hidden="true" />
       <div className="ambient-glow ambient-glow-gold" aria-hidden="true" />
 
-      <SiteNavbar showUserMenu />
+      <SiteNavbarServer showUserMenu />
 
       <section className="relative z-10 mx-auto w-full max-w-[960px] px-[5%] pb-20 pt-[120px]">
         <div className="events-dashboard-heading">
