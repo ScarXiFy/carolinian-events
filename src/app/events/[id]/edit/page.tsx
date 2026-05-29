@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import { SiteNavbar } from "@/components/site-navbar";
+import { SiteNavbarServer } from "@/components/site-navbar-server";
 import { CreateEventForm } from "../../create/create-event-form";
 import { updateEventAction } from "./actions";
 import { getEventByRouteId, getEventStaticParams } from "@/lib/event-store.mjs";
@@ -41,7 +41,7 @@ export default async function EditEventPage(props: PageProps<"/events/[id]/edit"
       <div className="ambient-glow ambient-glow-green" aria-hidden="true" />
       <div className="ambient-glow ambient-glow-gold" aria-hidden="true" />
 
-      <SiteNavbar showUserMenu />
+      <SiteNavbarServer showUserMenu />
 
       <section className="form-container relative z-10 mx-auto w-full max-w-[800px] px-[5%] pb-20 pt-[120px]">
         <div className="form-card rounded-3xl border border-[#222] bg-[#111] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.4)] md:p-12">

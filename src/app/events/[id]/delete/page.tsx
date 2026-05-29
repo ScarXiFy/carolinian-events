@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import { SiteNavbar } from "@/components/site-navbar";
+import { SiteNavbarServer } from "@/components/site-navbar-server";
 import {
   formatEventDate,
   formatEventTime,
@@ -41,7 +41,7 @@ export default async function DeleteEventPage(props: PageProps<"/events/[id]/del
       <div className="ambient-glow ambient-glow-green" aria-hidden="true" />
       <div className="ambient-glow ambient-glow-gold" aria-hidden="true" />
 
-      <SiteNavbar showUserMenu />
+      <SiteNavbarServer showUserMenu />
 
       <section className="relative z-10 flex min-h-screen items-center justify-center px-[5%] py-[120px]">
         <article className="w-full max-w-[440px] scale-100 rounded-3xl border border-[#222] bg-[#111] p-8 text-center shadow-[0_25px_60px_rgba(0,0,0,0.6)] md:p-12">

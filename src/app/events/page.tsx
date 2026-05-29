@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowUpDown,
   ExternalLink,
@@ -16,7 +17,7 @@ import {
 import { getAllEvents } from "@/lib/event-store.mjs";
 import { getEventFlashMessage } from "@/lib/flash-message.mjs";
 import { auth } from "@/auth";
-import { SiteNavbar } from "@/components/site-navbar";
+import { SiteNavbarServer } from "@/components/site-navbar-server";
 import { getCreateEventHref } from "@/lib/auth-navigation";
 import { canCreateEvents } from "@/lib/permissions.mjs";
 import {
@@ -29,6 +30,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { EventFlash } from "./event-flash";
+import { SortSelect } from "@/components/sort-select";
 
 type EventSort = "date_desc" | "date_asc" | "name_asc" | "name_desc";
 type EventStatus = "Upcoming" | "Ongoing" | "Completed" | "Cancelled";
@@ -82,14 +84,14 @@ export default async function EventsPage({
       <div className="ambient-glow ambient-glow-green" aria-hidden="true" />
       <div className="ambient-glow ambient-glow-gold" aria-hidden="true" />
 
-      <SiteNavbar showUserMenu />
+      <SiteNavbarServer showUserMenu />
 
       <section className="events-dashboard-shell">
         <div className="events-dashboard-heading">
           <h1>Events Dashboard</h1>
           {showCreateEventLink ? (
             <Link href={createEventHref} className="events-add-button">
-              <Plus size={18} aria-hidden="true" />
+              <Plus size={16} aria-hidden="true" />
               Add New Event
             </Link>
           ) : null}
@@ -109,47 +111,37 @@ export default async function EventsPage({
             />
           </label>
 
-          <label className="events-sort-field">
-            <span className="sr-only">Sort events</span>
-            <select name="sort" defaultValue={sort}>
-              {Object.entries(sortLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <ArrowUpDown size={20} aria-hidden="true" />
-          </label>
-
-          <button type="submit" className="events-apply-button">
-            Apply
-          </button>
+          <SortSelect
+            currentSort={sort}
+            sortLabels={sortLabels}
+            currentSearch={search}
+          />
         </form>
 
         {pageEvents.length === 0 ? (
           <div className="events-empty-card">
-            <h2>No events found</h2>
-            <p>Try a different search term or create a new campus event.</p>
-            {showCreateEventLink ? <Link href={createEventHref}>Create Event</Link> : null}
+            <h2>No events yet. Create one to get started.</h2>
+            <p>Your events will appear here once you create your first one.</p>
           </div>
         ) : (
           <div className="events-card-grid">
             {pageEvents.map((event) => (
               <article className="event-dashboard-card" key={event.id}>
                 <div className="event-card-topline">
-                  <h2>{event.eventName}</h2>
+                  <div>
+                    <h2>{event.eventName}</h2>
+                    <div className="event-card-meta">
+                      <span>
+                        <MapPin size={15} aria-hidden="true" />
+                        {event.location}
+                      </span>
+                      <span>{event.category}</span>
+                    </div>
+                  </div>
                   <div className="event-card-date">
                     <span>{formatEventDate(event)}</span>
                     <time>{formatEventRange(event)}</time>
                   </div>
-                </div>
-
-                <div className="event-card-meta">
-                  <span>
-                    <MapPin size={15} aria-hidden="true" />
-                    {event.location}
-                  </span>
-                  <span>{event.category}</span>
                 </div>
 
                 <div
@@ -157,11 +149,23 @@ export default async function EventsPage({
                     event.category,
                     event.status,
                   )}`}
-                  aria-hidden="true"
+                  aria-hidden={!event.eventImagePath}
                 >
-                  <div className="event-media-orb" />
-                  <div className="event-media-lines" />
-                  <div className="event-media-label">{event.category}</div>
+                  {event.eventImagePath ? (
+                    <Image
+                      src={event.eventImagePath}
+                      alt={`${event.eventName} event image`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
+                  ) : (
+                    <>
+                      <div className="event-media-orb" />
+                      <div className="event-media-lines" />
+                      <div className="event-media-label">{event.category}</div>
+                    </>
+                  )}
                 </div>
 
                 <div className="event-card-footer">

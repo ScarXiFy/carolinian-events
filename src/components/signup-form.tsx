@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-import { googleLogin, signup } from "@/app/auth-actions";
+import { signup } from "@/app/auth-actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -79,10 +79,9 @@ function PasswordField({
 }
 
 export function SignupForm({
-  isGoogleConfigured = false,
   className,
   ...props
-}: React.ComponentProps<"div"> & { isGoogleConfigured?: boolean }) {
+}: React.ComponentProps<"div">) {
   const [error, action, isPending] = useActionState<AuthActionState, FormData>(
     async (_prevState, formData) => signup(formData),
     null,
@@ -94,23 +93,6 @@ export function SignupForm({
         <CardContent className="p-5 sm:p-6">
           <form action={action}>
             <FieldGroup className="gap-5">
-              <button
-                type="button"
-                onClick={() => googleLogin()}
-                disabled={isPending || !isGoogleConfigured}
-                title={
-                  isGoogleConfigured
-                    ? "Sign up with Google"
-                    : "Google OAuth credentials are not configured yet."
-                }
-                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] px-4 py-3 text-sm font-bold text-white transition hover:border-[#2a8c4f]/70 hover:bg-[#2a8c4f]/18 hover:text-[#b9f5cc] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#2a8c4f]/25 disabled:pointer-events-none disabled:opacity-45"
-              >
-                <span className="flex size-4 items-center justify-center rounded-full bg-white text-xs font-black text-[#111]">
-                  G
-                </span>
-                {isGoogleConfigured ? "Sign up with Google" : "Google signup unavailable"}
-              </button>
-
               {error?.error ? (
                 <div
                   role="alert"
@@ -165,22 +147,20 @@ export function SignupForm({
                 </div>
               </Field>
 
-              <div className="grid gap-4">
-                <PasswordField
-                  id="password"
-                  name="password"
-                  label="Password"
-                  autoComplete="new-password"
-                  disabled={isPending}
-                />
-                <PasswordField
-                  id="confirm-password"
-                  name="confirm-password"
-                  label="Confirm password"
-                  autoComplete="new-password"
-                  disabled={isPending}
-                />
-              </div>
+              <PasswordField
+                id="password"
+                name="password"
+                label="Password"
+                autoComplete="new-password"
+                disabled={isPending}
+              />
+              <PasswordField
+                id="confirm-password"
+                name="confirm-password"
+                label="Confirm password"
+                autoComplete="new-password"
+                disabled={isPending}
+              />
 
               <p className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-sm leading-5 text-white/62">
                 New accounts start as Student. You can request organizer access
