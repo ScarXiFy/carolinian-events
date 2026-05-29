@@ -858,11 +858,21 @@ html {
   white-space: nowrap;
 }
 
+.legacy-home .navbar-user-role {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--legacy-accent);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.legacy-home .navbar-user-dropdown a,
 .legacy-home .navbar-user-dropdown button {
   width: 100%;
   border: 0;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.08);
+  display: block;
   padding: 0.65rem 0.75rem;
   color: #ffffff;
   font: inherit;
@@ -875,6 +885,7 @@ html {
     color 0.2s ease;
 }
 
+.legacy-home .navbar-user-dropdown a:hover,
 .legacy-home .navbar-user-dropdown button:hover {
   background: rgba(212, 168, 67, 0.16);
   color: var(--legacy-accent);

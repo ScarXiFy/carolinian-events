@@ -1,9 +1,12 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
+import { auth } from "@/auth";
 import { SiteNavbar } from "@/components/site-navbar";
 import { CreateEventForm } from "../../create/create-event-form";
 import { updateEventAction } from "./actions";
 import { getEventByRouteId, getEventStaticParams } from "@/lib/event-store.mjs";
+import { EVENTS_PATH, LOGIN_PATH } from "@/lib/auth-navigation";
+import { canManageEvent } from "@/lib/permissions.mjs";
 
 export function generateStaticParams() {
   return getEventStaticParams();
@@ -15,6 +18,16 @@ export default async function EditEventPage(props: PageProps<"/events/[id]/edit"
 
   if (!event) {
     notFound();
+  }
+
+  const session = await auth();
+
+  if (!session) {
+    redirect(LOGIN_PATH);
+  }
+
+  if (!canManageEvent(session.user?.role, session.user.id, event)) {
+    redirect(EVENTS_PATH);
   }
 
   const eventWithParticipants = event as typeof event & {

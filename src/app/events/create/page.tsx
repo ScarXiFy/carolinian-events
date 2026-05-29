@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { SiteNavbar } from "@/components/site-navbar";
 import { EVENTS_PATH, LOGIN_PATH } from "@/lib/auth-navigation";
+import { canCreateEvents } from "@/lib/permissions.mjs";
 import { createEventAction } from "./actions";
 import { CreateEventForm } from "./create-event-form";
 
@@ -13,7 +14,7 @@ export default async function CreateEventPage() {
     redirect(LOGIN_PATH);
   }
 
-  if (session.user?.role !== "Organizer") {
+  if (!canCreateEvents(session.user?.role)) {
     redirect(EVENTS_PATH);
   }
 

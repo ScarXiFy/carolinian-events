@@ -33,6 +33,7 @@ export function mapLegacyEventRow(row) {
     participantLimit: row.participant_limit ?? null,
     participantCount: row.participant_count ?? 0,
     eventImagePath: row.event_image_path ?? null,
+    createdByUserId: row.created_by_user_id ?? null,
   };
 }
 

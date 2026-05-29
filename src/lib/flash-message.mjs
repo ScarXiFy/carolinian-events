@@ -22,6 +22,13 @@ export function getEventFlashMessage(params = {}) {
     };
   }
 
+  if (params.organizerRequest === "pending") {
+    return {
+      tone: "success",
+      text: "Organizer access request submitted.",
+    };
+  }
+
   if (
     params.created === "preview" ||
     params.updated === "preview" ||

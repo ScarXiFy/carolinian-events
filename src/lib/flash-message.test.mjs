@@ -29,6 +29,13 @@ test("getEventFlashMessage returns detail update messages", () => {
   });
 });
 
+test("getEventFlashMessage returns organizer request messages", () => {
+  assert.deepEqual(getEventFlashMessage({ organizerRequest: "pending" }), {
+    tone: "success",
+    text: "Organizer access request submitted.",
+  });
+});
+
 test("getEventFlashMessage ignores unknown query values", () => {
   assert.equal(getEventFlashMessage({ created: "nope" }), null);
   assert.equal(getEventFlashMessage({}), null);

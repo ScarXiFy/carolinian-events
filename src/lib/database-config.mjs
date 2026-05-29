@@ -2,7 +2,7 @@ const MYSQL_PROTOCOLS = new Set(["mysql:", "mysql2:", "mariadb:"]);
 const POSTGRES_PROTOCOLS = new Set(["postgres:", "postgresql:"]);
 
 export function getDatabaseConfig(env = process.env) {
-  const url = (env.DATABASE_URL ?? "").trim();
+  let url = (env.DATABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
 
   if (!url) {
     return {
@@ -10,6 +10,12 @@ export function getDatabaseConfig(env = process.env) {
       provider: "sample",
       url: "",
     };
+  }
+
+  // Auto-clean square brackets from password placeholders if they exist
+  // e.g. postgresql://postgres:[password]@host:5432/postgres -> postgresql://postgres:password@host:5432/postgres
+  if (url.includes(":[") && url.includes("]@")) {
+    url = url.replace(":[", ":").replace("]@", "@");
   }
 
   requireSupportedDatabaseUrl(url);

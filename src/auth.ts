@@ -9,7 +9,11 @@ import {
   getUserByEmail,
   getUserByGithubId,
   getUserByGoogleId,
+  getUserById,
+  linkGithubIdToUser,
+  linkGoogleIdToUser,
 } from "@/lib/db-users.mjs";
+import { getDefaultUserRole } from "@/lib/auth-roles.mjs";
 
 /*
 Google OAuth setup required before enabling live Google login:
@@ -18,6 +22,11 @@ Google OAuth setup required before enabling live Google login:
 3. Add the callback URL: http://localhost:3000/api/auth/callback/google for local dev.
 4. Add the production callback URL: https://YOUR_DOMAIN/api/auth/callback/google.
 5. Configure the OAuth consent screen with app name, support email, authorized domain, and the email/profile scopes.
+
+Role bootstrap setup:
+1. Add ADMIN_EMAILS to local and deployment environment as a comma-separated list.
+2. Matching email/password, GitHub, or Google accounts are created as Admin.
+3. All other new accounts are created as Student and must request organizer access.
 */
 
 type DatabaseUser = {
@@ -80,11 +89,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const existingUser = await getUserByGithubId(githubId) as DatabaseUser | null;
         if (!existingUser) {
-          // Check if email exists to link, or just create new
           const emailUser = user.email ? await getUserByEmail(user.email) as DatabaseUser | null : null;
           if (emailUser) {
-            // we could link it, but for simplicity let's just create or reject if email collision
-            return false;
+            const linkedUser = await linkGithubIdToUser(emailUser.id, githubId) as DatabaseUser | null;
+            return Boolean(linkedUser);
           }
 
           await createUser({
@@ -92,7 +100,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             name: user.name || profile?.login,
             email: user.email,
             githubId,
-            role: "Student",
+            role: getDefaultUserRole(user.email, process.env),
           });
         }
       }
@@ -104,14 +112,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const existingUser = await getUserByGoogleId(googleId) as DatabaseUser | null;
         if (!existingUser) {
           const emailUser = user.email ? await getUserByEmail(user.email) as DatabaseUser | null : null;
-          if (emailUser) return false;
+          if (emailUser) {
+            const linkedUser = await linkGoogleIdToUser(emailUser.id, googleId) as DatabaseUser | null;
+            return Boolean(linkedUser);
+          }
 
           await createUser({
             id: `usr_${Date.now()}`,
             name: user.name,
             email: user.email,
             googleId,
-            role: "Student",
+            role: getDefaultUserRole(user.email, process.env),
           });
         }
       }
@@ -124,19 +135,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const dbUser = await getUserByGithubId(profile?.id?.toString()) as DatabaseUser | null;
           if (dbUser) {
             token.id = dbUser.id;
-            token.role = dbUser.role ?? "Student";
           }
         } else if (account?.provider === "google") {
           const dbUser = await getUserByGoogleId(account.providerAccountId) as DatabaseUser | null;
           if (dbUser) {
             token.id = dbUser.id;
-            token.role = dbUser.role ?? "Student";
           }
         } else {
           token.id = user.id;
-          token.role = user.role ?? "Student";
         }
       }
+
+      // Always fetch the latest user role and profile from the database
+      if (token.id) {
+        const dbUser = await getUserById(token.id as string) as DatabaseUser | null;
+        if (dbUser) {
+          token.role = dbUser.role ?? "Student";
+          token.name = dbUser.name;
+          token.email = dbUser.email;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {

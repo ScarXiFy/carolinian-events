@@ -13,6 +13,7 @@ import { EventFlash } from "../event-flash";
 import { auth } from "@/auth";
 import { SiteNavbar } from "@/components/site-navbar";
 import { JoinEventButton } from "./join-button";
+import { canJoinEvents, canManageEvent } from "@/lib/permissions.mjs";
 
 type EventStatus = "Upcoming" | "Ongoing" | "Completed" | "Cancelled";
 
@@ -53,8 +54,12 @@ export default async function EventDetailPage(
     : null;
 
   const session = await auth();
-  const isOrganizer = session?.user?.role === "Organizer";
   const userId = session?.user?.id;
+  const canManageThisEvent = canManageEvent(session?.user?.role, userId, eventWithParticipants);
+  const canJoinThisEvent =
+    Boolean(userId) &&
+    canJoinEvents(session?.user?.role) &&
+    !canManageThisEvent;
 
   const isJoined = userId ? await isEventParticipant(event.id, userId) : false;
 
@@ -146,10 +151,10 @@ export default async function EventDetailPage(
           <footer className="event-detail-footer">
             <p>Added on {formatCreatedDate(eventWithParticipants)}</p>
             <div className="action-group">
-              {userId && !isOrganizer && (
+              {canJoinThisEvent && (
                 <JoinEventButton eventId={eventWithParticipants.id} isJoined={isJoined} isFull={isFull} />
               )}
-              {isOrganizer && (
+              {canManageThisEvent && (
                 <>
                   <Link href={`/events/${eventWithParticipants.id}/edit`} className="legacy-btn legacy-btn-secondary btn-sm">
                     Edit

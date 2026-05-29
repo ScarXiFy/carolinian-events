@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(255),
     email VARCHAR(255) UNIQUE,
     password_hash VARCHAR(255),
-    role ENUM('Student', 'Organizer') DEFAULT 'Student',
+    role ENUM('Student', 'Organizer', 'Admin') DEFAULT 'Student',
     github_id VARCHAR(255) UNIQUE,
     google_id VARCHAR(255) UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -20,6 +20,21 @@ CREATE TABLE IF NOT EXISTS event_participants (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS organizer_requests (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    user_id VARCHAR(255) NOT NULL,
+    status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
+    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reviewed_by_user_id VARCHAR(255) DEFAULT NULL,
+    reviewed_at TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY organizer_pending_user_status (user_id, status),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (reviewed_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
 ALTER TABLE events ADD COLUMN IF NOT EXISTS participant_limit INT DEFAULT NULL;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS event_image_path VARCHAR(255) DEFAULT NULL;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS created_by_user_id VARCHAR(255) DEFAULT NULL;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255) UNIQUE;
+ALTER TABLE users MODIFY COLUMN role ENUM('Student', 'Organizer', 'Admin') DEFAULT 'Student';

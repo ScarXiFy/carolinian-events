@@ -1,9 +1,9 @@
 const EVENTS_QUERY =
-  "SELECT e.id, e.event_name, e.organizer, e.description, e.event_date, e.event_time, e.event_end_time, e.location, e.category, e.status, e.created_at, e.participant_limit, e.event_image_path, (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) as participant_count FROM events e ORDER BY e.created_at DESC, e.id DESC";
+  "SELECT e.id, e.event_name, e.organizer, e.description, e.event_date, e.event_time, e.event_end_time, e.location, e.category, e.status, e.created_at, e.participant_limit, e.event_image_path, e.created_by_user_id, (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) as participant_count FROM events e ORDER BY e.created_at DESC, e.id DESC";
 const LEGACY_EVENTS_QUERY =
   "SELECT id, event_name, organizer, description, event_date, event_time, location, category, status, created_at FROM events ORDER BY created_at DESC, id DESC";
 const CREATE_EVENT_QUERY =
-  "INSERT INTO events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+  "INSERT INTO events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path, created_by_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 const LEGACY_CREATE_EVENT_QUERY =
   "INSERT INTO events (event_name, organizer, description, event_date, event_time, location, category, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 const UPDATE_EVENT_QUERY =
@@ -32,7 +32,7 @@ export function normalizeMysqlEventRow(row) {
 export function getCreateEventStatement(input) {
   return {
     sql: CREATE_EVENT_QUERY,
-    values: getEventValues(input),
+    values: getCreateEventValues(input),
   };
 }
 
@@ -85,6 +85,7 @@ export function createMysqlEventReader({ createConnection = createMysqlConnectio
             ...row,
             event_end_time: null,
             event_image_path: null,
+            created_by_user_id: null,
           }));
         } else {
           throw error;
@@ -222,6 +223,10 @@ function getEventValues(input) {
     input.participantLimit || null,
     input.eventImagePath || null,
   ];
+}
+
+function getCreateEventValues(input) {
+  return [...getEventValues(input), input.createdByUserId || null];
 }
 
 function getLegacyEventValues(input) {

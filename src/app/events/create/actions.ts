@@ -8,6 +8,7 @@ import { parseEventFormData } from "@/lib/event-form-data.mjs";
 import { saveEventImageFile } from "@/lib/event-image-upload.mjs";
 import { createEvent } from "@/lib/event-store.mjs";
 import { EVENTS_PATH, LOGIN_PATH } from "@/lib/auth-navigation";
+import { canCreateEvents } from "@/lib/permissions.mjs";
 
 export async function createEventAction(formData: FormData) {
   const session = await auth();
@@ -16,7 +17,7 @@ export async function createEventAction(formData: FormData) {
     redirect(LOGIN_PATH);
   }
 
-  if (session.user?.role !== "Organizer") {
+  if (!canCreateEvents(session.user?.role)) {
     redirect(EVENTS_PATH);
   }
 
@@ -28,6 +29,7 @@ export async function createEventAction(formData: FormData) {
   const result = await createEvent({
     ...input,
     eventImagePath,
+    createdByUserId: session.user.id,
   });
 
   revalidatePath("/");

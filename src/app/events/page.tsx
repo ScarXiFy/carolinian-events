@@ -18,6 +18,7 @@ import { getEventFlashMessage } from "@/lib/flash-message.mjs";
 import { auth } from "@/auth";
 import { SiteNavbar } from "@/components/site-navbar";
 import { getCreateEventHref } from "@/lib/auth-navigation";
+import { canCreateEvents } from "@/lib/permissions.mjs";
 import {
   Pagination,
   PaginationContent,
@@ -73,6 +74,7 @@ export default async function EventsPage({
   const flashMessage = getEventFlashMessage(params);
   const session = await auth();
   const createEventHref = getCreateEventHref(session);
+  const showCreateEventLink = !session || canCreateEvents(session.user?.role);
 
   return (
     <main className="legacy-home events-dashboard-page min-h-screen bg-[#050505] text-white">
@@ -85,10 +87,12 @@ export default async function EventsPage({
       <section className="events-dashboard-shell">
         <div className="events-dashboard-heading">
           <h1>Events Dashboard</h1>
-          <Link href={createEventHref} className="events-add-button">
-            <Plus size={18} aria-hidden="true" />
-            Add New Event
-          </Link>
+          {showCreateEventLink ? (
+            <Link href={createEventHref} className="events-add-button">
+              <Plus size={18} aria-hidden="true" />
+              Add New Event
+            </Link>
+          ) : null}
         </div>
 
         <EventFlash message={flashMessage} />
@@ -126,7 +130,7 @@ export default async function EventsPage({
           <div className="events-empty-card">
             <h2>No events found</h2>
             <p>Try a different search term or create a new campus event.</p>
-            <Link href={createEventHref}>Create Event</Link>
+            {showCreateEventLink ? <Link href={createEventHref}>Create Event</Link> : null}
           </div>
         ) : (
           <div className="events-card-grid">

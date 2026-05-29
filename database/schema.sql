@@ -23,13 +23,14 @@ CREATE TABLE IF NOT EXISTS events (
                              NOT NULL DEFAULT 'Upcoming',
     participant_limit INT     DEFAULT NULL,
     event_image_path VARCHAR(255) DEFAULT NULL,
+    created_by_user_id VARCHAR(255) DEFAULT NULL,
     created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO events
-    (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path)
+    (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path, created_by_user_id)
 VALUES
     (
         'Mock Presentation',
@@ -42,6 +43,7 @@ VALUES
         'Academic',
         'Completed',
         80,
+        NULL,
         NULL
     ),
     (
@@ -55,6 +57,7 @@ VALUES
         'Academic',
         'Completed',
         120,
+        NULL,
         NULL
     ),
     (
@@ -68,6 +71,7 @@ VALUES
         'Cultural',
         'Upcoming',
         300,
+        NULL,
         NULL
     ),
     (
@@ -81,6 +85,7 @@ VALUES
         'Sports',
         'Completed',
         200,
+        NULL,
         NULL
     ),
     (
@@ -94,5 +99,6 @@ VALUES
         'Academic',
         'Upcoming',
         100,
+        NULL,
         NULL
     );

@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { CalendarIcon, LockKeyhole } from "lucide-react";
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -104,11 +105,28 @@ export function CreateEventForm({
     );
   }
 
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    const fileInput = event.currentTarget.querySelector('input[type="file"]') as HTMLInputElement;
+    if (fileInput && fileInput.files && fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      const maxBytes = 1 * 1024 * 1024; // 1 MB limit
+      if (file.size > maxBytes) {
+        event.preventDefault();
+        toast.error(`Image size exceeds the 1 MB limit. Your file is ${(file.size / (1024 * 1024)).toFixed(2)} MB. Please choose a smaller image.`);
+        return;
+      }
+    }
+
+    if (!formAction) {
+      handlePreviewSubmit(event);
+    }
+  }
+
   return (
     <form
       action={formAction}
       className="create-event-form space-y-6"
-      onSubmit={formAction ? undefined : handlePreviewSubmit}
+      onSubmit={handleSubmit}
     >
       {notice ? <div className="alert alert-info">{notice}</div> : null}
 
@@ -361,7 +379,7 @@ export function CreateEventForm({
           </FieldDescription>
         ) : (
           <FieldDescription className="status-hint text-sm text-[#a1a1aa]">
-            JPG, PNG, WebP, or GIF. Maximum size is 2 MB.
+            JPG, PNG, WebP, or GIF. Maximum size is 1 MB.
           </FieldDescription>
         )}
       </Field>

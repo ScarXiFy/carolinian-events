@@ -32,6 +32,38 @@ export function createUser(user, options = {}) {
   return getUserStore(options.env).createUser(user, options);
 }
 
+export function linkGithubIdToUser(userId, githubId, options = {}) {
+  return getUserStore(options.env).linkGithubIdToUser(userId, githubId, options);
+}
+
+export function linkGoogleIdToUser(userId, googleId, options = {}) {
+  return getUserStore(options.env).linkGoogleIdToUser(userId, googleId, options);
+}
+
+export function updateUserRole(userId, role, options = {}) {
+  return getUserStore(options.env).updateUserRole(userId, role, options);
+}
+
+export function createOrganizerRequest(userId, options = {}) {
+  return getUserStore(options.env).createOrganizerRequest(userId, options);
+}
+
+export function getOrganizerRequestByUserId(userId, options = {}) {
+  return getUserStore(options.env).getOrganizerRequestByUserId(userId, options);
+}
+
+export function listPendingOrganizerRequests(options = {}) {
+  return getUserStore(options.env).listPendingOrganizerRequests(options);
+}
+
+export function approveOrganizerRequest(requestId, adminUserId, options = {}) {
+  return getUserStore(options.env).approveOrganizerRequest(requestId, adminUserId, options);
+}
+
+export function rejectOrganizerRequest(requestId, adminUserId, options = {}) {
+  return getUserStore(options.env).rejectOrganizerRequest(requestId, adminUserId, options);
+}
+
 export function getEventParticipants(eventId, options = {}) {
   return getUserStore(options.env).getEventParticipants(eventId, options);
 }
