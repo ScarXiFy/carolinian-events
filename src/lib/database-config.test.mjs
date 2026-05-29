@@ -55,3 +55,24 @@ test("getEventStoreMode describes the active read source", () => {
     "database-ready",
   );
 });
+
+test("getDatabaseConfig falls back to NEXT_PUBLIC_SUPABASE_URL", () => {
+  assert.deepEqual(getDatabaseConfig({ NEXT_PUBLIC_SUPABASE_URL: "postgresql://postgres.example:secret@localhost:5432/postgres" }), {
+    isConfigured: true,
+    provider: "postgres",
+    url: "postgresql://postgres.example:secret@localhost:5432/postgres",
+  });
+});
+
+test("getDatabaseConfig strips square brackets from password segment", () => {
+  assert.deepEqual(
+    getDatabaseConfig({
+      DATABASE_URL: "postgresql://postgres:[MileahDaGoat123!]@db.example.co:5432/postgres",
+    }),
+    {
+      isConfigured: true,
+      provider: "postgres",
+      url: "postgresql://postgres:MileahDaGoat123!@db.example.co:5432/postgres",
+    }
+  );
+});

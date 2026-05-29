@@ -9,6 +9,7 @@ import {
   getUserByEmail,
   getUserByGithubId,
   getUserByGoogleId,
+  getUserById,
   linkGithubIdToUser,
   linkGoogleIdToUser,
 } from "@/lib/db-users.mjs";
@@ -134,19 +135,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const dbUser = await getUserByGithubId(profile?.id?.toString()) as DatabaseUser | null;
           if (dbUser) {
             token.id = dbUser.id;
-            token.role = dbUser.role ?? "Student";
           }
         } else if (account?.provider === "google") {
           const dbUser = await getUserByGoogleId(account.providerAccountId) as DatabaseUser | null;
           if (dbUser) {
             token.id = dbUser.id;
-            token.role = dbUser.role ?? "Student";
           }
         } else {
           token.id = user.id;
-          token.role = user.role ?? "Student";
         }
       }
+
+      // Always fetch the latest user role and profile from the database
+      if (token.id) {
+        const dbUser = await getUserById(token.id as string) as DatabaseUser | null;
+        if (dbUser) {
+          token.role = dbUser.role ?? "Student";
+          token.name = dbUser.name;
+          token.email = dbUser.email;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
