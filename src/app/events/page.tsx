@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import {
-  ArrowUpDown,
   ExternalLink,
   MapPin,
   Plus,
@@ -34,6 +33,20 @@ import { SortSelect } from "@/components/sort-select";
 
 type EventSort = "date_desc" | "date_asc" | "name_asc" | "name_desc";
 type EventStatus = "Upcoming" | "Ongoing" | "Completed" | "Cancelled";
+type DashboardEvent = {
+  id: number;
+  eventName: string;
+  organizer: string;
+  description: string;
+  eventDate: string;
+  eventTime: string;
+  eventEndTime?: string;
+  location: string;
+  category: string;
+  status: string;
+  createdAt: string;
+  eventImagePath?: string | null;
+};
 
 const EVENTS_PER_PAGE = 6;
 
@@ -68,7 +81,7 @@ export default async function EventsPage({
   const sort = isEventSort(requestedSort)
     ? requestedSort
     : (EVENT_SORTS.DATE_DESC as EventSort);
-  const events = getVisibleEvents(await getAllEvents(), { search, sort });
+  const events = getVisibleEvents(await getAllEvents(), { search, sort }) as DashboardEvent[];
   const pageCount = Math.max(1, Math.ceil(events.length / EVENTS_PER_PAGE));
   const currentPage = clampPage(params.page, pageCount);
   const pageStart = (currentPage - 1) * EVENTS_PER_PAGE;

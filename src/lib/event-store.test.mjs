@@ -58,6 +58,49 @@ test("event store exposes sample events through route-friendly helpers", async (
   assert.deepEqual((await getEventStaticParams())[0], { id: "1" });
 });
 
+test("getEventByRouteId returns complete normalized event detail data from database rows", async () => {
+  const event = await getEventByRouteId("11", {
+    env: { DATABASE_URL: "postgresql://postgres.example:secret@localhost:5432/postgres" },
+    readDatabaseEvents: async () => [
+      {
+        id: 11,
+        event_name: "AI Research Forum",
+        organizer: "CPE Society",
+        description: "Research talks and demos.",
+        event_date: "2026-08-05",
+        event_time: "09:00:00",
+        event_end_time: "12:00:00",
+        location: "Engineering Auditorium",
+        category: "Academic",
+        status: "Upcoming",
+        created_at: "2026-07-01T08:00:00.000Z",
+        participant_limit: 120,
+        participant_count: 34,
+        event_image_path: "/uploads/events/ai-forum.png",
+        created_by_user_id: "usr_organizer",
+      },
+    ],
+  });
+
+  assert.deepEqual(event, {
+    id: 11,
+    eventName: "AI Research Forum",
+    organizer: "CPE Society",
+    description: "Research talks and demos.",
+    eventDate: "2026-08-05",
+    eventTime: "09:00:00",
+    eventEndTime: "12:00:00",
+    location: "Engineering Auditorium",
+    category: "Academic",
+    status: "Upcoming",
+    createdAt: "2026-07-01T08:00:00.000Z",
+    participantLimit: 120,
+    participantCount: 34,
+    eventImagePath: "/uploads/events/ai-forum.png",
+    createdByUserId: "usr_organizer",
+  });
+});
+
 test("getEventStaticParams returns no static params when the configured database is unavailable", async () => {
   const params = await getEventStaticParams({
     env: { DATABASE_URL: "postgresql://postgres.example:secret@localhost:5432/postgres" },

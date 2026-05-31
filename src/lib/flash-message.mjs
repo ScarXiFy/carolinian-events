@@ -5,6 +5,7 @@ export function getEventFlashMessage(params = {}) {
     return {
       tone: "success",
       text: "Event created successfully.",
+      showInline: false,
     };
   }
 
@@ -12,6 +13,7 @@ export function getEventFlashMessage(params = {}) {
     return {
       tone: "success",
       text: "Event updated successfully.",
+      showInline: false,
     };
   }
 
@@ -19,6 +21,7 @@ export function getEventFlashMessage(params = {}) {
     return {
       tone: "success",
       text: "Event deleted successfully.",
+      showInline: false,
     };
   }
 
@@ -26,6 +29,7 @@ export function getEventFlashMessage(params = {}) {
     return {
       tone: "success",
       text: "Organizer access request submitted.",
+      showInline: false,
     };
   }
 
@@ -37,6 +41,7 @@ export function getEventFlashMessage(params = {}) {
     return {
       tone: "info",
       text: PREVIEW_MESSAGE,
+      showInline: false,
     };
   }
 

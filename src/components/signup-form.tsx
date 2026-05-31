@@ -79,9 +79,10 @@ function PasswordField({
 }
 
 export function SignupForm({
+  callbackUrl = "/events",
   className,
   ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & { callbackUrl?: string }) {
   const [error, action, isPending] = useActionState<AuthActionState, FormData>(
     async (_prevState, formData) => signup(formData),
     null,
@@ -92,6 +93,7 @@ export function SignupForm({
       <Card className="w-full min-w-0 rounded-3xl border-white/10 bg-[#0d1110]/82 py-0 text-white shadow-[0_24px_70px_rgba(0,0,0,0.38)] backdrop-blur-2xl">
         <CardContent className="p-5 sm:p-6">
           <form action={action}>
+            <input type="hidden" name="callbackUrl" value={callbackUrl} />
             <FieldGroup className="gap-5">
               {error?.error ? (
                 <div
@@ -185,7 +187,7 @@ export function SignupForm({
                 <FieldDescription className="text-center text-white/58">
                   Already have an account?{" "}
                   <Link
-                    href="/login"
+                    href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}
                     className="font-semibold text-[#d4a843] transition hover:text-[#f1d37a] hover:no-underline"
                   >
                     Sign in

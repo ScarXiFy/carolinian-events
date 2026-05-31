@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { CalendarDays, Clock, MapPin } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Users } from "lucide-react";
 
 import {
   formatCreatedDate,
@@ -14,6 +14,7 @@ import { EventFlash } from "../event-flash";
 import { auth } from "@/auth";
 import { SiteNavbarServer } from "@/components/site-navbar-server";
 import { JoinEventButton } from "./join-button";
+import { getLoginHref } from "@/lib/auth-navigation.mjs";
 import { canJoinEvents, canManageEvent } from "@/lib/permissions.mjs";
 
 type EventStatus = "Upcoming" | "Ongoing" | "Completed" | "Cancelled";
@@ -47,6 +48,7 @@ export default async function EventDetailPage(
     participantLimit: number | null;
     participantCount: number;
     eventImagePath: string | null;
+    createdByUserId: string | null;
   };
 
   const formattedEndTime = eventWithParticipants.eventEndTime
@@ -54,17 +56,41 @@ export default async function EventDetailPage(
         new Date(`${eventWithParticipants.eventDate}T${eventWithParticipants.eventEndTime}`),
       )
     : null;
+  const formattedStartTime = formatEventTime(eventWithParticipants);
+  const participantLabel =
+    eventWithParticipants.participantLimit !== null
+      ? `${eventWithParticipants.participantCount} / ${eventWithParticipants.participantLimit}`
+      : String(eventWithParticipants.participantCount);
+  const detailRows = [
+    ["Organizer", eventWithParticipants.organizer],
+    ["Date", formatFullEventDate(eventWithParticipants)],
+    ["Start Time", formattedStartTime],
+    ["End Time", formattedEndTime ?? "Not set"],
+    ["Location", eventWithParticipants.location],
+    ["Category", eventWithParticipants.category],
+    ["Status", eventWithParticipants.status],
+    [
+      "Max Participants",
+      eventWithParticipants.participantLimit !== null
+        ? String(eventWithParticipants.participantLimit)
+        : "No limit set",
+    ],
+    ["Current Participants", participantLabel],
+    ["Event ID", String(eventWithParticipants.id)],
+    ["Created", formatCreatedDate(eventWithParticipants)],
+  ];
+
+  if (eventWithParticipants.createdByUserId) {
+    detailRows.push(["Created By", eventWithParticipants.createdByUserId]);
+  }
 
   const session = await auth();
   const userId = session?.user?.id;
   const canManageThisEvent = canManageEvent(session?.user?.role, userId, eventWithParticipants);
-  const canJoinThisEvent =
-    Boolean(userId) &&
-    canJoinEvents(session?.user?.role) &&
-    !canManageThisEvent;
+  const canJoinThisEvent = Boolean(userId) && canJoinEvents(session?.user?.role);
+  const loginHref = userId ? undefined : getLoginHref(`/events/${eventWithParticipants.id}`);
 
   const isJoined = userId ? await isEventParticipant(event.id, userId) : false;
-
   const isFull =
     eventWithParticipants.participantLimit !== null &&
     eventWithParticipants.participantCount >= eventWithParticipants.participantLimit;
@@ -79,114 +105,105 @@ export default async function EventDetailPage(
 
       <section className="relative z-10 mx-auto w-full max-w-[1200px] px-[5%] pb-20 pt-[120px]">
         <Link href="/events" className="legacy-btn legacy-btn-secondary mb-8">
-          ← Back to Dashboard
+          Back to Dashboard
         </Link>
 
         <EventFlash message={flashMessage} />
 
         <article className="event-detail-card">
-          <header className="event-detail-header">
-            {/* Title row: event name + status badge */}
-            <div className="event-detail-title-row">
-              <h1>{eventWithParticipants.eventName}</h1>
-              <span
-                className={`status-badge detail-badge ${statusStyles[eventWithParticipants.status as EventStatus]}`}
-              >
-                {eventWithParticipants.status}
-              </span>
+          <div className="event-detail-hero">
+            <div className="event-detail-image-wrapper">
+              {eventWithParticipants.eventImagePath ? (
+                <Image
+                  src={eventWithParticipants.eventImagePath}
+                  alt={`${eventWithParticipants.eventName} event banner`}
+                  fill
+                  className="object-cover"
+                  priority
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 45vw, 520px"
+                />
+              ) : (
+                <div
+                  className={`event-detail-image-placeholder ${getDetailMediaClass(
+                    eventWithParticipants.category,
+                    eventWithParticipants.status,
+                  )}`}
+                  aria-hidden="true"
+                >
+                  <div className="event-media-orb" />
+                  <div className="event-media-lines" />
+                  <div className="event-media-label">{eventWithParticipants.category}</div>
+                </div>
+              )}
             </div>
 
-            {/* Meta pills */}
-            <div className="event-meta">
-              <div className="meta-pill">
-                <CalendarDays size={13} aria-hidden="true" />
-                <span className="meta-pill-label">Date</span>
-                <span className="meta-pill-value">{formatFullEventDate(eventWithParticipants)}</span>
-              </div>
-              <div className="meta-pill">
-                <Clock size={13} aria-hidden="true" />
-                <span className="meta-pill-label">Time</span>
-                <span className="meta-pill-value">
-                  {formatEventTime(eventWithParticipants)}
-                  {formattedEndTime ? ` – ${formattedEndTime}` : ""}
+            <header className="event-detail-header">
+              <div className="event-detail-title-row">
+                <h1>{eventWithParticipants.eventName}</h1>
+                <span
+                  className={`status-badge detail-badge ${statusStyles[eventWithParticipants.status as EventStatus]}`}
+                >
+                  {eventWithParticipants.status}
                 </span>
               </div>
-              <div className="meta-pill">
-                <MapPin size={13} aria-hidden="true" />
-                <span className="meta-pill-label">Place</span>
-                <span className="meta-pill-value">{eventWithParticipants.location}</span>
-              </div>
-            </div>
-          </header>
 
-          {/* Event image — real image if available, styled placeholder otherwise */}
-          <div className="event-detail-image-wrapper">
-            {eventWithParticipants.eventImagePath ? (
-              <Image
-                src={eventWithParticipants.eventImagePath}
-                alt={`${eventWithParticipants.eventName} event banner`}
-                fill
-                className="object-cover"
-                priority
-                sizes="(max-width: 1200px) 100vw, 1200px"
-              />
-            ) : (
-              <div
-                className={`event-detail-image-placeholder ${getDetailMediaClass(
-                  eventWithParticipants.category,
-                  eventWithParticipants.status,
-                )}`}
-                aria-hidden="true"
-              >
-                <div className="event-media-orb" />
-                <div className="event-media-lines" />
-                <div className="event-media-label">{eventWithParticipants.category}</div>
+              <div className="event-meta">
+                <div className="meta-pill">
+                  <CalendarDays size={13} aria-hidden="true" />
+                  <span className="meta-pill-label">Date</span>
+                  <span className="meta-pill-value">{formatFullEventDate(eventWithParticipants)}</span>
+                </div>
+                <div className="meta-pill">
+                  <Clock size={13} aria-hidden="true" />
+                  <span className="meta-pill-label">Time</span>
+                  <span className="meta-pill-value">
+                    {formattedStartTime}
+                    {formattedEndTime ? ` - ${formattedEndTime}` : ""}
+                  </span>
+                </div>
+                <div className="meta-pill">
+                  <MapPin size={13} aria-hidden="true" />
+                  <span className="meta-pill-label">Place</span>
+                  <span className="meta-pill-value">{eventWithParticipants.location}</span>
+                </div>
+                <div className="meta-pill">
+                  <Users size={13} aria-hidden="true" />
+                  <span className="meta-pill-label">Slots</span>
+                  <span className="meta-pill-value">{participantLabel}</span>
+                </div>
               </div>
-            )}
+
+              <dl className="event-detail-facts">
+                {detailRows.map(([label, value]) => (
+                  <div key={label} className="event-detail-fact">
+                    <dt>{label}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </header>
           </div>
 
-          {/* Body: description + sidebar */}
           <div className="event-detail-body">
-            <div className="event-detail-main">
-              <section className="event-section">
-                <h2>Description</h2>
-                <p>{eventWithParticipants.description || "No description provided."}</p>
-              </section>
-            </div>
-
-            <aside className="event-detail-sidebar">
-              <section className="event-section">
-                <h2>Organizer</h2>
-                <p>{eventWithParticipants.organizer}</p>
-              </section>
-              <section className="event-section">
-                <h2>Category</h2>
-                <p>{eventWithParticipants.category}</p>
-              </section>
-              <section className="event-section">
-                <h2>Participants</h2>
-                <p>
-                  {eventWithParticipants.participantCount}
-                  {eventWithParticipants.participantLimit !== null
-                    ? ` / ${eventWithParticipants.participantLimit}`
-                    : ""}
-                </p>
-              </section>
-            </aside>
+            <section className="event-section event-description-section">
+              <h2>Description</h2>
+              <p>{eventWithParticipants.description || "No description provided."}</p>
+            </section>
           </div>
 
-          {/* Footer: actions */}
           <footer className="event-detail-footer">
             <p>Added on {formatCreatedDate(eventWithParticipants)}</p>
             <div className="action-group">
-              {/* Students/Organizers who don't manage this event */}
-              {canJoinThisEvent && (
-                <JoinEventButton eventId={eventWithParticipants.id} isJoined={isJoined} isFull={isFull} />
+              {(canJoinThisEvent || loginHref) && (
+                <JoinEventButton
+                  eventId={eventWithParticipants.id}
+                  isJoined={isJoined}
+                  isFull={isFull}
+                  loginHref={loginHref}
+                />
               )}
-              {/* Managers (organizer/admin): Join Event left of Edit */}
               {canManageThisEvent && (
                 <>
-                  <JoinEventButton eventId={eventWithParticipants.id} isJoined={isJoined} isFull={isFull} />
                   <Link href={`/events/${eventWithParticipants.id}/edit`} className="legacy-btn legacy-btn-secondary btn-sm">
                     Edit
                   </Link>

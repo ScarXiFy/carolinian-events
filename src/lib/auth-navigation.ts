@@ -1,10 +1,15 @@
 import type { Session } from "next-auth";
 import { canCreateEvents } from "@/lib/permissions.mjs";
+export {
+  CREATE_EVENT_PATH,
+  EVENTS_PATH,
+  LOGIN_PATH,
+  SIGNUP_PATH,
+  getAuthRedirectPath,
+  getLoginHref,
+} from "@/lib/auth-navigation.mjs";
 
-export const LOGIN_PATH = "/login";
-export const SIGNUP_PATH = "/signup";
-export const EVENTS_PATH = "/events";
-export const CREATE_EVENT_PATH = "/events/create";
+import { CREATE_EVENT_PATH, EVENTS_PATH, LOGIN_PATH } from "@/lib/auth-navigation.mjs";
 
 export function getCreateEventHref(session: Session | null) {
   if (!session) return LOGIN_PATH;

@@ -4,12 +4,19 @@ import { signIn, signOut } from "@/auth";
 import { AuthError } from "next-auth";
 import { createUser, getUserByEmail } from "@/lib/db-users.mjs";
 import { getDefaultUserRole } from "@/lib/auth-roles.mjs";
+import { getAuthRedirectPath } from "@/lib/auth-navigation.mjs";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 
 export async function login(formData: FormData) {
+  const callbackUrl = getAuthRedirectPath(String(formData.get("callbackUrl") ?? ""));
+  const credentials = {
+    ...Object.fromEntries(formData),
+    redirect: false,
+  };
+
   try {
-    await signIn("credentials", Object.fromEntries(formData));
+    await signIn("credentials", credentials);
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
@@ -21,11 +28,11 @@ export async function login(formData: FormData) {
     }
     throw error;
   }
-  redirect("/events");
+  redirect(callbackUrl);
 }
 
-export async function githubLogin() {
-  await signIn("github", { redirectTo: "/events" });
+export async function githubLogin(callbackUrl?: string) {
+  await signIn("github", { redirectTo: getAuthRedirectPath(callbackUrl) });
 }
 
 export async function googleLogin() {
@@ -41,6 +48,7 @@ export async function logout() {
 }
 
 export async function signup(formData: FormData) {
+  const callbackUrl = getAuthRedirectPath(String(formData.get("callbackUrl") ?? ""));
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
@@ -74,5 +82,5 @@ export async function signup(formData: FormData) {
     console.error(error);
   }
 
-  redirect("/events");
+  redirect(callbackUrl);
 }

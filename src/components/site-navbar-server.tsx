@@ -6,9 +6,9 @@ type SiteNavbarServerProps = {
   showUserMenu?: boolean;
 };
 
-export async function SiteNavbarServer({
-  showUserMenu = false,
-}: SiteNavbarServerProps) {
+export async function SiteNavbarServer(_props: SiteNavbarServerProps = {}) {
+  void _props;
+
   const session = await auth();
   const userName = session?.user?.name || session?.user?.email || "Account";
   const role = session?.user?.role || ROLES.STUDENT;
@@ -17,7 +17,6 @@ export async function SiteNavbarServer({
 
   return (
     <SiteNavbar
-      showUserMenu={showUserMenu}
       isLoggedIn={isLoggedIn}
       userName={userName}
       role={role}
