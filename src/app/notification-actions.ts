@@ -10,7 +10,7 @@ export async function markMyNotificationsRead() {
   if (!session?.user?.id) return;
 
   await markNotificationsRead(session.user.id);
-  revalidatePath("/");
-  revalidatePath("/events");
-  revalidatePath("/admin");
+  //revalidatePath("/");
+  //revalidatePath("/events");
+  //revalidatePath("/admin");
 }
