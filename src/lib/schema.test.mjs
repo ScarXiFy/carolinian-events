@@ -19,3 +19,12 @@ test("database schema keeps the app-supported event statuses", () => {
   assert.match(schema, /CREATE TABLE IF NOT EXISTS events/);
   assert.match(schema, /'Upcoming', 'Ongoing', 'Completed', 'Cancelled'/);
 });
+
+test("database schema includes organizer contact fields and event images", () => {
+  const schema = readFileSync(schemaPath, "utf8");
+
+  assert.match(schema, /contact_email/);
+  assert.match(schema, /contact_phone/);
+  assert.match(schema, /CREATE TABLE IF NOT EXISTS event_images/);
+  assert.match(schema, /event_images_event_sort/);
+});

@@ -10,6 +10,8 @@ type JoinEventButtonProps = {
   eventId: number;
   isJoined: boolean;
   isFull: boolean;
+  status: string;
+  joinLabel: string;
   loginHref?: string;
 };
 
@@ -17,14 +19,26 @@ export function JoinEventButton({
   eventId,
   isJoined,
   isFull,
+  status,
+  joinLabel,
   loginHref,
 }: JoinEventButtonProps) {
   const [loading, setLoading] = useState(false);
+  const isClosed = status === "Completed" || status === "Cancelled";
+  const isUnavailable = isClosed || isFull;
 
   if (loginHref) {
+    if (isUnavailable) {
+      return (
+        <button className="legacy-btn legacy-btn-primary" disabled>
+          {getButtonLabel({ loading: false, isJoined, isFull, status, joinLabel })}
+        </button>
+      );
+    }
+
     return (
       <Link href={loginHref} className="legacy-btn legacy-btn-primary">
-        Join Event
+        {joinLabel}
       </Link>
     );
   }
@@ -50,10 +64,10 @@ export function JoinEventButton({
   return (
     <button
       onClick={handleAction}
-      disabled={loading || (isFull && !isJoined)}
+      disabled={loading || isClosed || (isFull && !isJoined)}
       className={`legacy-btn ${isJoined ? "btn-danger" : "legacy-btn-primary"}`}
     >
-      {getButtonLabel({ loading, isJoined, isFull })}
+      {getButtonLabel({ loading, isJoined, isFull, status, joinLabel })}
     </button>
   );
 }
@@ -62,18 +76,25 @@ function getButtonLabel({
   loading,
   isJoined,
   isFull,
+  status,
+  joinLabel,
 }: {
   loading: boolean;
   isJoined: boolean;
   isFull: boolean;
+  status: string;
+  joinLabel: string;
 }) {
   if (loading) {
-    return "Processing...";
+    return isJoined ? "Cancelling RSVP..." : "Joining...";
   }
+
+  if (status === "Completed") return "Event Completed";
+  if (status === "Cancelled") return "Event Cancelled";
 
   if (isJoined) {
     return "Cancel RSVP";
   }
 
-  return isFull ? "Event Full" : "Join Event";
+  return isFull ? "Event Full" : joinLabel;
 }

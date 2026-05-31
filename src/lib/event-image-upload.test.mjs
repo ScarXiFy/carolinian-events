@@ -5,6 +5,7 @@ import {
   createSupabaseEventImageUpload,
   getSafeEventImageName,
   validateEventImageFile,
+  validateStoredEventImageUrls,
 } from "./event-image-upload.mjs";
 
 test("validateEventImageFile accepts safe image uploads", () => {
@@ -84,4 +85,17 @@ test("createSupabaseEventImageUpload returns signed upload details and public UR
     token: "token_1",
   });
   assert.deepEqual(calls[0], ["client", "https://project.supabase.co", "sb_publishable"]);
+});
+
+test("validateStoredEventImageUrls accepts configured Supabase image URLs", () => {
+  assert.deepEqual(
+    validateStoredEventImageUrls(
+      [
+        "https://project.supabase.co/storage/v1/object/public/event-images/events/a.png",
+        "https://project.supabase.co/storage/v1/object/public/event-images/events/a.png",
+      ],
+      { env: { NEXT_PUBLIC_SUPABASE_URL: "https://project.supabase.co" } },
+    ),
+    ["https://project.supabase.co/storage/v1/object/public/event-images/events/a.png"],
+  );
 });

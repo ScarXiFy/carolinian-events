@@ -26,6 +26,20 @@ export const CATEGORY_OPTIONS = [
   "Other",
 ];
 
+export const EVENT_STATUSES = {
+  UPCOMING: "Upcoming",
+  ONGOING: "Ongoing",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+export const EVENT_JOIN_STATES = {
+  OPEN: "open",
+  FULL: "full",
+  COMPLETED: "completed",
+  CANCELLED: "cancelled",
+};
+
 export const sampleEvents = [
   {
     id: 1,
@@ -100,16 +114,18 @@ export const sampleEvents = [
 ];
 
 export function getEventStats(events = sampleEvents) {
+  const normalizedEvents = normalizeEventStatuses(events);
+
   return {
-    total: events.length,
-    upcoming: events.filter((event) => event.status === "Upcoming").length,
-    ongoing: events.filter((event) => event.status === "Ongoing").length,
-    completed: events.filter((event) => event.status === "Completed").length,
+    total: normalizedEvents.length,
+    upcoming: normalizedEvents.filter((event) => event.status === EVENT_STATUSES.UPCOMING).length,
+    ongoing: normalizedEvents.filter((event) => event.status === EVENT_STATUSES.ONGOING).length,
+    completed: normalizedEvents.filter((event) => event.status === EVENT_STATUSES.COMPLETED).length,
   };
 }
 
 export function getFeaturedEvents(events = sampleEvents, limit = 5) {
-  return [...events]
+  return normalizeEventStatuses(events)
     .sort((a, b) => {
       const first = new Date(`${a.eventDate}T${a.eventTime}`).getTime();
       const second = new Date(`${b.eventDate}T${b.eventTime}`).getTime();
@@ -123,13 +139,14 @@ export function getVisibleEvents(
   { search = "", sort = EVENT_SORTS.DATE_DESC } = {},
 ) {
   const normalizedSearch = search.trim().toLowerCase();
+  const normalizedEvents = normalizeEventStatuses(events);
   const visibleEvents = normalizedSearch
-    ? events.filter((event) => {
+    ? normalizedEvents.filter((event) => {
         return [event.eventName, event.location].some((value) =>
           value.toLowerCase().includes(normalizedSearch),
         );
       })
-    : [...events];
+    : [...normalizedEvents];
 
   return visibleEvents.sort((a, b) => {
     if (sort === EVENT_SORTS.DATE_ASC) {
@@ -198,14 +215,85 @@ export function computeEventStatus(eventDate, eventTime, eventEndTime, now = new
   const endDateTime = new Date(`${eventDate}T${eventEndTime}`);
 
   if (now < startDateTime) {
-    return "Upcoming";
+    return EVENT_STATUSES.UPCOMING;
   }
 
   if (now > endDateTime) {
-    return "Completed";
+    return EVENT_STATUSES.COMPLETED;
   }
 
-  return "Ongoing";
+  return EVENT_STATUSES.ONGOING;
+}
+
+export function getNormalizedEventStatus(event, now = new Date()) {
+  if (event?.status === EVENT_STATUSES.CANCELLED) {
+    return EVENT_STATUSES.CANCELLED;
+  }
+
+  if (!event?.eventDate || !event?.eventTime || !event?.eventEndTime) {
+    return event?.status || EVENT_STATUSES.UPCOMING;
+  }
+
+  return computeEventStatus(event?.eventDate, event?.eventTime, event?.eventEndTime, now);
+}
+
+export function normalizeEventStatus(event, now = new Date()) {
+  return {
+    ...event,
+    status: getNormalizedEventStatus(event, now),
+  };
+}
+
+export function normalizeEventStatuses(events = [], now = new Date()) {
+  return events.map((event) => normalizeEventStatus(event, now));
+}
+
+export function getEventImagePaths(event) {
+  const paths = Array.isArray(event?.eventImagePaths) ? event.eventImagePaths : [];
+  const values = [...paths, event?.eventImagePath]
+    .map((value) => String(value ?? "").trim())
+    .filter(Boolean);
+
+  return [...new Set(values)];
+}
+
+export function getEventJoinState(event) {
+  if (event.status === EVENT_STATUSES.CANCELLED) {
+    return {
+      state: EVENT_JOIN_STATES.CANCELLED,
+      disabled: true,
+      label: "Event Cancelled",
+      error: "Event Cancelled",
+    };
+  }
+
+  if (event.status === EVENT_STATUSES.COMPLETED) {
+    return {
+      state: EVENT_JOIN_STATES.COMPLETED,
+      disabled: true,
+      label: "Event Completed",
+      error: "Event Completed",
+    };
+  }
+
+  const participantLimit = event.participantLimit ?? null;
+  const participantCount = event.participantCount ?? 0;
+
+  if (participantLimit !== null && participantCount >= participantLimit) {
+    return {
+      state: EVENT_JOIN_STATES.FULL,
+      disabled: true,
+      label: "Event Full",
+      error: "Event Full",
+    };
+  }
+
+  return {
+    state: EVENT_JOIN_STATES.OPEN,
+    disabled: false,
+    label: "Join Event",
+    error: "",
+  };
 }
 
 export function getSelectWithCustomValue(options, value) {

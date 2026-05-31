@@ -6,6 +6,9 @@ import {
   CATEGORY_OPTIONS,
   LOCATION_OPTIONS,
   computeEventStatus,
+  getEventImagePaths,
+  getEventJoinState,
+  getNormalizedEventStatus,
   getDeleteConfirmationMessage,
   getEventById,
   getSelectWithCustomValue,
@@ -93,6 +96,46 @@ test("computeEventStatus uses start and end times for event windows", () => {
   assert.equal(computeEventStatus("2026-05-27", "11:30", "12:30", now), "Ongoing");
   assert.equal(computeEventStatus("2026-05-28", "08:00", "09:00", now), "Upcoming");
   assert.equal(computeEventStatus("2026-05-28", "08:00", "", now), "Upcoming");
+});
+
+test("getNormalizedEventStatus preserves cancelled and completes expired events", () => {
+  const now = new Date("2026-06-02T00:00:00");
+
+  assert.equal(
+    getNormalizedEventStatus({
+      eventDate: "2026-06-01",
+      eventTime: "07:30",
+      eventEndTime: "23:59",
+      status: "Upcoming",
+    }, now),
+    "Completed",
+  );
+  assert.equal(
+    getNormalizedEventStatus({
+      eventDate: "2026-06-01",
+      eventTime: "07:30",
+      eventEndTime: "23:59",
+      status: "Cancelled",
+    }, now),
+    "Cancelled",
+  );
+});
+
+test("getEventJoinState blocks full, completed, and cancelled events", () => {
+  assert.equal(getEventJoinState({ status: "Upcoming", participantLimit: 2, participantCount: 1 }).label, "Join Event");
+  assert.equal(getEventJoinState({ status: "Upcoming", participantLimit: 2, participantCount: 2 }).label, "Event Full");
+  assert.equal(getEventJoinState({ status: "Completed", participantLimit: 2, participantCount: 1 }).label, "Event Completed");
+  assert.equal(getEventJoinState({ status: "Cancelled", participantLimit: 2, participantCount: 1 }).label, "Event Cancelled");
+});
+
+test("getEventImagePaths keeps the first image as the main banner", () => {
+  assert.deepEqual(
+    getEventImagePaths({
+      eventImagePath: "https://cdn.example/main.png",
+      eventImagePaths: ["https://cdn.example/gallery.png", "https://cdn.example/main.png"],
+    }),
+    ["https://cdn.example/gallery.png", "https://cdn.example/main.png"],
+  );
 });
 
 test("getSelectWithCustomValue resolves preset values for edit forms", () => {

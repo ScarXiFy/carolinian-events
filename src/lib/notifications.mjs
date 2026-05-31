@@ -1,4 +1,5 @@
 import { getDatabaseConfig } from "./database-config.mjs";
+import { formatEventTime, formatFullEventDate } from "./events.mjs";
 
 const RECENT_LIMIT = 10;
 
@@ -110,6 +111,32 @@ export async function notifyEventLimitReached(event, options = {}) {
       message: `${event.eventName} has reached its registration limit.`,
       eventId: event.id,
     },
+    options,
+  );
+}
+
+export async function notifyEventCancelledToAttendees(event, attendeeUserIds = [], actorUserId, options = {}) {
+  if (!event?.id || attendeeUserIds.length === 0) return [];
+
+  const eventDate = formatFullEventDate(event);
+  const startTime = formatEventTime(event);
+  const endTime = event.eventEndTime
+    ? new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+      }).format(new Date(`${event.eventDate}T${event.eventEndTime}`))
+    : null;
+  const timeLabel = endTime ? `${startTime} - ${endTime}` : startTime;
+
+  return createNotifications(
+    [...new Set(attendeeUserIds)].map((recipientUserId) => ({
+      recipientUserId,
+      type: "event_cancelled",
+      title: `${event.eventName} cancelled`,
+      message: `${event.eventName} is Cancelled. It was scheduled for ${eventDate}, ${timeLabel}. The organizer has cancelled this event.`,
+      eventId: event.id,
+      actorUserId: actorUserId || null,
+    })),
     options,
   );
 }

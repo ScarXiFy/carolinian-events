@@ -14,6 +14,8 @@ create table if not exists events (
   status text not null default 'Upcoming',
   participant_limit integer,
   event_image_path text,
+  contact_email text,
+  contact_phone text,
   created_by_user_id text,
   created_at timestamptz default now()
 );
@@ -31,6 +33,8 @@ create table if not exists users (
 );
 
 alter table events add column if not exists created_by_user_id text;
+alter table events add column if not exists contact_email text;
+alter table events add column if not exists contact_phone text;
 alter table users add column if not exists google_id text unique;
 alter table users add column if not exists github_id text unique;
 alter table users add column if not exists email_verified_at timestamptz;
@@ -66,6 +70,17 @@ create table if not exists email_verification_tokens (
   used_at timestamptz,
   created_at timestamptz default now()
 );
+
+create table if not exists event_images (
+  id bigserial primary key,
+  event_id bigint not null references events(id) on delete cascade,
+  image_url text not null,
+  sort_order integer not null default 0,
+  created_at timestamptz default now()
+);
+
+create index if not exists event_images_event_sort
+  on event_images(event_id, sort_order, id);
 
 create table if not exists notifications (
   id bigserial primary key,

@@ -5,17 +5,17 @@ import { writeMysqlEvents, readMysqlEvents } from "@/lib/mysql-events.mjs";
 import { writePostgresEvents, readPostgresEvents } from "@/lib/postgres-events.mjs";
 import { getDatabaseConfig } from "@/lib/database-config.mjs";
 import { getAllEvents, getEventByRouteId, updateEvent } from "@/lib/event-store.mjs";
-import { notifyEventLimitReached, notifyEventOwner } from "@/lib/notifications.mjs";
+import {
+  notifyEventCancelledToAttendees,
+  notifyEventLimitReached,
+  notifyEventOwner,
+} from "@/lib/notifications.mjs";
+import { getEventJoinState } from "@/lib/events.mjs";
+import { getEventParticipants } from "@/lib/db-users.mjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { EVENTS_PATH, LOGIN_PATH } from "@/lib/auth-navigation";
-import { ROLES } from "@/lib/permissions.mjs";
-
-type EventWithParticipants = {
-  id: number;
-  participant_limit?: number | null;
-  participant_count?: number;
-};
+import { canManageEvent } from "@/lib/permissions.mjs";
 
 type EventForNotifications = {
   id: number;
@@ -40,17 +40,14 @@ export async function joinEvent(eventId: number) {
   const readEvents = config.provider === "postgres" ? readPostgresEvents : readMysqlEvents;
   const writeEvents = config.provider === "postgres" ? writePostgresEvents : writeMysqlEvents;
 
-  // Check limits
-  const events = await readEvents(config.url) as EventWithParticipants[];
-  const event = events.find((candidate) => candidate.id === eventId);
+  await readEvents(config.url);
+  const event = await getEventByRouteId(eventId);
 
   if (!event) return { error: "Event not found" };
 
-  const participantLimit = event.participant_limit ?? null;
-  const participantCount = event.participant_count ?? 0;
-
-  if (participantLimit !== null && participantCount >= participantLimit) {
-    return { error: "Event is full" };
+  const joinState = getEventJoinState(event);
+  if (joinState.disabled) {
+    return { error: joinState.error };
   }
 
   try {
@@ -103,27 +100,34 @@ export async function cancelEvent(eventId: number) {
     redirect(LOGIN_PATH);
   }
 
-  if (session.user.role !== ROLES.ADMIN) {
-    redirect(EVENTS_PATH);
-  }
-
   const event = await getEventByRouteId(eventId);
   if (!event) {
     redirect(EVENTS_PATH);
   }
 
+  if (!canManageEvent(session.user?.role, session.user.id, event)) {
+    redirect(EVENTS_PATH);
+  }
+
+  const eventForUpdate = event as typeof event & {
+    eventImagePath?: string | null;
+    eventImagePaths?: string[];
+  };
+  const attendees = await getEventParticipants(eventId);
   const result = await updateEvent(eventId, {
-    ...event,
+    ...eventForUpdate,
     status: "Cancelled",
-    eventImagePath: null,
+    eventImagePath: eventForUpdate.eventImagePath ?? null,
+    eventImagePaths: eventForUpdate.eventImagePaths ?? [],
   });
 
   await notifyEventOwner(event, {
-    type: "event_cancelled_by_admin",
-    title: "Event cancelled by Admin",
-    message: `${event.eventName} was cancelled by an Admin.`,
+    type: "event_cancelled_by_manager",
+    title: "Event cancelled",
+    message: `${event.eventName} was cancelled.`,
     actorUserId: session.user.id,
   });
+  await notifyEventCancelledToAttendees(event, attendees, session.user.id);
 
   revalidatePath("/");
   revalidatePath("/events");

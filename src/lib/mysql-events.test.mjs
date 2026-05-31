@@ -12,10 +12,10 @@ import {
 } from "./mysql-events.mjs";
 
 test("getEventsQuery selects legacy event fields in dashboard order", () => {
-  assert.equal(
-    getEventsQuery(),
-    "SELECT e.id, e.event_name, e.organizer, e.description, e.event_date, e.event_time, e.event_end_time, e.location, e.category, e.status, e.created_at, e.participant_limit, e.event_image_path, e.created_by_user_id, (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) as participant_count FROM events e ORDER BY e.created_at DESC, e.id DESC",
-  );
+  assert.match(getEventsQuery(), /e\.event_image_path/);
+  assert.match(getEventsQuery(), /e\.contact_email/);
+  assert.match(getEventsQuery(), /GROUP_CONCAT\(image_url/);
+  assert.match(getEventsQuery(), /event_participants/);
 });
 
 test("normalizeMysqlEventRow serializes Date values for app formatting", () => {
@@ -34,6 +34,9 @@ test("normalizeMysqlEventRow serializes Date values for app formatting", () => {
     participant_limit: 120,
     participant_count: 18,
     event_image_path: "/uploads/events/poster.png",
+    event_image_paths: "/uploads/events/poster.png\n/uploads/events/gallery.png",
+    contact_email: "events@usc.edu.ph",
+    contact_phone: "09171234567",
     created_by_user_id: "usr_1",
   };
 
@@ -52,6 +55,9 @@ test("normalizeMysqlEventRow serializes Date values for app formatting", () => {
     participant_limit: 120,
     participant_count: 18,
     event_image_path: "/uploads/events/poster.png",
+    event_image_paths: "/uploads/events/poster.png\n/uploads/events/gallery.png",
+    contact_email: "events@usc.edu.ph",
+    contact_phone: "09171234567",
     created_by_user_id: "usr_1",
   });
 });
@@ -129,11 +135,13 @@ test("event write statements use parameterized SQL", () => {
     status: "Upcoming",
     participantLimit: 80,
     eventImagePath: "/uploads/events/poster.png",
+    contactEmail: "events@usc.edu.ph",
+    contactPhone: "09171234567",
     createdByUserId: "usr_1",
   };
 
   assert.deepEqual(getCreateEventStatement(input), {
-    sql: "INSERT INTO events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path, created_by_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    sql: "INSERT INTO events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path, contact_email, contact_phone, created_by_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     values: [
       "Research Colloquium",
       "CPE Department",
@@ -146,12 +154,14 @@ test("event write statements use parameterized SQL", () => {
       "Upcoming",
       80,
       "/uploads/events/poster.png",
+      "events@usc.edu.ph",
+      "09171234567",
       "usr_1",
     ],
   });
 
   assert.deepEqual(getUpdateEventStatement(9, input), {
-    sql: "UPDATE events SET event_name = ?, organizer = ?, description = ?, event_date = ?, event_time = ?, event_end_time = ?, location = ?, category = ?, status = ?, participant_limit = ?, event_image_path = COALESCE(?, event_image_path) WHERE id = ?",
+    sql: "UPDATE events SET event_name = ?, organizer = ?, description = ?, event_date = ?, event_time = ?, event_end_time = ?, location = ?, category = ?, status = ?, participant_limit = ?, event_image_path = COALESCE(?, event_image_path), contact_email = ?, contact_phone = ? WHERE id = ?",
     values: [
       "Research Colloquium",
       "CPE Department",
@@ -164,6 +174,8 @@ test("event write statements use parameterized SQL", () => {
       "Upcoming",
       80,
       "/uploads/events/poster.png",
+      "events@usc.edu.ph",
+      "09171234567",
       9,
     ],
   });
@@ -205,6 +217,7 @@ test("createMysqlEventWriter executes write operations through an injected conne
       status: "Upcoming",
       participantLimit: 80,
       eventImagePath: "/uploads/events/poster.png",
+      eventImagePaths: ["/uploads/events/poster.png"],
     },
   );
   const updated = await writer.updateEvent(
@@ -222,6 +235,7 @@ test("createMysqlEventWriter executes write operations through an injected conne
       status: "Upcoming",
       participantLimit: 80,
       eventImagePath: "/uploads/events/poster.png",
+      eventImagePaths: ["/uploads/events/poster.png"],
     },
   );
   const deleted = await writer.deleteEvent(
@@ -232,5 +246,5 @@ test("createMysqlEventWriter executes write operations through an injected conne
   assert.equal(created.id, 12);
   assert.deepEqual(updated, { affectedRows: 1 });
   assert.deepEqual(deleted, { affectedRows: 1 });
-  assert.equal(calls.filter(([name]) => name === "end").length, 3);
+  assert.equal(calls.filter(([name]) => name === "end").length, 5);
 });

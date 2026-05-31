@@ -13,6 +13,8 @@ test("parseEventFormData maps create form fields to an event input", () => {
   formData.set("event_end_time", "11:00");
   formData.set("location_select", "Bunzel Building");
   formData.set("category_select", "Academic");
+  formData.set("contact_email", "research@usc.edu.ph");
+  formData.set("contact_phone", "09171234567");
   formData.set("status", "Completed");
   formData.set("participant_limit", "80");
   formData.set(
@@ -44,7 +46,10 @@ test("parseEventFormData maps create form fields to an event input", () => {
     category: "Academic",
     status: "Upcoming",
     participantLimit: 80,
+    contactEmail: "research@usc.edu.ph",
+    contactPhone: "09171234567",
     eventImagePath: "",
+    eventImagePaths: [],
     imageFile: {
       name: "poster.png",
       type: "image/png",
@@ -64,6 +69,8 @@ test("parseEventFormData uses custom Other fields", () => {
   formData.set("location_other", "NCR Lab");
   formData.set("category_select", "Other");
   formData.set("category_other", "Research");
+  formData.set("contact_email", "demo@usc.edu.ph");
+  formData.set("contact_phone", "+639171234567");
 
   const parsed = parseEventFormData(formData, new Date("2026-05-27T12:00:00"));
 
@@ -76,6 +83,8 @@ test("parseEventFormData uses custom Other fields", () => {
 
 test("parseEventFormData rejects invalid participant limits when required", () => {
   const formData = new FormData();
+  formData.set("contact_email", "events@usc.edu.ph");
+  formData.set("contact_phone", "09171234567");
   formData.set("participant_limit", "0");
 
   assert.throws(
@@ -86,9 +95,46 @@ test("parseEventFormData rejects invalid participant limits when required", () =
 
 test("parseEventFormData rejects missing image uploads when required", () => {
   const formData = new FormData();
+  formData.set("contact_email", "events@usc.edu.ph");
+  formData.set("contact_phone", "09171234567");
 
   assert.throws(
     () => parseEventFormData(formData, new Date(), { requireImage: true }),
     /Event image is required/,
   );
+});
+
+test("parseEventFormData accepts contact details and stored image lists", () => {
+  const formData = new FormData();
+  formData.set("contact_email", "events@usc.edu.ph");
+  formData.set("contact_phone", "+639171234567");
+  formData.set("event_image_paths", JSON.stringify(["https://cdn.example/a.png", "https://cdn.example/b.png"]));
+
+  const parsed = parseEventFormData(formData, new Date());
+
+  assert.equal(parsed.contactEmail, "events@usc.edu.ph");
+  assert.equal(parsed.contactPhone, "+639171234567");
+  assert.equal(parsed.eventImagePath, "https://cdn.example/a.png");
+  assert.deepEqual(parsed.eventImagePaths, ["https://cdn.example/a.png", "https://cdn.example/b.png"]);
+});
+
+test("parseEventFormData rejects invalid contact details", () => {
+  const formData = new FormData();
+  formData.set("contact_email", "not-email");
+  assert.throws(() => parseEventFormData(formData), /valid email/);
+
+  const phoneData = new FormData();
+  phoneData.set("contact_email", "events@usc.edu.ph");
+  phoneData.set("contact_phone", "12345");
+  assert.throws(() => parseEventFormData(phoneData), /Philippine mobile number/);
+});
+
+test("parseEventFormData requires contact details", () => {
+  const missingEmail = new FormData();
+  missingEmail.set("contact_phone", "09171234567");
+  assert.throws(() => parseEventFormData(missingEmail), /Contact email is required/);
+
+  const missingPhone = new FormData();
+  missingPhone.set("contact_email", "events@usc.edu.ph");
+  assert.throws(() => parseEventFormData(missingPhone), /Contact cellphone is required/);
 });
