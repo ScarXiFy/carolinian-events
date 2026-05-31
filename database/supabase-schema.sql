@@ -26,14 +26,17 @@ create table if not exists users (
   role text not null default 'Student' check (role in ('Student', 'Organizer', 'Admin')),
   github_id text unique,
   google_id text unique,
+  email_verified_at timestamptz,
   created_at timestamptz default now()
 );
 
 alter table events add column if not exists created_by_user_id text;
 alter table users add column if not exists google_id text unique;
 alter table users add column if not exists github_id text unique;
+alter table users add column if not exists email_verified_at timestamptz;
 alter table users drop constraint if exists users_role_check;
 alter table users add constraint users_role_check check (role in ('Student', 'Organizer', 'Admin'));
+update users set email_verified_at = now() where email_verified_at is null;
 
 create table if not exists event_participants (
   event_id bigint not null references events(id) on delete cascade,
@@ -54,6 +57,33 @@ create table if not exists organizer_requests (
 create unique index if not exists organizer_requests_one_pending_per_user
   on organizer_requests(user_id)
   where status = 'Pending';
+
+create table if not exists email_verification_tokens (
+  id bigserial primary key,
+  user_id text not null references users(id) on delete cascade,
+  token_hash text not null unique,
+  expires_at timestamptz not null,
+  used_at timestamptz,
+  created_at timestamptz default now()
+);
+
+create table if not exists notifications (
+  id bigserial primary key,
+  recipient_user_id text not null references users(id) on delete cascade,
+  type text not null,
+  title text not null,
+  message text not null,
+  event_id bigint references events(id) on delete set null,
+  actor_user_id text references users(id) on delete set null,
+  read_at timestamptz,
+  created_at timestamptz default now()
+);
+
+create index if not exists notifications_recipient_read_created
+  on notifications(recipient_user_id, read_at, created_at);
+
+create index if not exists notifications_event_type
+  on notifications(event_id, type);
 
 insert into events (
   event_name,

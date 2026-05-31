@@ -44,6 +44,18 @@ export function updateUserRole(userId, role, options = {}) {
   return getUserStore(options.env).updateUserRole(userId, role, options);
 }
 
+export function markUserEmailVerified(userId, options = {}) {
+  return getUserStore(options.env).markUserEmailVerified(userId, options);
+}
+
+export function createEmailVerificationToken(userId, tokenHash, expiresAt, options = {}) {
+  return getUserStore(options.env).createEmailVerificationToken(userId, tokenHash, expiresAt, options);
+}
+
+export function consumeEmailVerificationToken(tokenHash, options = {}) {
+  return getUserStore(options.env).consumeEmailVerificationToken(tokenHash, options);
+}
+
 export function createOrganizerRequest(userId, options = {}) {
   return getUserStore(options.env).createOrganizerRequest(userId, options);
 }

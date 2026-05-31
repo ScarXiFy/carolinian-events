@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     role ENUM('Student', 'Organizer', 'Admin') DEFAULT 'Student',
     github_id VARCHAR(255) UNIQUE,
     google_id VARCHAR(255) UNIQUE,
+    email_verified_at TIMESTAMP NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -18,6 +19,35 @@ CREATE TABLE IF NOT EXISTS event_participants (
     PRIMARY KEY (event_id, user_id),
     FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    user_id VARCHAR(255) NOT NULL,
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
+    expires_at TIMESTAMP NOT NULL,
+    used_at TIMESTAMP NULL DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    recipient_user_id VARCHAR(255) NOT NULL,
+    type VARCHAR(80) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    event_id INT(11) DEFAULT NULL,
+    actor_user_id VARCHAR(255) DEFAULT NULL,
+    read_at TIMESTAMP NULL DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY notifications_recipient_read_created (recipient_user_id, read_at, created_at),
+    KEY notifications_event_type (event_id, type),
+    FOREIGN KEY (recipient_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE SET NULL,
+    FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS organizer_requests (
@@ -37,4 +67,6 @@ ALTER TABLE events ADD COLUMN IF NOT EXISTS participant_limit INT DEFAULT NULL;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS event_image_path VARCHAR(255) DEFAULT NULL;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS created_by_user_id VARCHAR(255) DEFAULT NULL;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255) UNIQUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP NULL DEFAULT NULL;
 ALTER TABLE users MODIFY COLUMN role ENUM('Student', 'Organizer', 'Admin') DEFAULT 'Student';
+UPDATE users SET email_verified_at = CURRENT_TIMESTAMP WHERE email_verified_at IS NULL;

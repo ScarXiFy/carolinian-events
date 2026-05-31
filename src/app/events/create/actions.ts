@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { parseEventFormData } from "@/lib/event-form-data.mjs";
-import { saveEventImageFile } from "@/lib/event-image-upload.mjs";
+import { validateStoredEventImageUrl } from "@/lib/event-image-upload.mjs";
 import { createEvent } from "@/lib/event-store.mjs";
 import { EVENTS_PATH, LOGIN_PATH } from "@/lib/auth-navigation";
 import { canCreateEvents } from "@/lib/permissions.mjs";
@@ -25,7 +25,7 @@ export async function createEventAction(formData: FormData) {
     requireImage: true,
     requireParticipantLimit: true,
   });
-  const eventImagePath = await saveEventImageFile(input.imageFile);
+  const eventImagePath = validateStoredEventImageUrl(input.eventImagePath);
   const result = await createEvent({
     ...input,
     eventImagePath,

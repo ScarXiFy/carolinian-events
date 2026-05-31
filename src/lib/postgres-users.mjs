@@ -2,7 +2,7 @@ import { getDatabaseConfig } from "./database-config.mjs";
 
 export function getPostgresCreateUserStatement(user) {
   return {
-    sql: "insert into users (id, name, email, password_hash, role, github_id, google_id) values ($1, $2, $3, $4, $5, $6, $7)",
+    sql: "insert into users (id, name, email, password_hash, role, github_id, google_id, email_verified_at) values ($1, $2, $3, $4, $5, $6, $7, $8)",
     values: [
       user.id,
       user.name || null,
@@ -11,6 +11,7 @@ export function getPostgresCreateUserStatement(user) {
       user.role || "Student",
       user.githubId || null,
       user.googleId || null,
+      user.emailVerifiedAt || null,
     ],
   };
 }
@@ -104,6 +105,46 @@ export function createPostgresUserStore({ createClient = createPostgresClient } 
       if (!url) return null;
 
       return queryOne(url, "update users set role = $2 where id = $1 returning *", [userId, role]);
+    },
+    async markUserEmailVerified(userId, { env = process.env } = {}) {
+      const url = getUrl(env);
+      if (!url) return null;
+
+      return queryOne(
+        url,
+        "update users set email_verified_at = coalesce(email_verified_at, now()) where id = $1 returning *",
+        [userId],
+      );
+    },
+    async createEmailVerificationToken(userId, tokenHash, expiresAt, { env = process.env } = {}) {
+      const url = getUrl(env);
+      if (!url) return null;
+
+      return queryOne(
+        url,
+        "insert into email_verification_tokens (user_id, token_hash, expires_at) values ($1, $2, $3) returning *",
+        [userId, tokenHash, expiresAt],
+      );
+    },
+    async consumeEmailVerificationToken(tokenHash, { env = process.env, now = new Date() } = {}) {
+      const url = getUrl(env);
+      if (!url) return null;
+
+      const token = await queryOne(
+        url,
+        "update email_verification_tokens set used_at = now() where token_hash = $1 and used_at is null and expires_at > $2 returning *",
+        [tokenHash, now],
+      );
+
+      if (!token?.user_id) return null;
+
+      await queryOne(
+        url,
+        "update users set email_verified_at = coalesce(email_verified_at, now()) where id = $1 returning *",
+        [token.user_id],
+      );
+
+      return token;
     },
     async createOrganizerRequest(userId, { env = process.env } = {}) {
       const url = getUrl(env);

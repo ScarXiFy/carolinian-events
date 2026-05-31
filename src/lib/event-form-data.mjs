@@ -17,6 +17,7 @@ export function parseEventFormData(formData, now = new Date(), options = {}) {
     status: computeEventStatus(eventDate, eventTime, eventEndTime, now),
     participantLimit: getParticipantLimit(formData, options),
     imageFile: getImageFile(formData, options),
+    eventImagePath: getFormValue(formData, "event_image_path"),
   };
 }
 
@@ -65,7 +66,7 @@ function getImageFile(formData, options = {}) {
     file.size > 0;
 
   if (!hasFile) {
-    if (options.requireImage) {
+    if (options.requireImage && !getFormValue(formData, "event_image_path")) {
       throw new Error("Event image is required.");
     }
 

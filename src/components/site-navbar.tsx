@@ -6,6 +6,7 @@ import { Bell, UserCircle } from "lucide-react";
 
 import { logout } from "@/app/auth-actions";
 import { requestOrganizerAccess } from "@/app/account-actions";
+import { markMyNotificationsRead } from "@/app/notification-actions";
 import { ROLES } from "@/lib/permissions.mjs";
 
 type SiteNavbarProps = {
@@ -13,6 +14,17 @@ type SiteNavbarProps = {
   userName?: string;
   role?: string;
   isAdmin?: boolean;
+  notifications?: NotificationItem[];
+  unreadNotificationCount?: number;
+};
+
+type NotificationItem = {
+  id: number;
+  title: string;
+  message: string;
+  eventId?: number | null;
+  readAt?: string | null;
+  createdAt?: string | null;
 };
 
 export function SiteNavbar({
@@ -20,9 +32,12 @@ export function SiteNavbar({
   userName = "Account",
   role = ROLES.STUDENT,
   isAdmin = false,
+  notifications = [],
+  unreadNotificationCount = 0,
 }: SiteNavbarProps) {
   const [userOpen, setUserOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [visibleUnreadCount, setVisibleUnreadCount] = useState(unreadNotificationCount);
   const notificationRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -61,7 +76,14 @@ export function SiteNavbar({
   }
 
   function toggleNotif() {
-    setNotifOpen((v) => !v);
+    setNotifOpen((v) => {
+      const nextOpen = !v;
+      if (nextOpen && visibleUnreadCount > 0) {
+        setVisibleUnreadCount(0);
+        void markMyNotificationsRead();
+      }
+      return nextOpen;
+    });
     setUserOpen(false);
   }
 
@@ -82,6 +104,8 @@ export function SiteNavbar({
                 isOpen={notifOpen}
                 onToggle={toggleNotif}
                 menuRef={notificationRef}
+                notifications={notifications}
+                unreadNotificationCount={visibleUnreadCount}
               />
               <UserMenu
                 isOpen={userOpen}
@@ -103,10 +127,14 @@ function NotificationMenu({
   isOpen,
   onToggle,
   menuRef,
+  notifications,
+  unreadNotificationCount,
 }: {
   isOpen: boolean;
   onToggle: () => void;
   menuRef: RefObject<HTMLDivElement | null>;
+  notifications: NotificationItem[];
+  unreadNotificationCount: number;
 }) {
   return (
     <div className="navbar-notification-menu" ref={menuRef}>
@@ -118,10 +146,45 @@ function NotificationMenu({
         onClick={onToggle}
       >
         <Bell size={20} aria-hidden="true" />
+        {unreadNotificationCount > 0 ? (
+          <span className="navbar-notification-badge">
+            {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
+          </span>
+        ) : null}
       </button>
       {isOpen && (
         <div className="navbar-user-dropdown navbar-notif-dropdown" role="status">
-          <p className="notif-empty">No notifications yet.</p>
+          {notifications.length === 0 ? (
+            <p className="notif-empty">No notifications yet.</p>
+          ) : (
+            <div className="notif-list">
+              {notifications.map((notification) => {
+                const content = (
+                  <>
+                    <strong>{notification.title}</strong>
+                    <span>{notification.message}</span>
+                  </>
+                );
+
+                return notification.eventId ? (
+                  <Link
+                    href={`/events/${notification.eventId}`}
+                    className={`notif-item ${notification.readAt ? "" : "notif-item-unread"}`}
+                    key={notification.id}
+                  >
+                    {content}
+                  </Link>
+                ) : (
+                  <div
+                    className={`notif-item ${notification.readAt ? "" : "notif-item-unread"}`}
+                    key={notification.id}
+                  >
+                    {content}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

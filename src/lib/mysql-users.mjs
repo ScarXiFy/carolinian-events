@@ -59,7 +59,7 @@ export async function createUser(user, { env = process.env } = {}) {
   const connection = await createMysqlConnection(config.url);
   try {
     await connection.execute(
-      "INSERT INTO users (id, name, email, password_hash, role, github_id, google_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO users (id, name, email, password_hash, role, github_id, google_id, email_verified_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       [
         user.id,
         user.name || null,
@@ -68,6 +68,7 @@ export async function createUser(user, { env = process.env } = {}) {
         user.role || 'Student',
         user.githubId || null,
         user.googleId || null,
+        user.emailVerifiedAt || null,
       ]
     );
     const [rows] = await connection.execute("SELECT * FROM users WHERE id = ?", [user.id]);
@@ -117,6 +118,68 @@ export async function updateUserRole(userId, role, { env = process.env } = {}) {
     await connection.execute("UPDATE users SET role = ? WHERE id = ?", [role, userId]);
     const [rows] = await connection.execute("SELECT * FROM users WHERE id = ?", [userId]);
     return rows[0] || null;
+  } finally {
+    await connection.end();
+  }
+}
+
+export async function markUserEmailVerified(userId, { env = process.env } = {}) {
+  const config = getDatabaseConfig(env);
+  if (!config.isConfigured) return null;
+  const connection = await createMysqlConnection(config.url);
+  try {
+    await connection.execute(
+      "UPDATE users SET email_verified_at = COALESCE(email_verified_at, CURRENT_TIMESTAMP) WHERE id = ?",
+      [userId],
+    );
+    const [rows] = await connection.execute("SELECT * FROM users WHERE id = ?", [userId]);
+    return rows[0] || null;
+  } finally {
+    await connection.end();
+  }
+}
+
+export async function createEmailVerificationToken(userId, tokenHash, expiresAt, { env = process.env } = {}) {
+  const config = getDatabaseConfig(env);
+  if (!config.isConfigured) return null;
+  const connection = await createMysqlConnection(config.url);
+  try {
+    await connection.execute(
+      "INSERT INTO email_verification_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)",
+      [userId, tokenHash, expiresAt],
+    );
+    const [rows] = await connection.execute(
+      "SELECT * FROM email_verification_tokens WHERE token_hash = ?",
+      [tokenHash],
+    );
+    return rows[0] || null;
+  } finally {
+    await connection.end();
+  }
+}
+
+export async function consumeEmailVerificationToken(tokenHash, { env = process.env, now = new Date() } = {}) {
+  const config = getDatabaseConfig(env);
+  if (!config.isConfigured) return null;
+  const connection = await createMysqlConnection(config.url);
+  try {
+    const [rows] = await connection.execute(
+      "SELECT * FROM email_verification_tokens WHERE token_hash = ? AND used_at IS NULL AND expires_at > ? LIMIT 1",
+      [tokenHash, now],
+    );
+    const token = rows[0] || null;
+    if (!token) return null;
+
+    await connection.execute(
+      "UPDATE email_verification_tokens SET used_at = CURRENT_TIMESTAMP WHERE id = ?",
+      [token.id],
+    );
+    await connection.execute(
+      "UPDATE users SET email_verified_at = COALESCE(email_verified_at, CURRENT_TIMESTAMP) WHERE id = ?",
+      [token.user_id],
+    );
+
+    return token;
   } finally {
     await connection.end();
   }
