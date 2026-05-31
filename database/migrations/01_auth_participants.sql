@@ -21,6 +21,17 @@ CREATE TABLE IF NOT EXISTS event_participants (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS event_images (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    event_id INT(11) NOT NULL,
+    image_url VARCHAR(1024) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY event_images_event_sort (event_id, sort_order, id),
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS email_verification_tokens (
     id INT(11) NOT NULL AUTO_INCREMENT,
     user_id VARCHAR(255) NOT NULL,
@@ -66,6 +77,8 @@ CREATE TABLE IF NOT EXISTS organizer_requests (
 ALTER TABLE events ADD COLUMN IF NOT EXISTS participant_limit INT DEFAULT NULL;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS event_image_path VARCHAR(255) DEFAULT NULL;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS created_by_user_id VARCHAR(255) DEFAULT NULL;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS contact_email VARCHAR(255) DEFAULT NULL;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS contact_phone VARCHAR(32) DEFAULT NULL;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255) UNIQUE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP NULL DEFAULT NULL;
 ALTER TABLE users MODIFY COLUMN role ENUM('Student', 'Organizer', 'Admin') DEFAULT 'Student';

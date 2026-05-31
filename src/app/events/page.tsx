@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import {
   ExternalLink,
   MapPin,
@@ -11,6 +10,7 @@ import {
   EVENT_SORTS,
   formatEventDate,
   formatEventTime,
+  getEventImagePaths,
   getVisibleEvents,
 } from "@/lib/events.mjs";
 import { getAllEvents } from "@/lib/event-store.mjs";
@@ -30,9 +30,10 @@ import {
 } from "@/components/ui/pagination";
 import { EventFlash } from "./event-flash";
 import { SortSelect } from "@/components/sort-select";
+import { EventImageCarousel } from "@/components/event-image-carousel";
+import { EventStatusBadge } from "@/components/event-status-badge";
 
 type EventSort = "date_desc" | "date_asc" | "name_asc" | "name_desc";
-type EventStatus = "Upcoming" | "Ongoing" | "Completed" | "Cancelled";
 type DashboardEvent = {
   id: number;
   eventName: string;
@@ -46,6 +47,7 @@ type DashboardEvent = {
   status: string;
   createdAt: string;
   eventImagePath?: string | null;
+  eventImagePaths?: string[];
 };
 
 const EVENTS_PER_PAGE = 6;
@@ -56,13 +58,6 @@ const sortLabels = {
   name_asc: "Name A-Z",
   name_desc: "Name Z-A",
 } satisfies Record<EventSort, string>;
-
-const statusStyles = {
-  Upcoming: "status-upcoming",
-  Ongoing: "status-ongoing",
-  Completed: "status-completed",
-  Cancelled: "status-cancelled",
-} satisfies Record<EventStatus, string>;
 
 export default async function EventsPage({
   searchParams,
@@ -157,36 +152,16 @@ export default async function EventsPage({
                   </div>
                 </div>
 
-                <div
-                  className={`event-card-media ${getEventMediaClass(
-                    event.category,
-                    event.status,
-                  )}`}
-                  aria-hidden={!event.eventImagePath}
-                >
-                  {event.eventImagePath ? (
-                    <Image
-                      src={event.eventImagePath}
-                      alt={`${event.eventName} event image`}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    />
-                  ) : (
-                    <>
-                      <div className="event-media-orb" />
-                      <div className="event-media-lines" />
-                      <div className="event-media-label">{event.category}</div>
-                    </>
-                  )}
-                </div>
+                <EventImageCarousel
+                  images={getEventImagePaths(event)}
+                  title={event.eventName}
+                  category={event.category}
+                  status={event.status}
+                  className="event-card-media"
+                />
 
                 <div className="event-card-footer">
-                  <span
-                    className={`status-badge ${statusStyles[event.status as EventStatus]}`}
-                  >
-                    {event.status}
-                  </span>
+                  <EventStatusBadge status={event.status} />
 
                   <div className="event-card-actions">
                     <Link href={`/events/${event.id}`} className="event-view-button">
@@ -339,24 +314,3 @@ function formatEventRange(event: { eventDate: string; eventTime: string; eventEn
   return `${formatEventTime(event)} - ${endTime}`;
 }
 
-function getEventMediaClass(category: string, status: string) {
-  const value = `${category} ${status}`.toLowerCase();
-
-  if (value.includes("thesis") || value.includes("academic")) {
-    return "event-media-academic";
-  }
-
-  if (value.includes("verification") || value.includes("tech")) {
-    return "event-media-tech";
-  }
-
-  if (value.includes("social") || value.includes("cultural")) {
-    return "event-media-social";
-  }
-
-  if (value.includes("sports")) {
-    return "event-media-sports";
-  }
-
-  return "event-media-default";
-}

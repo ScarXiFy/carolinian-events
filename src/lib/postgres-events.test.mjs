@@ -13,6 +13,8 @@ import {
 test("getPostgresEventsQuery selects dashboard fields with participant counts", () => {
   assert.match(getPostgresEventsQuery(), /select e\.id, e\.event_name/);
   assert.match(getPostgresEventsQuery(), /event_participants/);
+  assert.match(getPostgresEventsQuery(), /event_images/);
+  assert.match(getPostgresEventsQuery(), /e\.contact_email/);
   assert.match(getPostgresEventsQuery(), /order by e\.created_at desc, e\.id desc/);
 });
 
@@ -29,11 +31,13 @@ test("Postgres event write statements use numbered parameters", () => {
     status: "Upcoming",
     participantLimit: 80,
     eventImagePath: "/uploads/events/poster.png",
+    contactEmail: "events@usc.edu.ph",
+    contactPhone: "09171234567",
     createdByUserId: "usr_1",
   };
 
   assert.deepEqual(getPostgresCreateEventStatement(input), {
-    sql: "insert into events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path, created_by_user_id) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) returning id",
+    sql: "insert into events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path, contact_email, contact_phone, created_by_user_id) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) returning id",
     values: [
       "Research Colloquium",
       "CPE Department",
@@ -46,12 +50,14 @@ test("Postgres event write statements use numbered parameters", () => {
       "Upcoming",
       80,
       "/uploads/events/poster.png",
+      "events@usc.edu.ph",
+      "09171234567",
       "usr_1",
     ],
   });
 
   assert.deepEqual(getPostgresUpdateEventStatement(9, input), {
-    sql: "update events set event_name = $1, organizer = $2, description = $3, event_date = $4, event_time = $5, event_end_time = $6, location = $7, category = $8, status = $9, participant_limit = $10, event_image_path = coalesce($11, event_image_path) where id = $12",
+    sql: "update events set event_name = $1, organizer = $2, description = $3, event_date = $4, event_time = $5, event_end_time = $6, location = $7, category = $8, status = $9, participant_limit = $10, event_image_path = coalesce($11, event_image_path), contact_email = $12, contact_phone = $13 where id = $14",
     values: [
       "Research Colloquium",
       "CPE Department",
@@ -64,6 +70,8 @@ test("Postgres event write statements use numbered parameters", () => {
       "Upcoming",
       80,
       "/uploads/events/poster.png",
+      "events@usc.edu.ph",
+      "09171234567",
       9,
     ],
   });
@@ -138,6 +146,7 @@ test("createPostgresEventWriter executes create, update, delete, join, and leave
     status: "Upcoming",
     participantLimit: 80,
     eventImagePath: null,
+    eventImagePaths: ["/uploads/events/poster.png"],
   };
 
   assert.deepEqual(await writer.createEvent("postgresql://example", input), { id: 12 });
@@ -146,5 +155,5 @@ test("createPostgresEventWriter executes create, update, delete, join, and leave
   await writer.joinEvent("postgresql://example", 12, "usr_1");
   await writer.leaveEvent("postgresql://example", 12, "usr_1");
 
-  assert.equal(calls.filter(([name]) => name === "end").length, 5);
+  assert.equal(calls.filter(([name]) => name === "end").length, 9);
 });

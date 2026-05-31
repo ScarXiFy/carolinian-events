@@ -12,6 +12,7 @@ import { getEventByRouteId, getEventStaticParams } from "@/lib/event-store.mjs";
 import { EVENTS_PATH, LOGIN_PATH } from "@/lib/auth-navigation";
 import { canManageEvent } from "@/lib/permissions.mjs";
 import { deleteEventAction } from "./actions";
+import { FormSubmitButton } from "@/components/form-submit-button";
 
 export function generateStaticParams() {
   return getEventStaticParams();
@@ -69,9 +70,11 @@ export default async function DeleteEventPage(props: PageProps<"/events/[id]/del
               Cancel
             </Link>
             <form action={deleteEventAction.bind(null, event.id)}>
-              <button type="submit" className="legacy-btn btn-danger">
-                Delete
-              </button>
+              <FormSubmitButton
+                label="Delete Event"
+                pendingLabel="Deleting..."
+                className="legacy-btn btn-danger"
+              />
             </form>
           </div>
           <p className="mt-5 text-sm leading-6 text-[#a1a1aa]">

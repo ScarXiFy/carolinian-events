@@ -7,6 +7,7 @@ import {
   getPostgresCreateNotificationStatement,
   getUnreadNotificationCount,
   markNotificationsRead,
+  notifyEventCancelledToAttendees,
 } from "./notifications.mjs";
 
 test("notification create statements use parameterized SQL", () => {
@@ -81,4 +82,33 @@ test("notification helpers route through the configured database provider", asyn
     ["count", "usr_1"],
     ["read", "usr_1"],
   ]);
+});
+
+test("notifyEventCancelledToAttendees creates attendee notifications", async () => {
+  const calls = [];
+  const store = {
+    createNotification: async (input) => {
+      calls.push(input);
+      return { id: calls.length, ...input };
+    },
+  };
+
+  await notifyEventCancelledToAttendees(
+    {
+      id: 12,
+      eventName: "Research Forum",
+      eventDate: "2026-07-01",
+      eventTime: "09:30",
+      eventEndTime: "11:30",
+    },
+    ["usr_1", "usr_1", "usr_2"],
+    "admin_1",
+    { store },
+  );
+
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].type, "event_cancelled");
+  assert.equal(calls[0].eventId, 12);
+  assert.match(calls[0].message, /Cancelled/);
+  assert.match(calls[0].message, /Research Forum/);
 });

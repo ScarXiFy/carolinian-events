@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { parseEventFormData } from "@/lib/event-form-data.mjs";
-import { validateStoredEventImageUrl } from "@/lib/event-image-upload.mjs";
+import { validateStoredEventImageUrls } from "@/lib/event-image-upload.mjs";
 import { getEventByRouteId, updateEvent } from "@/lib/event-store.mjs";
 import { EVENTS_PATH, LOGIN_PATH } from "@/lib/auth-navigation";
 import { canManageEvent, ROLES } from "@/lib/permissions.mjs";
@@ -31,12 +31,11 @@ export async function updateEventAction(id: number, formData: FormData) {
   const input = parseEventFormData(formData, new Date(), {
     requireParticipantLimit: true,
   });
-  const eventImagePath = input.eventImagePath
-    ? validateStoredEventImageUrl(input.eventImagePath)
-    : null;
+  const eventImagePaths = validateStoredEventImageUrls(input.eventImagePaths);
   const result = await updateEvent(id, {
     ...input,
-    eventImagePath,
+    eventImagePath: eventImagePaths[0] ?? null,
+    eventImagePaths,
   });
 
   if (session.user.role === ROLES.ADMIN) {

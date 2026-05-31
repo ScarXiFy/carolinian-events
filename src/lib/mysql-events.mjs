@@ -1,16 +1,20 @@
 const EVENTS_QUERY =
+  "SELECT e.id, e.event_name, e.organizer, e.description, e.event_date, e.event_time, e.event_end_time, e.location, e.category, e.status, e.created_at, e.participant_limit, e.event_image_path, e.contact_email, e.contact_phone, e.created_by_user_id, (SELECT GROUP_CONCAT(image_url ORDER BY sort_order ASC, id ASC SEPARATOR '\\n') FROM event_images WHERE event_id = e.id) as event_image_paths, (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) as participant_count FROM events e ORDER BY e.created_at DESC, e.id DESC";
+const COMPAT_EVENTS_QUERY =
   "SELECT e.id, e.event_name, e.organizer, e.description, e.event_date, e.event_time, e.event_end_time, e.location, e.category, e.status, e.created_at, e.participant_limit, e.event_image_path, e.created_by_user_id, (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) as participant_count FROM events e ORDER BY e.created_at DESC, e.id DESC";
 const LEGACY_EVENTS_QUERY =
   "SELECT id, event_name, organizer, description, event_date, event_time, location, category, status, created_at FROM events ORDER BY created_at DESC, id DESC";
 const CREATE_EVENT_QUERY =
-  "INSERT INTO events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path, created_by_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+  "INSERT INTO events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path, contact_email, contact_phone, created_by_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 const LEGACY_CREATE_EVENT_QUERY =
   "INSERT INTO events (event_name, organizer, description, event_date, event_time, location, category, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 const UPDATE_EVENT_QUERY =
-  "UPDATE events SET event_name = ?, organizer = ?, description = ?, event_date = ?, event_time = ?, event_end_time = ?, location = ?, category = ?, status = ?, participant_limit = ?, event_image_path = COALESCE(?, event_image_path) WHERE id = ?";
+  "UPDATE events SET event_name = ?, organizer = ?, description = ?, event_date = ?, event_time = ?, event_end_time = ?, location = ?, category = ?, status = ?, participant_limit = ?, event_image_path = COALESCE(?, event_image_path), contact_email = ?, contact_phone = ? WHERE id = ?";
 const LEGACY_UPDATE_EVENT_QUERY =
   "UPDATE events SET event_name = ?, organizer = ?, description = ?, event_date = ?, event_time = ?, location = ?, category = ?, status = ? WHERE id = ?";
 const DELETE_EVENT_QUERY = "DELETE FROM events WHERE id = ?";
+const COMPLETE_EXPIRED_EVENTS_QUERY =
+  "UPDATE events SET status = 'Completed' WHERE status IN ('Upcoming', 'Ongoing') AND event_end_time IS NOT NULL AND ? > TIMESTAMP(event_date, event_end_time)";
 
 export function getEventsQuery() {
   return EVENTS_QUERY;
@@ -26,6 +30,9 @@ export function normalizeMysqlEventRow(row) {
     participant_limit: row.participant_limit ?? null,
     participant_count: row.participant_count ?? 0,
     event_image_path: row.event_image_path ?? null,
+    event_image_paths: row.event_image_paths ?? "",
+    contact_email: row.contact_email ?? "",
+    contact_phone: row.contact_phone ?? "",
   };
 }
 
@@ -72,25 +79,27 @@ export function createMysqlEventReader({ createConnection = createMysqlConnectio
       let rows;
 
       try {
-        [rows] = await connection.query(getEventsQuery());
-      } catch (error) {
-        if (
-          typeof error === "object" &&
-          error !== null &&
-          "code" in error &&
-          error.code === "ER_BAD_FIELD_ERROR"
-        ) {
-          [rows] = await connection.query(LEGACY_EVENTS_QUERY);
-          rows = rows.map((row) => ({
-            ...row,
-            event_end_time: null,
-            event_image_path: null,
-            created_by_user_id: null,
-          }));
-        } else {
-          throw error;
+          [rows] = await connection.query(getEventsQuery());
+        } catch (error) {
+          if (!isMissingSchemaError(error)) throw error;
+          try {
+            [rows] = await connection.query(COMPAT_EVENTS_QUERY);
+          } catch (fallbackError) {
+            if (!isMissingSchemaError(fallbackError)) throw fallbackError;
+            [rows] = await connection.query(LEGACY_EVENTS_QUERY);
+            rows = rows.map((row) => ({
+              ...row,
+              event_end_time: null,
+              participant_limit: null,
+              participant_count: 0,
+              event_image_path: null,
+              event_image_paths: null,
+              contact_email: "",
+              contact_phone: "",
+              created_by_user_id: null,
+            }));
+          }
         }
-      }
       return rows.map(normalizeMysqlEventRow);
     } finally {
       await connection.end();
@@ -102,12 +111,7 @@ export const readMysqlEvents = createMysqlEventReader();
 
 export function createMysqlEventWriter({ createConnection = createMysqlConnection } = {}) {
   function isMissingColumnError(error) {
-    return (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      error.code === "ER_BAD_FIELD_ERROR"
-    );
+    return isMissingSchemaError(error);
   }
 
   async function executeStatement(url, statement, legacyStatement) {
@@ -136,8 +140,19 @@ export function createMysqlEventWriter({ createConnection = createMysqlConnectio
         getCreateEventStatement(input),
         getLegacyCreateEventStatement(input)
       );
+      await replaceEventImages(url, result.insertId, getInputImagePaths(input));
       return {
         id: result.insertId,
+      };
+    },
+    async completeExpiredEvents(url, now) {
+      const result = await executeStatement(url, {
+        sql: COMPLETE_EXPIRED_EVENTS_QUERY,
+        values: [formatDateTimeForSql(now)],
+      });
+
+      return {
+        affectedRows: result.affectedRows,
       };
     },
     async updateEvent(url, id, input) {
@@ -146,6 +161,7 @@ export function createMysqlEventWriter({ createConnection = createMysqlConnectio
         getUpdateEventStatement(id, input),
         getLegacyUpdateEventStatement(id, input)
       );
+      await replaceEventImages(url, Number(id), getInputImagePaths(input));
       return {
         affectedRows: result.affectedRows,
       };
@@ -176,6 +192,41 @@ export function createMysqlEventWriter({ createConnection = createMysqlConnectio
       }
     }
   };
+
+  async function replaceEventImages(url, eventId, imagePaths) {
+    const connection = await createConnection(url);
+    try {
+      await connection.execute("DELETE FROM event_images WHERE event_id = ?", [eventId]);
+
+      for (const [index, imageUrl] of imagePaths.entries()) {
+        await connection.execute(
+          "INSERT INTO event_images (event_id, image_url, sort_order) VALUES (?, ?, ?)",
+          [eventId, imageUrl, index],
+        );
+      }
+    } catch (error) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        (error.code === "ER_NO_SUCH_TABLE" || error.code === "ER_BAD_FIELD_ERROR")
+      ) {
+        return;
+      }
+      throw error;
+    } finally {
+      await connection.end();
+    }
+  }
+}
+
+function isMissingSchemaError(error) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error.code === "ER_BAD_FIELD_ERROR" || error.code === "ER_NO_SUCH_TABLE")
+  );
 }
 
 export const writeMysqlEvents = createMysqlEventWriter();
@@ -222,11 +273,21 @@ function getEventValues(input) {
     input.status,
     input.participantLimit || null,
     input.eventImagePath || null,
+    input.contactEmail || null,
+    input.contactPhone || null,
   ];
 }
 
 function getCreateEventValues(input) {
   return [...getEventValues(input), input.createdByUserId || null];
+}
+
+function getInputImagePaths(input) {
+  const values = Array.isArray(input.eventImagePaths)
+    ? input.eventImagePaths
+    : [input.eventImagePath];
+
+  return [...new Set(values.map((value) => String(value ?? "").trim()).filter(Boolean))];
 }
 
 function getLegacyEventValues(input) {
@@ -255,4 +316,15 @@ function formatLocalDateOnly(value) {
   const month = String(value.getMonth() + 1).padStart(2, "0");
   const day = String(value.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function formatDateTimeForSql(value) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  const hours = String(value.getHours()).padStart(2, "0");
+  const minutes = String(value.getMinutes()).padStart(2, "0");
+  const seconds = String(value.getSeconds()).padStart(2, "0");
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }

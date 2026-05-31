@@ -3,10 +3,15 @@
 import { format } from "date-fns";
 import { CalendarIcon, LockKeyhole } from "lucide-react";
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { createClient } from "@supabase/supabase-js";
 
+import {
+  EventImageItem,
+  EventImageUploader,
+} from "@/components/event-image-uploader";
+import { FormSubmitButton } from "@/components/form-submit-button";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -47,6 +52,9 @@ type EventFormInitialValues = {
   category?: string;
   participantLimit?: number;
   eventImagePath?: string | null;
+  eventImagePaths?: string[];
+  contactEmail?: string;
+  contactPhone?: string;
 };
 
 type CreateEventFormProps = {
@@ -71,9 +79,24 @@ export function CreateEventForm({
   const [location, setLocation] = useState(initialLocation.selectValue);
   const [category, setCategory] = useState(initialCategory.selectValue);
   const [notice, setNotice] = useState("");
-  const [uploadedImagePath, setUploadedImagePath] = useState("");
+  const [imageItems, setImageItems] = useState<EventImageItem[]>(() => {
+    const paths = [
+      ...(initialValues?.eventImagePaths ?? []),
+      initialValues?.eventImagePath ?? "",
+    ]
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    return [...new Set(paths)].map((url, index) => ({
+      id: `existing-${index}-${url}`,
+      kind: "existing",
+      url,
+    }));
+  });
   const [isUploading, setIsUploading] = useState(false);
+  const skipUploadRef = useRef(false);
   const actionLabel = mode === "edit" ? "Save Changes" : "Create Event";
+  const pendingLabel = mode === "edit" ? "Saving..." : "Creating...";
   const labelClass = "create-event-label";
   const controlClass =
     "create-event-control min-h-12 rounded-lg border-[#222] bg-white/[0.03] px-4 py-3 text-base text-white shadow-none outline-none transition placeholder:text-white/35 focus-visible:border-[#2a8c4f] focus-visible:ring-[#2a8c4f]/25";
@@ -116,34 +139,21 @@ export function CreateEventForm({
       return;
     }
 
-    const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
-    const file = fileInput?.files?.[0];
-
-    if (!file) {
-      if (mode === "create" && !uploadedImagePath) {
-        event.preventDefault();
-        toast.error("Event image is required.");
-      }
+    if (skipUploadRef.current) {
+      skipUploadRef.current = false;
       return;
     }
 
-    if (uploadedImagePath) {
-      fileInput.disabled = true;
+    if (imageItems.length === 0) {
+      event.preventDefault();
+      toast.error("Event image is required.");
       return;
     }
+
+    const newItems = imageItems.filter((item) => item.kind === "new");
+    if (newItems.length === 0) return;
 
     event.preventDefault();
-    const maxBytes = 5 * 1024 * 1024;
-
-    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
-      toast.error("Event image must be a JPG, PNG, WebP, or GIF file.");
-      return;
-    }
-
-    if (file.size > maxBytes) {
-      toast.error(`Image size exceeds the 5 MB limit. Your file is ${(file.size / (1024 * 1024)).toFixed(2)} MB.`);
-      return;
-    }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -156,40 +166,65 @@ export function CreateEventForm({
     setIsUploading(true);
 
     try {
-      const response = await fetch("/api/event-images/upload-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: file.name,
-          type: file.type,
-          size: file.size,
-        }),
-      });
-      const upload = await response.json();
+      const uploadedUrlsById = new Map<string, string>();
 
-      if (!response.ok) {
-        toast.error(upload.error || "Unable to prepare image upload.");
-        return;
-      }
-
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      const { error } = await supabase.storage
-        .from(upload.bucket)
-        .uploadToSignedUrl(upload.path, upload.token, file, {
-          contentType: file.type,
+      for (const item of newItems) {
+        const response = await fetch("/api/event-images/upload-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: item.file.name,
+            type: item.file.type,
+            size: item.file.size,
+          }),
         });
+        const upload = await response.json();
 
-      if (error) {
-        toast.error(error.message || "Image upload failed.");
-        return;
+        if (!response.ok) {
+          toast.error(upload.error || "Unable to prepare image upload.");
+          return;
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        const { error } = await supabase.storage
+          .from(upload.bucket)
+          .uploadToSignedUrl(upload.path, upload.token, item.file, {
+            contentType: item.file.type,
+          });
+
+        if (error) {
+          toast.error(error.message || "Image upload failed.");
+          return;
+        }
+
+        uploadedUrlsById.set(item.id, upload.publicUrl);
       }
 
-      setUploadedImagePath(upload.publicUrl);
+      const nextItems: EventImageItem[] = imageItems.flatMap((item) => {
+        if (item.kind === "existing") return [item];
+        const uploadedUrl = uploadedUrlsById.get(item.id);
+        if (!uploadedUrl) return [];
+
+        return [
+          {
+            id: `existing-${item.id}`,
+            kind: "existing" as const,
+            url: uploadedUrl,
+          },
+        ];
+      });
+      const nextImagePaths = getImagePaths(nextItems);
+
+      setImageItems(nextItems);
       const imagePathInput = form.querySelector('input[name="event_image_path"]') as HTMLInputElement | null;
       if (imagePathInput) {
-        imagePathInput.value = upload.publicUrl;
+        imagePathInput.value = nextImagePaths[0] ?? "";
       }
-      fileInput.disabled = true;
+      const imagePathsInput = form.querySelector('input[name="event_image_paths"]') as HTMLInputElement | null;
+      if (imagePathsInput) {
+        imagePathsInput.value = JSON.stringify(nextImagePaths);
+      }
+      skipUploadRef.current = true;
       window.setTimeout(() => {
         form.requestSubmit();
       }, 0);
@@ -205,7 +240,8 @@ export function CreateEventForm({
       onSubmit={handleSubmit}
     >
       {notice ? <div className="alert alert-info">{notice}</div> : null}
-      <input type="hidden" name="event_image_path" value={uploadedImagePath} />
+      <input type="hidden" name="event_image_path" value={getImagePaths(imageItems)[0] ?? ""} />
+      <input type="hidden" name="event_image_paths" value={JSON.stringify(getImagePaths(imageItems))} />
 
       <div className={rowClass}>
         <Field className="gap-2.5">
@@ -230,6 +266,36 @@ export function CreateEventForm({
             name="organizer"
             className={controlClass}
             defaultValue={initialValues?.organizer ?? ""}
+            required
+          />
+        </Field>
+      </div>
+
+      <div className={rowClass}>
+        <Field className="gap-2.5">
+          <FieldLabel htmlFor="contact_email" className={labelClass}>
+            Contact Email <span className="required-marker">*</span>
+          </FieldLabel>
+          <Input
+            id="contact_email"
+            name="contact_email"
+            type="email"
+            className={controlClass}
+            defaultValue={initialValues?.contactEmail ?? ""}
+            required
+          />
+        </Field>
+
+        <Field className="gap-2.5">
+          <FieldLabel htmlFor="contact_phone" className={labelClass}>
+            Contact Cellphone <span className="required-marker">*</span>
+          </FieldLabel>
+          <Input
+            id="contact_phone"
+            name="contact_phone"
+            type="tel"
+            className={controlClass}
+            defaultValue={initialValues?.contactPhone ?? ""}
             required
           />
         </Field>
@@ -442,23 +508,12 @@ export function CreateEventForm({
         <FieldLabel htmlFor="event_image" className={labelClass}>
           Event Image {mode === "create" ? <span className="text-[#d4a843]">*</span> : null}
         </FieldLabel>
-        <Input
-          id="event_image"
-          name="event_image"
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          className={`${controlClass} file:mr-4 file:rounded-md file:border-0 file:bg-[#d4a843] file:px-3 file:py-2 file:text-sm file:font-bold file:text-black`}
-          required={mode === "create"}
+        <EventImageUploader
+          items={imageItems}
+          onItemsChange={setImageItems}
+          mode={mode}
+          disabled={isUploading}
         />
-        {initialValues?.eventImagePath ? (
-          <FieldDescription className="status-hint text-sm text-[#a1a1aa]">
-            Upload a new image only if you want to replace the current poster.
-          </FieldDescription>
-        ) : (
-          <FieldDescription className="status-hint text-sm text-[#a1a1aa]">
-            JPG, PNG, WebP, or GIF. Maximum size is 5 MB.
-          </FieldDescription>
-        )}
       </Field>
 
       <div className="create-event-actions form-actions mt-8 flex flex-col-reverse gap-3 sm:mt-6 sm:flex-row sm:justify-end sm:gap-4">
@@ -469,14 +524,21 @@ export function CreateEventForm({
         >
           <Link href="/events">Cancel</Link>
         </Button>
-        <Button
-          type="submit"
-          disabled={isUploading}
+        <FormSubmitButton
+          label={actionLabel}
+          pendingLabel={pendingLabel}
+          loading={isUploading}
+          loadingLabel="Uploading..."
           className="legacy-btn legacy-btn-primary h-auto px-8 py-3 text-sm font-bold"
-        >
-          {isUploading ? "Uploading..." : actionLabel}
-        </Button>
+        />
       </div>
     </form>
   );
+}
+
+function getImagePaths(items: EventImageItem[]) {
+  return items
+    .filter((item) => item.kind === "existing")
+    .map((item) => item.url.trim())
+    .filter(Boolean);
 }

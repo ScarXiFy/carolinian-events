@@ -76,15 +76,15 @@ export function SiteNavbar({
   }
 
   function toggleNotif() {
-    setNotifOpen((v) => {
-      const nextOpen = !v;
-      if (nextOpen && visibleUnreadCount > 0) {
-        setVisibleUnreadCount(0);
-        void markMyNotificationsRead();
-      }
-      return nextOpen;
-    });
+    const nextOpen = !notifOpen;
+
+    setNotifOpen(nextOpen);
     setUserOpen(false);
+
+    if (nextOpen && visibleUnreadCount > 0) {
+      setVisibleUnreadCount(0);
+      void markMyNotificationsRead();
+    }
   }
 
   return (

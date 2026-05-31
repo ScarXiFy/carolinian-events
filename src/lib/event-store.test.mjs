@@ -46,6 +46,9 @@ test("mapLegacyEventRow converts legacy database fields to app event fields", ()
     participantLimit: 80,
     participantCount: 12,
     eventImagePath: "/uploads/events/poster.png",
+    eventImagePaths: ["/uploads/events/poster.png"],
+    contactEmail: "",
+    contactPhone: "",
     createdByUserId: "usr_1",
   });
 });
@@ -77,6 +80,9 @@ test("getEventByRouteId returns complete normalized event detail data from datab
         participant_limit: 120,
         participant_count: 34,
         event_image_path: "/uploads/events/ai-forum.png",
+        event_image_paths: ["/uploads/events/ai-forum.png", "/uploads/events/gallery.png"],
+        contact_email: "cpe@usc.edu.ph",
+        contact_phone: "09171234567",
         created_by_user_id: "usr_organizer",
       },
     ],
@@ -97,6 +103,9 @@ test("getEventByRouteId returns complete normalized event detail data from datab
     participantLimit: 120,
     participantCount: 34,
     eventImagePath: "/uploads/events/ai-forum.png",
+    eventImagePaths: ["/uploads/events/ai-forum.png", "/uploads/events/gallery.png"],
+    contactEmail: "cpe@usc.edu.ph",
+    contactPhone: "09171234567",
     createdByUserId: "usr_organizer",
   });
 });

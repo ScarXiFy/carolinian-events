@@ -72,6 +72,14 @@ export function validateStoredEventImageUrl(value, { env = process.env } = {}) {
   return imageUrl;
 }
 
+export function validateStoredEventImageUrls(values, options = {}) {
+  if (!Array.isArray(values)) {
+    throw new Error("Event images must be a list.");
+  }
+
+  return [...new Set(values.map((value) => validateStoredEventImageUrl(value, options)).filter(Boolean))];
+}
+
 export function getEventImageBucket(env = process.env) {
   return env.SUPABASE_STORAGE_BUCKET || EVENT_IMAGE_BUCKET;
 }

@@ -33,6 +33,9 @@ export default async function EditEventPage(props: PageProps<"/events/[id]/edit"
   const eventWithParticipants = event as typeof event & {
     participantLimit: number | null;
     eventImagePath: string | null;
+    eventImagePaths: string[];
+    contactEmail: string;
+    contactPhone: string;
   };
 
   return (
@@ -62,6 +65,9 @@ export default async function EditEventPage(props: PageProps<"/events/[id]/edit"
               category: eventWithParticipants.category,
               participantLimit: eventWithParticipants.participantLimit ?? undefined,
               eventImagePath: eventWithParticipants.eventImagePath,
+              eventImagePaths: eventWithParticipants.eventImagePaths,
+              contactEmail: eventWithParticipants.contactEmail,
+              contactPhone: eventWithParticipants.contactPhone,
             }}
           />
         </div>
