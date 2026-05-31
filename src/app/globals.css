@@ -1750,7 +1750,7 @@ html {
   z-index: 10;
   width: min(100%, 1680px);
   margin: 0 auto;
-  padding: clamp(7rem, 10vw, 8.5rem) 5% 6rem;
+  padding: 7rem 5% 6rem;
 }
 
 .events-dashboard-heading {
