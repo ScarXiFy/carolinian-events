@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 import { joinEvent, leaveEvent } from "./actions";
@@ -9,14 +10,24 @@ type JoinEventButtonProps = {
   eventId: number;
   isJoined: boolean;
   isFull: boolean;
+  loginHref?: string;
 };
 
 export function JoinEventButton({
   eventId,
   isJoined,
   isFull,
+  loginHref,
 }: JoinEventButtonProps) {
   const [loading, setLoading] = useState(false);
+
+  if (loginHref) {
+    return (
+      <Link href={loginHref} className="legacy-btn legacy-btn-primary">
+        Join Event
+      </Link>
+    );
+  }
 
   async function handleAction() {
     setLoading(true);

@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { getAuthRedirectPath, getLoginHref } from "@/lib/auth-navigation.mjs";
 import { canApproveOrganizers, canCreateEvents } from "@/lib/permissions.mjs";
 import { NextResponse } from "next/server";
 
@@ -16,7 +17,8 @@ export default auth((req) => {
 
   if (isAuthRoute) {
     if (isLoggedIn) {
-      return NextResponse.redirect(new URL("/events", req.nextUrl));
+      const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
+      return NextResponse.redirect(new URL(getAuthRedirectPath(callbackUrl), req.nextUrl));
     }
 
     return NextResponse.next();
@@ -24,7 +26,9 @@ export default auth((req) => {
 
   if (isProtectedActionRoute || isAdminRoute) {
     if (!isLoggedIn) {
-      return NextResponse.redirect(new URL("/login", req.nextUrl));
+      return NextResponse.redirect(
+        new URL(getLoginHref(`${pathname}${req.nextUrl.search}`), req.nextUrl),
+      );
     }
 
     if (isProtectedActionRoute && !canCreateEvents(role)) {

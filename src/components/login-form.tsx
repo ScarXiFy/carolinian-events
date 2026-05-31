@@ -24,9 +24,10 @@ const fieldClass =
   "min-h-12 rounded-xl border-white/10 bg-white/[0.045] px-11 py-3 text-base text-white shadow-none outline-none transition placeholder:text-white/34 focus-visible:border-[#2a8c4f] focus-visible:ring-[#2a8c4f]/25 disabled:opacity-60";
 
 export function LoginForm({
+  callbackUrl = "/events",
   className,
   ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & { callbackUrl?: string }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, action, isPending] = useActionState<AuthActionState, FormData>(
     async (_prevState, formData) => login(formData),
@@ -38,10 +39,11 @@ export function LoginForm({
       <Card className="w-full min-w-0 rounded-3xl border-white/10 bg-[#0d1110]/82 py-0 text-white shadow-[0_24px_70px_rgba(0,0,0,0.38)] backdrop-blur-2xl">
         <CardContent className="p-5 sm:p-6">
           <form action={action}>
+            <input type="hidden" name="callbackUrl" value={callbackUrl} />
             <FieldGroup className="gap-5">
               <button
                 type="button"
-                onClick={() => githubLogin()}
+                onClick={() => githubLogin(callbackUrl)}
                 disabled={isPending}
                 className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] px-4 py-3 text-sm font-bold text-white transition hover:border-[#2a8c4f]/70 hover:bg-[#2a8c4f]/18 hover:text-[#b9f5cc] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#2a8c4f]/25 disabled:pointer-events-none disabled:opacity-60"
               >
@@ -145,7 +147,7 @@ export function LoginForm({
                 <FieldDescription className="text-center text-white/58">
                   Don&apos;t have an account?{" "}
                   <Link
-                    href="/signup"
+                    href={`/signup?callbackUrl=${encodeURIComponent(callbackUrl)}`}
                     className="font-semibold text-[#d4a843] transition hover:text-[#f1d37a] hover:no-underline"
                   >
                     Sign up
