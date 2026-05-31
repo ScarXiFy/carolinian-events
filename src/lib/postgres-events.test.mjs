@@ -7,6 +7,7 @@ import {
   getPostgresCreateEventStatement,
   getPostgresEventsQuery,
   getPostgresUpdateEventStatement,
+  normalizePostgresEventRow,
 } from "./postgres-events.mjs";
 
 test("getPostgresEventsQuery selects dashboard fields with participant counts", () => {
@@ -88,6 +89,24 @@ test("createPostgresEventReader reads rows through an injected client", async ()
 
   assert.equal(rows[0].event_name, "Mock Presentation");
   assert.deepEqual(calls.map(([name]) => name), ["connect", "connected", "query", "end"]);
+});
+
+test("normalizePostgresEventRow keeps SQL DATE values on the selected local date", () => {
+  const row = {
+    id: 6,
+    event_name: "Date Regression",
+    organizer: "CPE Society",
+    description: "Checks local date handling.",
+    event_date: new Date(2026, 5, 6),
+    event_time: "08:00:00",
+    event_end_time: "10:00:00",
+    location: "Bunzel Building",
+    category: "Academic",
+    status: "Upcoming",
+    created_at: "2026-05-31T08:00:00.000Z",
+  };
+
+  assert.equal(normalizePostgresEventRow(row).event_date, "2026-06-06");
 });
 
 test("createPostgresEventWriter executes create, update, delete, join, and leave", async () => {

@@ -823,6 +823,7 @@ html {
 
 /* Shared icon button style (replaces summary) */
 .legacy-home .navbar-icon-btn {
+  position: relative;
   display: inline-flex;
   width: 40px;
   height: 40px;
@@ -837,6 +838,22 @@ html {
     border-color 0.2s ease,
     color 0.2s ease,
     background 0.2s ease;
+}
+
+.legacy-home .navbar-notification-badge {
+  position: absolute;
+  right: -3px;
+  top: -4px;
+  min-width: 18px;
+  height: 18px;
+  border: 2px solid rgba(13, 17, 16, 0.98);
+  border-radius: 999px;
+  background: #d4a843;
+  color: #080808;
+  font-size: 0.64rem;
+  font-weight: 900;
+  line-height: 14px;
+  text-align: center;
 }
 
 .legacy-home .navbar-icon-btn:hover {
@@ -904,7 +921,8 @@ html {
 }
 
 .legacy-home .navbar-notif-dropdown {
-  min-width: 220px;
+  min-width: 280px;
+  max-width: min(340px, calc(100vw - 2rem));
 }
 
 .legacy-home .notif-empty {
@@ -913,6 +931,34 @@ html {
   text-align: center;
   padding: 0.5rem 0;
   margin-bottom: 0 !important;
+}
+
+.legacy-home .notif-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.legacy-home .navbar-user-dropdown .notif-item {
+  display: grid;
+  gap: 0.25rem;
+  background: rgba(255, 255, 255, 0.055);
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.35;
+}
+
+.legacy-home .navbar-user-dropdown .notif-item strong {
+  color: #ffffff;
+  font-size: 0.82rem;
+}
+
+.legacy-home .navbar-user-dropdown .notif-item span {
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+.legacy-home .navbar-user-dropdown .notif-item-unread {
+  border-left: 3px solid #d4a843;
+  background: rgba(212, 168, 67, 0.14);
 }
 
 .legacy-home .navbar-user-dropdown a,

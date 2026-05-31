@@ -18,8 +18,8 @@ test("getPostgresCreateUserStatement uses numbered parameters", () => {
       googleId: "google_1",
     }),
     {
-      sql: "insert into users (id, name, email, password_hash, role, github_id, google_id) values ($1, $2, $3, $4, $5, $6, $7)",
-      values: ["usr_1", "Juan", "juan@example.com", "hash", "Organizer", "gh_1", "google_1"],
+      sql: "insert into users (id, name, email, password_hash, role, github_id, google_id, email_verified_at) values ($1, $2, $3, $4, $5, $6, $7, $8)",
+      values: ["usr_1", "Juan", "juan@example.com", "hash", "Organizer", "gh_1", "google_1", null],
     },
   );
 });

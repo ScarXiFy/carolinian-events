@@ -44,6 +44,7 @@ test("parseEventFormData maps create form fields to an event input", () => {
     category: "Academic",
     status: "Upcoming",
     participantLimit: 80,
+    eventImagePath: "",
     imageFile: {
       name: "poster.png",
       type: "image/png",

@@ -5,6 +5,7 @@ import { CalendarIcon, LockKeyhole } from "lucide-react";
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { createClient } from "@supabase/supabase-js";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -70,6 +71,8 @@ export function CreateEventForm({
   const [location, setLocation] = useState(initialLocation.selectValue);
   const [category, setCategory] = useState(initialCategory.selectValue);
   const [notice, setNotice] = useState("");
+  const [uploadedImagePath, setUploadedImagePath] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
   const actionLabel = mode === "edit" ? "Save Changes" : "Create Event";
   const labelClass = "create-event-label";
   const controlClass =
@@ -105,20 +108,93 @@ export function CreateEventForm({
     );
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    const fileInput = event.currentTarget.querySelector('input[type="file"]') as HTMLInputElement;
-    if (fileInput && fileInput.files && fileInput.files.length > 0) {
-      const file = fileInput.files[0];
-      const maxBytes = 1 * 1024 * 1024; // 1 MB limit
-      if (file.size > maxBytes) {
-        event.preventDefault();
-        toast.error(`Image size exceeds the 1 MB limit. Your file is ${(file.size / (1024 * 1024)).toFixed(2)} MB. Please choose a smaller image.`);
-        return;
-      }
-    }
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    const form = event.currentTarget;
 
     if (!formAction) {
       handlePreviewSubmit(event);
+      return;
+    }
+
+    const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = fileInput?.files?.[0];
+
+    if (!file) {
+      if (mode === "create" && !uploadedImagePath) {
+        event.preventDefault();
+        toast.error("Event image is required.");
+      }
+      return;
+    }
+
+    if (uploadedImagePath) {
+      fileInput.disabled = true;
+      return;
+    }
+
+    event.preventDefault();
+    const maxBytes = 5 * 1024 * 1024;
+
+    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+      toast.error("Event image must be a JPG, PNG, WebP, or GIF file.");
+      return;
+    }
+
+    if (file.size > maxBytes) {
+      toast.error(`Image size exceeds the 5 MB limit. Your file is ${(file.size / (1024 * 1024)).toFixed(2)} MB.`);
+      return;
+    }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      toast.error("Supabase Storage is not configured.");
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const response = await fetch("/api/event-images/upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        }),
+      });
+      const upload = await response.json();
+
+      if (!response.ok) {
+        toast.error(upload.error || "Unable to prepare image upload.");
+        return;
+      }
+
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      const { error } = await supabase.storage
+        .from(upload.bucket)
+        .uploadToSignedUrl(upload.path, upload.token, file, {
+          contentType: file.type,
+        });
+
+      if (error) {
+        toast.error(error.message || "Image upload failed.");
+        return;
+      }
+
+      setUploadedImagePath(upload.publicUrl);
+      const imagePathInput = form.querySelector('input[name="event_image_path"]') as HTMLInputElement | null;
+      if (imagePathInput) {
+        imagePathInput.value = upload.publicUrl;
+      }
+      fileInput.disabled = true;
+      window.setTimeout(() => {
+        form.requestSubmit();
+      }, 0);
+    } finally {
+      setIsUploading(false);
     }
   }
 
@@ -129,6 +205,7 @@ export function CreateEventForm({
       onSubmit={handleSubmit}
     >
       {notice ? <div className="alert alert-info">{notice}</div> : null}
+      <input type="hidden" name="event_image_path" value={uploadedImagePath} />
 
       <div className={rowClass}>
         <Field className="gap-2.5">
@@ -379,7 +456,7 @@ export function CreateEventForm({
           </FieldDescription>
         ) : (
           <FieldDescription className="status-hint text-sm text-[#a1a1aa]">
-            JPG, PNG, WebP, or GIF. Maximum size is 1 MB.
+            JPG, PNG, WebP, or GIF. Maximum size is 5 MB.
           </FieldDescription>
         )}
       </Field>
@@ -394,9 +471,10 @@ export function CreateEventForm({
         </Button>
         <Button
           type="submit"
+          disabled={isUploading}
           className="legacy-btn legacy-btn-primary h-auto px-8 py-3 text-sm font-bold"
         >
-          {actionLabel}
+          {isUploading ? "Uploading..." : actionLabel}
         </Button>
       </div>
     </form>

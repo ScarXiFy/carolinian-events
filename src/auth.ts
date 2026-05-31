@@ -12,8 +12,10 @@ import {
   getUserById,
   linkGithubIdToUser,
   linkGoogleIdToUser,
+  markUserEmailVerified,
 } from "@/lib/db-users.mjs";
 import { getDefaultUserRole } from "@/lib/auth-roles.mjs";
+import { isEmailVerified } from "@/lib/email-verification.mjs";
 
 /*
 Google OAuth setup required before enabling live Google login:
@@ -35,6 +37,7 @@ type DatabaseUser = {
   email: string | null;
   password_hash?: string | null;
   role?: string | null;
+  email_verified_at?: string | Date | null;
 };
 
 const providers: Provider[] = [
@@ -59,12 +62,14 @@ const providers: Provider[] = [
       );
 
       if (!isPasswordValid) return null;
+      if (!isEmailVerified(user.email_verified_at)) return null;
 
       return {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role ?? "Student",
+        isEmailVerified: true,
       };
     },
   }),
@@ -92,6 +97,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const emailUser = user.email ? await getUserByEmail(user.email) as DatabaseUser | null : null;
           if (emailUser) {
             const linkedUser = await linkGithubIdToUser(emailUser.id, githubId) as DatabaseUser | null;
+            if (linkedUser && !isEmailVerified(linkedUser.email_verified_at)) {
+              await markUserEmailVerified(linkedUser.id);
+            }
             return Boolean(linkedUser);
           }
 
@@ -101,7 +109,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             email: user.email,
             githubId,
             role: getDefaultUserRole(user.email, process.env),
+            emailVerifiedAt: new Date(),
           });
+        } else if (existingUser && !isEmailVerified(existingUser.email_verified_at)) {
+          await markUserEmailVerified(existingUser.id);
         }
       }
 
@@ -114,6 +125,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const emailUser = user.email ? await getUserByEmail(user.email) as DatabaseUser | null : null;
           if (emailUser) {
             const linkedUser = await linkGoogleIdToUser(emailUser.id, googleId) as DatabaseUser | null;
+            if (linkedUser && !isEmailVerified(linkedUser.email_verified_at)) {
+              await markUserEmailVerified(linkedUser.id);
+            }
             return Boolean(linkedUser);
           }
 
@@ -123,7 +137,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             email: user.email,
             googleId,
             role: getDefaultUserRole(user.email, process.env),
+            emailVerifiedAt: new Date(),
           });
+        } else if (existingUser && !isEmailVerified(existingUser.email_verified_at)) {
+          await markUserEmailVerified(existingUser.id);
         }
       }
       return true;
@@ -153,6 +170,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.role = dbUser.role ?? "Student";
           token.name = dbUser.name;
           token.email = dbUser.email;
+          token.isEmailVerified = isEmailVerified(dbUser.email_verified_at);
         }
       }
 
@@ -162,6 +180,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+        session.user.isEmailVerified = Boolean(token.isEmailVerified);
       }
       return session;
     },

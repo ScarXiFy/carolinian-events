@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { createClient } from "@supabase/supabase-js";
 
-const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
+export const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+export const EVENT_IMAGE_BUCKET = "event-images";
 const ALLOWED_IMAGE_TYPES = new Map([
   ["image/jpeg", ".jpg"],
   ["image/png", ".png"],
@@ -20,16 +21,17 @@ export function validateEventImageFile(file) {
   }
 
   if (file.size > MAX_IMAGE_SIZE_BYTES) {
-    throw new Error("Event image must be 2 MB or smaller.");
+    throw new Error("Event image must be 5 MB or smaller.");
   }
 
   return file;
 }
 
 export function getSafeEventImageName(originalName, idFactory = randomUUID) {
-  const extension = path.extname(originalName).toLowerCase();
+  const originalExtension = path.extname(originalName);
+  const extension = originalExtension.toLowerCase();
   const baseName = path
-    .basename(originalName, extension)
+    .basename(originalName, originalExtension)
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
@@ -39,13 +41,79 @@ export function getSafeEventImageName(originalName, idFactory = randomUUID) {
 }
 
 export async function saveEventImageFile(file, { cwd = process.cwd() } = {}) {
-  const validFile = validateEventImageFile(file);
-  const safeName = getSafeEventImageName(validFile.name);
-  const uploadDir = path.join(cwd, "public", "uploads", "events");
-  const uploadPath = path.join(uploadDir, safeName);
+  void cwd;
+  throw new Error("Local event image storage has been replaced by Supabase Storage.");
+}
 
-  await mkdir(uploadDir, { recursive: true });
-  await writeFile(uploadPath, Buffer.from(await validFile.arrayBuffer()));
+export function validateEventImageUploadMetadata({ name, type, size }) {
+  return validateEventImageFile({ name, type, size });
+}
 
-  return `/uploads/events/${safeName}`;
+export function validateStoredEventImageUrl(value, { env = process.env } = {}) {
+  const imageUrl = String(value ?? "").trim();
+  if (!imageUrl) return "";
+
+  const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl) {
+    throw new Error("Supabase URL is not configured.");
+  }
+
+  const parsedImageUrl = new URL(imageUrl);
+  const parsedSupabaseUrl = new URL(supabaseUrl);
+
+  if (parsedImageUrl.hostname !== parsedSupabaseUrl.hostname) {
+    throw new Error("Event image must come from the configured Supabase project.");
+  }
+
+  if (!parsedImageUrl.pathname.includes(`/storage/v1/object/public/${getEventImageBucket(env)}/`)) {
+    throw new Error("Event image must come from the event image bucket.");
+  }
+
+  return imageUrl;
+}
+
+export function getEventImageBucket(env = process.env) {
+  return env.SUPABASE_STORAGE_BUCKET || EVENT_IMAGE_BUCKET;
+}
+
+export function createSupabaseEventImageUpload({
+  createClient: clientFactory = createClient,
+  idFactory = randomUUID,
+} = {}) {
+  return async function createUpload(originalName, { env = process.env } = {}) {
+    const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY || env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error("Supabase Storage is not configured.");
+    }
+
+    const bucket = getEventImageBucket(env);
+    const safeName = getSafeEventImageName(originalName, idFactory);
+    const filePath = `events/${safeName}`;
+    const supabase = clientFactory(supabaseUrl, supabaseKey);
+    const storage = supabase.storage.from(bucket);
+    const { data, error } = await storage.createSignedUploadUrl(filePath);
+
+    if (error) {
+      throw new Error(error.message || "Unable to create upload URL.");
+    }
+
+    const publicUrlResult = storage.getPublicUrl(filePath);
+
+    return {
+      bucket,
+      path: filePath,
+      publicUrl: publicUrlResult.data.publicUrl,
+      signedUrl: data.signedUrl,
+      token: data.token,
+    };
+  };
+}
+
+export const createEventImageUpload = createSupabaseEventImageUpload();
+
+export async function createEventImageUploadForFile(file, options = {}) {
+  const validFile = validateEventImageUploadMetadata(file);
+  return createEventImageUpload(validFile.name, options);
 }

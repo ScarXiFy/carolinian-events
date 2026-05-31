@@ -15,7 +15,8 @@ import { auth } from "@/auth";
 import { SiteNavbarServer } from "@/components/site-navbar-server";
 import { JoinEventButton } from "./join-button";
 import { getLoginHref } from "@/lib/auth-navigation.mjs";
-import { canJoinEvents, canManageEvent } from "@/lib/permissions.mjs";
+import { canJoinEvents, canManageEvent, ROLES } from "@/lib/permissions.mjs";
+import { cancelEvent } from "./actions";
 
 type EventStatus = "Upcoming" | "Ongoing" | "Completed" | "Cancelled";
 
@@ -87,6 +88,7 @@ export default async function EventDetailPage(
   const session = await auth();
   const userId = session?.user?.id;
   const canManageThisEvent = canManageEvent(session?.user?.role, userId, eventWithParticipants);
+  const canCancelThisEvent = session?.user?.role === ROLES.ADMIN && eventWithParticipants.status !== "Cancelled";
   const canJoinThisEvent = Boolean(userId) && canJoinEvents(session?.user?.role);
   const loginHref = userId ? undefined : getLoginHref(`/events/${eventWithParticipants.id}`);
 
@@ -204,6 +206,13 @@ export default async function EventDetailPage(
               )}
               {canManageThisEvent && (
                 <>
+                  {canCancelThisEvent ? (
+                    <form action={cancelEvent.bind(null, eventWithParticipants.id)}>
+                      <button type="submit" className="legacy-btn legacy-btn-secondary btn-sm">
+                        Cancel
+                      </button>
+                    </form>
+                  ) : null}
                   <Link href={`/events/${eventWithParticipants.id}/edit`} className="legacy-btn legacy-btn-secondary btn-sm">
                     Edit
                   </Link>

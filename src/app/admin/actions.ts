@@ -8,6 +8,7 @@ import {
   approveOrganizerRequest,
   rejectOrganizerRequest,
 } from "@/lib/db-users.mjs";
+import { notifyOrganizerRequestReviewed } from "@/lib/notifications.mjs";
 import { canApproveOrganizers } from "@/lib/permissions.mjs";
 import { EVENTS_PATH, LOGIN_PATH } from "@/lib/auth-navigation";
 
@@ -22,8 +23,13 @@ export async function approveOrganizerRequestAction(requestId: number) {
     redirect(EVENTS_PATH);
   }
 
-  await approveOrganizerRequest(requestId, session.user.id);
+  const request = await approveOrganizerRequest(requestId, session.user.id);
+  await notifyOrganizerRequestReviewed(
+    { ...request, reviewed_by_user_id: session.user.id },
+    "Approved",
+  );
   revalidatePath("/admin");
+  revalidatePath("/events");
 }
 
 export async function rejectOrganizerRequestAction(requestId: number) {
@@ -37,6 +43,11 @@ export async function rejectOrganizerRequestAction(requestId: number) {
     redirect(EVENTS_PATH);
   }
 
-  await rejectOrganizerRequest(requestId, session.user.id);
+  const request = await rejectOrganizerRequest(requestId, session.user.id);
+  await notifyOrganizerRequestReviewed(
+    { ...request, reviewed_by_user_id: session.user.id },
+    "Rejected",
+  );
   revalidatePath("/admin");
+  revalidatePath("/events");
 }
