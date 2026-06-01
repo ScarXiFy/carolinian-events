@@ -1,4 +1,4 @@
-const PREVIEW_MESSAGE = "Preview mode. Connect MySQL to save changes.";
+const PREVIEW_MESSAGE = "Preview mode. Connect a database to save changes.";
 
 export function getEventFlashMessage(params = {}) {
   if (params.created === "1") {

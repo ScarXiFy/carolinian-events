@@ -46,6 +46,37 @@ test("getVisibleEvents searches event names and locations", () => {
   assert.equal(visible[0].eventName, "Proposal Hearing");
 });
 
+test("getVisibleEvents hides non-approved events from public viewers", () => {
+  const events = [
+    { id: 1, eventName: "Approved Event", location: "Main", createdAt: "2026-05-01T00:00:00.000Z", approvalStatus: "Approved" },
+    { id: 2, eventName: "Pending Event", location: "Main", createdAt: "2026-05-02T00:00:00.000Z", approvalStatus: "Pending" },
+    { id: 3, eventName: "Rejected Event", location: "Main", createdAt: "2026-05-03T00:00:00.000Z", approvalStatus: "Rejected" },
+  ];
+
+  assert.deepEqual(
+    getVisibleEvents(events).map((event) => event.eventName),
+    ["Approved Event"],
+  );
+});
+
+test("getVisibleEvents includes owned and admin-visible pending events", () => {
+  const events = [
+    { id: 1, eventName: "Approved Event", location: "Main", createdAt: "2026-05-01T00:00:00.000Z", approvalStatus: "Approved" },
+    { id: 2, eventName: "Owned Pending Event", location: "Main", createdAt: "2026-05-02T00:00:00.000Z", approvalStatus: "Pending", createdByUserId: "usr_owner" },
+  ];
+
+  assert.deepEqual(
+    getVisibleEvents(events, { viewer: { role: "Organizer", userId: "usr_owner" } })
+      .map((event) => event.eventName),
+    ["Owned Pending Event", "Approved Event"],
+  );
+  assert.deepEqual(
+    getVisibleEvents(events, { viewer: { role: "Admin", userId: "usr_admin" } })
+      .map((event) => event.eventName),
+    ["Owned Pending Event", "Approved Event"],
+  );
+});
+
 test("getVisibleEvents sorts by legacy dashboard options", () => {
   const events = [
     { id: 1, eventName: "B Event", location: "Main", createdAt: "2026-05-01T00:00:00.000Z" },
@@ -121,11 +152,13 @@ test("getNormalizedEventStatus preserves cancelled and completes expired events"
   );
 });
 
-test("getEventJoinState blocks full, completed, and cancelled events", () => {
+test("getEventJoinState blocks full, completed, cancelled, pending, and rejected events", () => {
   assert.equal(getEventJoinState({ status: "Upcoming", participantLimit: 2, participantCount: 1 }).label, "Join Event");
   assert.equal(getEventJoinState({ status: "Upcoming", participantLimit: 2, participantCount: 2 }).label, "Event Full");
   assert.equal(getEventJoinState({ status: "Completed", participantLimit: 2, participantCount: 1 }).label, "Event Completed");
   assert.equal(getEventJoinState({ status: "Cancelled", participantLimit: 2, participantCount: 1 }).label, "Event Cancelled");
+  assert.equal(getEventJoinState({ status: "Upcoming", approvalStatus: "Pending" }).label, "Pending Approval");
+  assert.equal(getEventJoinState({ status: "Upcoming", approvalStatus: "Rejected" }).label, "Event Rejected");
 });
 
 test("getEventImagePaths keeps the first image as the main banner", () => {

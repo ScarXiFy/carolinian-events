@@ -16,6 +16,8 @@ import {
 } from "@/lib/db-users.mjs";
 import { getDefaultUserRole } from "@/lib/auth-roles.mjs";
 import { isEmailVerified } from "@/lib/email-verification.mjs";
+import { createUserId } from "@/lib/user-ids.mjs";
+import { isGithubAuthConfigured, isGoogleAuthConfigured } from "@/lib/oauth-config.mjs";
 
 /*
 Google OAuth setup required before enabling live Google login:
@@ -41,10 +43,6 @@ type DatabaseUser = {
 };
 
 const providers: Provider[] = [
-  GitHub({
-    clientId: process.env.AUTH_GITHUB_ID || "placeholder",
-    clientSecret: process.env.AUTH_GITHUB_SECRET || "placeholder",
-  }),
   Credentials({
     credentials: {
       email: { label: "Email", type: "email" },
@@ -75,7 +73,16 @@ const providers: Provider[] = [
   }),
 ];
 
-if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
+if (isGithubAuthConfigured(process.env)) {
+  providers.unshift(
+    GitHub({
+      clientId: process.env.AUTH_GITHUB_ID,
+      clientSecret: process.env.AUTH_GITHUB_SECRET,
+    }),
+  );
+}
+
+if (isGoogleAuthConfigured(process.env)) {
   providers.push(
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
@@ -104,7 +111,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
 
           await createUser({
-            id: `usr_${Date.now()}`,
+            id: createUserId(),
             name: user.name || profile?.login,
             email: user.email,
             githubId,
@@ -132,7 +139,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
 
           await createUser({
-            id: `usr_${Date.now()}`,
+            id: createUserId(),
             name: user.name,
             email: user.email,
             googleId,

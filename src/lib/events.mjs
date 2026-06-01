@@ -33,11 +33,19 @@ export const EVENT_STATUSES = {
   CANCELLED: "Cancelled",
 };
 
+export const EVENT_APPROVAL_STATUSES = {
+  PENDING: "Pending",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+};
+
 export const EVENT_JOIN_STATES = {
   OPEN: "open",
   FULL: "full",
   COMPLETED: "completed",
   CANCELLED: "cancelled",
+  PENDING_APPROVAL: "pending_approval",
+  REJECTED: "rejected",
 };
 
 export const sampleEvents = [
@@ -134,12 +142,12 @@ export function getFeaturedEvents(events = sampleEvents, limit = 5) {
     .slice(0, limit);
 }
 
-export function getVisibleEvents(
-  events = sampleEvents,
-  { search = "", sort = EVENT_SORTS.DATE_DESC } = {},
-) {
+export function getVisibleEvents(events = sampleEvents, options = {}) {
+  const { search = "", sort = EVENT_SORTS.DATE_DESC, viewer = null } = options;
   const normalizedSearch = search.trim().toLowerCase();
-  const normalizedEvents = normalizeEventStatuses(events);
+  const normalizedEvents = normalizeEventStatuses(events).filter((event) =>
+    canViewEventByApproval(event, viewer),
+  );
   const visibleEvents = normalizedSearch
     ? normalizedEvents.filter((event) => {
         return [event.eventName, event.location].some((value) =>
@@ -163,6 +171,20 @@ export function getVisibleEvents(
 
     return compareCreatedAt(b, a);
   });
+}
+
+export function canViewEventByApproval(event, viewer = null) {
+  const approvalStatus = event?.approvalStatus ?? EVENT_APPROVAL_STATUSES.APPROVED;
+
+  if (approvalStatus === EVENT_APPROVAL_STATUSES.APPROVED) {
+    return true;
+  }
+
+  if (viewer?.role === "Admin") {
+    return true;
+  }
+
+  return Boolean(viewer?.userId && event?.createdByUserId && viewer.userId === event.createdByUserId);
 }
 
 export function getEventById(events = sampleEvents, id) {
@@ -258,6 +280,24 @@ export function getEventImagePaths(event) {
 }
 
 export function getEventJoinState(event) {
+  if ((event.approvalStatus ?? EVENT_APPROVAL_STATUSES.APPROVED) === EVENT_APPROVAL_STATUSES.PENDING) {
+    return {
+      state: EVENT_JOIN_STATES.PENDING_APPROVAL,
+      disabled: true,
+      label: "Pending Approval",
+      error: "Pending Approval",
+    };
+  }
+
+  if (event.approvalStatus === EVENT_APPROVAL_STATUSES.REJECTED) {
+    return {
+      state: EVENT_JOIN_STATES.REJECTED,
+      disabled: true,
+      label: "Event Rejected",
+      error: "Event Rejected",
+    };
+  }
+
   if (event.status === EVENT_STATUSES.CANCELLED) {
     return {
       state: EVENT_JOIN_STATES.CANCELLED,

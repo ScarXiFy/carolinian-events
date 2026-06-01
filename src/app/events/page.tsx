@@ -48,6 +48,7 @@ type DashboardEvent = {
   createdAt: string;
   eventImagePath?: string | null;
   eventImagePaths?: string[];
+  approvalStatus?: string;
 };
 
 const EVENTS_PER_PAGE = 6;
@@ -76,13 +77,19 @@ export default async function EventsPage({
   const sort = isEventSort(requestedSort)
     ? requestedSort
     : (EVENT_SORTS.DATE_DESC as EventSort);
-  const events = getVisibleEvents(await getAllEvents(), { search, sort }) as DashboardEvent[];
+  const session = await auth();
+  const events = getVisibleEvents(await getAllEvents(), {
+    search,
+    sort,
+    viewer: session?.user
+      ? { role: session.user.role, userId: session.user.id }
+      : null,
+  }) as DashboardEvent[];
   const pageCount = Math.max(1, Math.ceil(events.length / EVENTS_PER_PAGE));
   const currentPage = clampPage(params.page, pageCount);
   const pageStart = (currentPage - 1) * EVENTS_PER_PAGE;
   const pageEvents = events.slice(pageStart, pageStart + EVENTS_PER_PAGE);
   const flashMessage = getEventFlashMessage(params);
-  const session = await auth();
   const createEventHref = getCreateEventHref(session);
   const showCreateEventLink = !session || canCreateEvents(session.user?.role);
 
@@ -161,7 +168,7 @@ export default async function EventsPage({
                 />
 
                 <div className="event-card-footer">
-                  <EventStatusBadge status={event.status} />
+                  <EventStatusBadge status={event.status} approvalStatus={event.approvalStatus} />
 
                   <div className="event-card-actions">
                     <Link href={`/events/${event.id}`} className="event-view-button">

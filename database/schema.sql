@@ -26,9 +26,15 @@ CREATE TABLE IF NOT EXISTS events (
     contact_email VARCHAR(255) DEFAULT NULL,
     contact_phone VARCHAR(32) DEFAULT NULL,
     created_by_user_id VARCHAR(255) DEFAULT NULL,
+    approval_status ENUM('Pending', 'Approved', 'Rejected') NOT NULL DEFAULT 'Approved',
+    approved_by_user_id VARCHAR(255) DEFAULT NULL,
+    approved_at TIMESTAMP NULL DEFAULT NULL,
+    rejected_by_user_id VARCHAR(255) DEFAULT NULL,
+    rejected_at TIMESTAMP NULL DEFAULT NULL,
     created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    KEY events_approval_status_created (approval_status, created_at, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS users (
@@ -104,6 +110,40 @@ CREATE TABLE IF NOT EXISTS notifications (
     FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE SET NULL,
     FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS rate_limits (
+    rate_key VARCHAR(255) NOT NULL,
+    count INT NOT NULL DEFAULT 0,
+    reset_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (rate_key),
+    KEY rate_limits_reset_at (reset_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TRIGGER IF EXISTS event_capacity_before_insert;
+DELIMITER //
+CREATE TRIGGER event_capacity_before_insert
+BEFORE INSERT ON event_participants
+FOR EACH ROW
+BEGIN
+    DECLARE current_count INT DEFAULT 0;
+    DECLARE max_count INT DEFAULT NULL;
+
+    SELECT participant_limit INTO max_count
+    FROM events
+    WHERE id = NEW.event_id;
+
+    IF max_count IS NOT NULL THEN
+        SELECT COUNT(*) INTO current_count
+        FROM event_participants
+        WHERE event_id = NEW.event_id;
+
+        IF current_count >= max_count THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Event Full';
+        END IF;
+    END IF;
+END//
+DELIMITER ;
 
 INSERT INTO events
     (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path, created_by_user_id)

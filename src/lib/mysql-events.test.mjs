@@ -59,6 +59,11 @@ test("normalizeMysqlEventRow serializes Date values for app formatting", () => {
     contact_email: "events@usc.edu.ph",
     contact_phone: "09171234567",
     created_by_user_id: "usr_1",
+    approval_status: "Approved",
+    approved_by_user_id: null,
+    approved_at: null,
+    rejected_by_user_id: null,
+    rejected_at: null,
   });
 });
 
@@ -141,7 +146,7 @@ test("event write statements use parameterized SQL", () => {
   };
 
   assert.deepEqual(getCreateEventStatement(input), {
-    sql: "INSERT INTO events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path, contact_email, contact_phone, created_by_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    sql: "INSERT INTO events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path, contact_email, contact_phone, created_by_user_id, approval_status, approved_by_user_id, approved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     values: [
       "Research Colloquium",
       "CPE Department",
@@ -157,6 +162,9 @@ test("event write statements use parameterized SQL", () => {
       "events@usc.edu.ph",
       "09171234567",
       "usr_1",
+      "Pending",
+      null,
+      null,
     ],
   });
 

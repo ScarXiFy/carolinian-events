@@ -8,6 +8,7 @@ import {
   getUnreadNotificationCount,
   markNotificationsRead,
   notifyEventCancelledToAttendees,
+  notifyEventApprovalReviewed,
 } from "./notifications.mjs";
 
 test("notification create statements use parameterized SQL", () => {
@@ -111,4 +112,36 @@ test("notifyEventCancelledToAttendees creates attendee notifications", async () 
   assert.equal(calls[0].eventId, 12);
   assert.match(calls[0].message, /Cancelled/);
   assert.match(calls[0].message, /Research Forum/);
+});
+
+test("notifyEventApprovalReviewed notifies the event owner", async () => {
+  const created = [];
+  const store = {
+    async createNotification(input) {
+      created.push(input);
+      return { id: created.length, ...input };
+    },
+  };
+
+  await notifyEventApprovalReviewed(
+    {
+      id: 9,
+      eventName: "Research Forum",
+      createdByUserId: "usr_owner",
+    },
+    "Approved",
+    "usr_admin",
+    { store },
+  );
+
+  assert.deepEqual(created, [
+    {
+      recipientUserId: "usr_owner",
+      type: "event_approved",
+      title: "Event approved",
+      message: "Research Forum was approved and is now visible to students.",
+      eventId: 9,
+      actorUserId: "usr_admin",
+    },
+  ]);
 });

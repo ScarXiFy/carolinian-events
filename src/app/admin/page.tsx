@@ -4,10 +4,13 @@ import { auth } from "@/auth";
 import { SiteNavbarServer } from "@/components/site-navbar-server";
 import { EVENTS_PATH, LOGIN_PATH } from "@/lib/auth-navigation";
 import { listPendingOrganizerRequests } from "@/lib/db-users.mjs";
+import { listPendingEvents } from "@/lib/event-store.mjs";
 import { canApproveOrganizers } from "@/lib/permissions.mjs";
 
 import {
+  approveEventAction,
   approveOrganizerRequestAction,
+  rejectEventAction,
   rejectOrganizerRequestAction,
 } from "./actions";
 
@@ -16,6 +19,13 @@ type OrganizerRequest = {
   name?: string | null;
   email?: string | null;
   status: string;
+};
+
+type PendingEvent = {
+  id: number;
+  eventName: string;
+  organizer: string;
+  approvalStatus?: string;
 };
 
 export default async function AdminPage() {
@@ -30,6 +40,7 @@ export default async function AdminPage() {
   }
 
   const requests = (await listPendingOrganizerRequests()) as OrganizerRequest[];
+  const pendingEvents = (await listPendingEvents()) as PendingEvent[];
 
   return (
     <main className="legacy-home min-h-screen bg-[#050505] text-white">
@@ -70,6 +81,47 @@ export default async function AdminPage() {
                       </button>
                     </form>
                     <form action={rejectOrganizerRequestAction.bind(null, request.id)}>
+                      <button type="submit" className="legacy-btn btn-danger">
+                        Reject
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+
+        <div className="events-dashboard-heading mt-12">
+          <h1>Event Approvals</h1>
+        </div>
+
+        <div className="grid gap-4">
+          {pendingEvents.length === 0 ? (
+            <div className="events-empty-card">
+              <h2>No pending events</h2>
+              <p>Event submissions will appear here when organizers create them.</p>
+            </div>
+          ) : (
+            pendingEvents.map((event) => (
+              <article className="event-dashboard-card" key={event.id}>
+                <div className="event-card-topline">
+                  <h2>{event.eventName}</h2>
+                  <div className="event-card-date">
+                    <span>{event.organizer}</span>
+                    <time>{event.approvalStatus}</time>
+                  </div>
+                </div>
+
+                <div className="event-card-footer">
+                  <span className="status-badge status-upcoming">Pending</span>
+                  <div className="event-card-actions">
+                    <form action={approveEventAction.bind(null, event.id)}>
+                      <button type="submit" className="event-view-button">
+                        Approve
+                      </button>
+                    </form>
+                    <form action={rejectEventAction.bind(null, event.id)}>
                       <button type="submit" className="legacy-btn btn-danger">
                         Reject
                       </button>

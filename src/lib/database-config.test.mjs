@@ -21,6 +21,13 @@ test("getDatabaseConfig falls back to sample data when DATABASE_URL is blank", (
   });
 });
 
+test("getDatabaseConfig rejects missing production DATABASE_URL", () => {
+  assert.throws(
+    () => getDatabaseConfig({ NODE_ENV: "production" }),
+    /DATABASE_URL is required in production/,
+  );
+});
+
 test("getDatabaseConfig accepts MySQL style database URLs", () => {
   assert.deepEqual(getDatabaseConfig({ DATABASE_URL: "mysql://root@localhost:3306/carolinian_events_db" }), {
     isConfigured: true,
@@ -56,12 +63,15 @@ test("getEventStoreMode describes the active read source", () => {
   );
 });
 
-test("getDatabaseConfig falls back to NEXT_PUBLIC_SUPABASE_URL", () => {
-  assert.deepEqual(getDatabaseConfig({ NEXT_PUBLIC_SUPABASE_URL: "postgresql://postgres.example:secret@localhost:5432/postgres" }), {
-    isConfigured: true,
-    provider: "postgres",
-    url: "postgresql://postgres.example:secret@localhost:5432/postgres",
-  });
+test("getDatabaseConfig ignores NEXT_PUBLIC_SUPABASE_URL as a database URL", () => {
+  assert.deepEqual(
+    getDatabaseConfig({ NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co" }),
+    {
+      isConfigured: false,
+      provider: "sample",
+      url: "",
+    },
+  );
 });
 
 test("getDatabaseConfig strips square brackets from password segment", () => {

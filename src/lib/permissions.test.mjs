@@ -6,7 +6,9 @@ import {
   canCreateEvents,
   canJoinEvents,
   canManageAllEvents,
+  canManageEvent,
   canManageOwnEvents,
+  canViewEvent,
   isAdmin,
   isOrganizer,
 } from "./permissions.mjs";
@@ -33,4 +35,10 @@ test("permission helpers follow the project role table", () => {
   assert.equal(isOrganizer("Organizer"), true);
   assert.equal(isOrganizer("Admin"), false);
   assert.equal(isAdmin("Admin"), true);
+
+  const ownPendingEvent = { createdByUserId: "usr_1", approvalStatus: "Pending" };
+  assert.equal(canManageEvent("Organizer", "usr_1", ownPendingEvent), true);
+  assert.equal(canViewEvent("Student", "usr_2", { approvalStatus: "Approved" }), true);
+  assert.equal(canViewEvent("Student", "usr_2", ownPendingEvent), false);
+  assert.equal(canViewEvent("Organizer", "usr_1", ownPendingEvent), true);
 });

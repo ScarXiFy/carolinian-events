@@ -1,6 +1,7 @@
 import { AuthShell } from "@/components/auth-shell"
 import { LoginForm } from "@/components/login-form"
 import { getAuthRedirectPath } from "@/lib/auth-navigation.mjs"
+import { isGithubAuthConfigured } from "@/lib/oauth-config.mjs"
 
 export default async function LoginPage({
   searchParams,
@@ -15,7 +16,10 @@ export default async function LoginPage({
       title="Get back to your campus events."
       description="Sign in to join upcoming activities, manage event details, and keep your Carolinian schedule in one place."
     >
-      <LoginForm callbackUrl={callbackUrl} />
+      <LoginForm
+        callbackUrl={callbackUrl}
+        showGithubLogin={isGithubAuthConfigured(process.env)}
+      />
     </AuthShell>
   )
 }

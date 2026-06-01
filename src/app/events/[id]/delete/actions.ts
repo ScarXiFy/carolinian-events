@@ -8,6 +8,7 @@ import { EVENTS_PATH, LOGIN_PATH } from "@/lib/auth-navigation";
 import { canManageEvent, ROLES } from "@/lib/permissions.mjs";
 import { deleteEvent, getEventByRouteId } from "@/lib/event-store.mjs";
 import { notifyEventOwner } from "@/lib/notifications.mjs";
+import { getRateLimitKey, RATE_LIMITS, requireRateLimit } from "@/lib/rate-limit.mjs";
 
 export async function deleteEventAction(id: number) {
   const session = await auth();
@@ -26,7 +27,17 @@ export async function deleteEventAction(id: number) {
     redirect(EVENTS_PATH);
   }
 
-  const result = await deleteEvent(id);
+  await requireRateLimit({
+    key: getRateLimitKey("event:delete", session.user.id),
+    ...RATE_LIMITS.writeAction,
+  });
+
+  const result = await deleteEvent(id, {
+    actor: {
+      role: session.user.role,
+      userId: session.user.id,
+    },
+  });
 
   if (session.user.role === ROLES.ADMIN) {
     await notifyEventOwner(event, {

@@ -16,7 +16,7 @@ test("getEventFlashMessage returns dashboard CRUD messages", () => {
   });
   assert.deepEqual(getEventFlashMessage({ created: "preview" }), {
     tone: "info",
-    text: "Preview mode. Connect MySQL to save changes.",
+    text: "Preview mode. Connect a database to save changes.",
     showInline: false,
   });
 });
@@ -29,7 +29,7 @@ test("getEventFlashMessage returns detail update messages", () => {
   });
   assert.deepEqual(getEventFlashMessage({ updated: "preview" }), {
     tone: "info",
-    text: "Preview mode. Connect MySQL to save changes.",
+    text: "Preview mode. Connect a database to save changes.",
     showInline: false,
   });
 });

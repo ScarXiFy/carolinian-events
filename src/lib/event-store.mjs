@@ -2,6 +2,7 @@ import { getEventById, getNormalizedEventStatus, sampleEvents } from "./events.m
 import { getDatabaseConfig, getEventStoreMode } from "./database-config.mjs";
 import { readMysqlEvents, writeMysqlEvents } from "./mysql-events.mjs";
 import { readPostgresEvents, writePostgresEvents } from "./postgres-events.mjs";
+import { canManageEvent } from "./permissions.mjs";
 
 const legacyEventRows = sampleEvents.map((event) => ({
   id: event.id,
@@ -38,6 +39,11 @@ export function mapLegacyEventRow(row) {
     contactEmail: row.contact_email ?? "",
     contactPhone: row.contact_phone ?? "",
     createdByUserId: row.created_by_user_id ?? null,
+    approvalStatus: row.approval_status ?? "Approved",
+    approvedByUserId: row.approved_by_user_id ?? null,
+    approvedAt: row.approved_at ?? null,
+    rejectedByUserId: row.rejected_by_user_id ?? null,
+    rejectedAt: row.rejected_at ?? null,
   };
 
   return {
@@ -171,13 +177,18 @@ export async function createEvent(
 export async function updateEvent(
   id,
   input,
-  {
+  options = {},
+) {
+  const {
     env = process.env,
     writeDatabaseEvents,
+    readMysqlEvents: mysqlReader = readMysqlEvents,
+    readPostgresEvents: postgresReader = readPostgresEvents,
     writeMysqlEvents: mysqlWriter = writeMysqlEvents,
     writePostgresEvents: postgresWriter = writePostgresEvents,
-  } = {},
-) {
+    actor,
+    readDatabaseEvents,
+  } = options;
   const config = getDatabaseConfig(env);
 
   if (!config.isConfigured) {
@@ -190,6 +201,16 @@ export async function updateEvent(
   const activeWriter =
     writeDatabaseEvents ??
     (config.provider === "postgres" ? postgresWriter : mysqlWriter);
+
+  if (actor) {
+    await assertActorCanManageEvent(id, actor, {
+      env,
+      readDatabaseEvents,
+      readMysqlEvents: mysqlReader,
+      readPostgresEvents: postgresReader,
+    });
+  }
+
   const updated = await activeWriter.updateEvent(config.url, Number(id), input);
 
   return {
@@ -200,13 +221,18 @@ export async function updateEvent(
 
 export async function deleteEvent(
   id,
-  {
+  options = {},
+) {
+  const {
     env = process.env,
     writeDatabaseEvents,
+    readDatabaseEvents,
+    readMysqlEvents: mysqlReader = readMysqlEvents,
+    readPostgresEvents: postgresReader = readPostgresEvents,
     writeMysqlEvents: mysqlWriter = writeMysqlEvents,
     writePostgresEvents: postgresWriter = writePostgresEvents,
-  } = {},
-) {
+    actor,
+  } = options;
   const config = getDatabaseConfig(env);
 
   if (!config.isConfigured) {
@@ -219,12 +245,88 @@ export async function deleteEvent(
   const activeWriter =
     writeDatabaseEvents ??
     (config.provider === "postgres" ? postgresWriter : mysqlWriter);
+
+  if (actor) {
+    await assertActorCanManageEvent(id, actor, {
+      env,
+      readDatabaseEvents,
+      readMysqlEvents: mysqlReader,
+      readPostgresEvents: postgresReader,
+    });
+  }
+
   const deleted = await activeWriter.deleteEvent(config.url, Number(id));
 
   return {
     mode: "database",
     affectedRows: deleted.affectedRows,
   };
+}
+
+export async function approveEvent(
+  id,
+  adminUserId,
+  {
+    env = process.env,
+    writeDatabaseEvents,
+    writeMysqlEvents: mysqlWriter = writeMysqlEvents,
+    writePostgresEvents: postgresWriter = writePostgresEvents,
+  } = {},
+) {
+  const config = getDatabaseConfig(env);
+
+  if (!config.isConfigured) {
+    return { mode: "sample", affectedRows: 0 };
+  }
+
+  const activeWriter =
+    writeDatabaseEvents ??
+    (config.provider === "postgres" ? postgresWriter : mysqlWriter);
+  const result = await activeWriter.approveEvent(config.url, Number(id), adminUserId);
+
+  return {
+    mode: "database",
+    affectedRows: result.affectedRows,
+  };
+}
+
+export async function rejectEvent(
+  id,
+  adminUserId,
+  {
+    env = process.env,
+    writeDatabaseEvents,
+    writeMysqlEvents: mysqlWriter = writeMysqlEvents,
+    writePostgresEvents: postgresWriter = writePostgresEvents,
+  } = {},
+) {
+  const config = getDatabaseConfig(env);
+
+  if (!config.isConfigured) {
+    return { mode: "sample", affectedRows: 0 };
+  }
+
+  const activeWriter =
+    writeDatabaseEvents ??
+    (config.provider === "postgres" ? postgresWriter : mysqlWriter);
+  const result = await activeWriter.rejectEvent(config.url, Number(id), adminUserId);
+
+  return {
+    mode: "database",
+    affectedRows: result.affectedRows,
+  };
+}
+
+export async function listPendingEvents(options = {}) {
+  return (await getAllEvents(options)).filter((event) => event.approvalStatus === "Pending");
+}
+
+async function assertActorCanManageEvent(id, actor, options) {
+  const event = await getEventByRouteId(id, options);
+
+  if (!event || !canManageEvent(actor.role, actor.userId, event)) {
+    throw new Error("You do not have permission to manage this event.");
+  }
 }
 
 export function getEventStoreStatus(env = process.env) {

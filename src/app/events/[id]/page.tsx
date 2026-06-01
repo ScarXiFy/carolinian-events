@@ -16,7 +16,7 @@ import { auth } from "@/auth";
 import { SiteNavbarServer } from "@/components/site-navbar-server";
 import { JoinEventButton } from "./join-button";
 import { getLoginHref } from "@/lib/auth-navigation.mjs";
-import { canJoinEvents, canManageEvent, ROLES } from "@/lib/permissions.mjs";
+import { canJoinEvents, canManageEvent, canViewEvent, ROLES } from "@/lib/permissions.mjs";
 import { cancelEvent } from "./actions";
 import { EventImageCarousel } from "@/components/event-image-carousel";
 import { EventParticipantProgress } from "@/components/event-participant-progress";
@@ -49,6 +49,7 @@ export default async function EventDetailPage(
     contactEmail: string;
     contactPhone: string;
     createdByUserId: string | null;
+    approvalStatus?: string;
   };
 
   const formattedEndTime = eventWithParticipants.eventEndTime
@@ -62,6 +63,10 @@ export default async function EventDetailPage(
       ? `${eventWithParticipants.participantCount} / ${eventWithParticipants.participantLimit}`
       : String(eventWithParticipants.participantCount);
   const session = await auth();
+  if (!canViewEvent(session?.user?.role, session?.user?.id, eventWithParticipants)) {
+    notFound();
+  }
+
   const userId = session?.user?.id;
   const canManageThisEvent = canManageEvent(session?.user?.role, userId, eventWithParticipants);
   const canCancelThisEvent = session?.user?.role === ROLES.ADMIN && eventWithParticipants.status !== "Cancelled";
@@ -114,7 +119,11 @@ export default async function EventDetailPage(
               <header className="event-platform-header">
                 <div className="event-detail-title-row">
                   <h1>{eventWithParticipants.eventName}</h1>
-                  <EventStatusBadge status={eventWithParticipants.status} className="detail-badge" />
+                  <EventStatusBadge
+                    status={eventWithParticipants.status}
+                    approvalStatus={eventWithParticipants.approvalStatus}
+                    className="detail-badge"
+                  />
                 </div>
 
                 <div className="event-meta event-platform-meta">

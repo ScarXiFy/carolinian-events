@@ -1,0 +1,18 @@
+
+> carolinian-events@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.254.174:3000
+- Environments: .env.local
+✓ Ready in 1196ms
+○ Compiling proxy ...
+
+○ Compiling proxy ...
+✓ Compiled in 36.5s
+✓ Finished filesystem cache database compaction in 13.1s
+✓ Compiled in 454ms
+✓ Compiled in 102ms
+ GET / 200 in 1983ms (next.js: 152ms, proxy.ts: 156ms, application-code: 1676ms)
+[?25h

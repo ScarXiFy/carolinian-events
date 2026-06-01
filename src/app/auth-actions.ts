@@ -17,6 +17,14 @@ import {
   isEmailVerified,
   sendVerificationEmail,
 } from "@/lib/email-verification.mjs";
+import { createUserId } from "@/lib/user-ids.mjs";
+import { isGithubAuthConfigured, isGoogleAuthConfigured } from "@/lib/oauth-config.mjs";
+import {
+  getRateLimitKey,
+  RATE_LIMITS,
+  RateLimitError,
+  requireRateLimit,
+} from "@/lib/rate-limit.mjs";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 
@@ -24,6 +32,18 @@ export async function login(formData: FormData) {
   const callbackUrl = getAuthRedirectPath(String(formData.get("callbackUrl") ?? ""));
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
+
+  try {
+    await requireRateLimit({
+      key: getRateLimitKey("login", email),
+      ...RATE_LIMITS.login,
+    });
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      return { error: error.message };
+    }
+    throw error;
+  }
 
   const existing = await getUserByEmail(email);
   if (existing?.password_hash) {
@@ -56,13 +76,27 @@ export async function login(formData: FormData) {
 }
 
 export async function githubLogin(callbackUrl?: string) {
+  if (!isGithubAuthConfigured(process.env)) {
+    return { error: "GitHub login is not configured yet." };
+  }
+
+  await requireRateLimit({
+    key: getRateLimitKey("login:github", "oauth"),
+    ...RATE_LIMITS.login,
+  });
+
   await signIn("github", { redirectTo: getAuthRedirectPath(callbackUrl) });
 }
 
 export async function googleLogin() {
-  if (!process.env.AUTH_GOOGLE_ID || !process.env.AUTH_GOOGLE_SECRET) {
+  if (!isGoogleAuthConfigured(process.env)) {
     return { error: "Google login is not configured yet." };
   }
+
+  await requireRateLimit({
+    key: getRateLimitKey("login:google", "oauth"),
+    ...RATE_LIMITS.login,
+  });
 
   await signIn("google", { redirectTo: "/events" });
 }
@@ -78,6 +112,18 @@ export async function signup(formData: FormData) {
   const password = String(formData.get("password") ?? "");
   const confirmPassword = String(formData.get("confirm-password") ?? "");
 
+  try {
+    await requireRateLimit({
+      key: getRateLimitKey("signup", email),
+      ...RATE_LIMITS.signup,
+    });
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      return { error: error.message };
+    }
+    throw error;
+  }
+
   if (!email || !password || !name) {
     return { error: "Missing fields" };
   }
@@ -92,7 +138,7 @@ export async function signup(formData: FormData) {
   }
 
   const hash = await bcrypt.hash(password, 10);
-  const userId = `usr_${Date.now()}`;
+  const userId = createUserId();
   await createUser({
     id: userId,
     name,
@@ -109,6 +155,12 @@ export async function signup(formData: FormData) {
 export async function resendVerification(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const callbackUrl = getAuthRedirectPath(String(formData.get("callbackUrl") ?? ""));
+
+  await requireRateLimit({
+    key: getRateLimitKey("resend-verification", email),
+    ...RATE_LIMITS.resendVerification,
+  });
+
   const user = await getUserByEmail(email);
 
   if (!user?.id || !user.email || isEmailVerified(user.email_verified_at)) {

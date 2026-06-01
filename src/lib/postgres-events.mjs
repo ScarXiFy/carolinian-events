@@ -1,16 +1,20 @@
 const POSTGRES_EVENTS_QUERY =
-  "select e.id, e.event_name, e.organizer, e.description, e.event_date, e.event_time, e.event_end_time, e.location, e.category, e.status, e.created_at, e.participant_limit, e.event_image_path, e.contact_email, e.contact_phone, e.created_by_user_id, coalesce((select array_agg(image_url order by sort_order asc, id asc) from event_images where event_id = e.id), array[]::text[]) as event_image_paths, (select count(*)::int from event_participants where event_id = e.id) as participant_count from events e order by e.created_at desc, e.id desc";
+  "select e.id, e.event_name, e.organizer, e.description, e.event_date, e.event_time, e.event_end_time, e.location, e.category, e.status, e.created_at, e.participant_limit, e.event_image_path, e.contact_email, e.contact_phone, e.created_by_user_id, e.approval_status, e.approved_by_user_id, e.approved_at, e.rejected_by_user_id, e.rejected_at, coalesce((select array_agg(image_url order by sort_order asc, id asc) from event_images where event_id = e.id), array[]::text[]) as event_image_paths, (select count(*)::int from event_participants where event_id = e.id) as participant_count from events e order by e.created_at desc, e.id desc";
 const POSTGRES_COMPAT_EVENTS_QUERY =
   "select e.id, e.event_name, e.organizer, e.description, e.event_date, e.event_time, e.event_end_time, e.location, e.category, e.status, e.created_at, e.participant_limit, e.event_image_path, e.created_by_user_id, (select count(*)::int from event_participants where event_id = e.id) as participant_count from events e order by e.created_at desc, e.id desc";
 const POSTGRES_LEGACY_EVENTS_QUERY =
   "select id, event_name, organizer, description, event_date, event_time, location, category, status, created_at from events order by created_at desc, id desc";
 const POSTGRES_CREATE_EVENT_QUERY =
-  "insert into events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path, contact_email, contact_phone, created_by_user_id) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) returning id";
+  "insert into events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path, contact_email, contact_phone, created_by_user_id, approval_status, approved_by_user_id, approved_at) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) returning id";
 const POSTGRES_UPDATE_EVENT_QUERY =
   "update events set event_name = $1, organizer = $2, description = $3, event_date = $4, event_time = $5, event_end_time = $6, location = $7, category = $8, status = $9, participant_limit = $10, event_image_path = coalesce($11, event_image_path), contact_email = $12, contact_phone = $13 where id = $14";
 const POSTGRES_DELETE_EVENT_QUERY = "delete from events where id = $1";
 const POSTGRES_JOIN_EVENT_QUERY =
   "insert into event_participants (event_id, user_id) values ($1, $2) on conflict (event_id, user_id) do nothing";
+const POSTGRES_APPROVE_EVENT_QUERY =
+  "update events set approval_status = 'Approved', approved_by_user_id = $2, approved_at = now(), rejected_by_user_id = null, rejected_at = null where id = $1 and approval_status = 'Pending'";
+const POSTGRES_REJECT_EVENT_QUERY =
+  "update events set approval_status = 'Rejected', rejected_by_user_id = $2, rejected_at = now() where id = $1 and approval_status = 'Pending'";
 const POSTGRES_LEAVE_EVENT_QUERY =
   "delete from event_participants where event_id = $1 and user_id = $2";
 const POSTGRES_COMPLETE_EXPIRED_EVENTS_QUERY =
@@ -109,7 +113,14 @@ export function createPostgresEventWriter({ createClient = createPostgresClient 
       };
     },
     async joinEvent(url, eventId, userId) {
-      await executeStatement(url, POSTGRES_JOIN_EVENT_QUERY, [Number(eventId), userId]);
+      try {
+        await executeStatement(url, POSTGRES_JOIN_EVENT_QUERY, [Number(eventId), userId]);
+      } catch (error) {
+        if (isCapacityError(error)) {
+          throw new Error("Event Full");
+        }
+        throw error;
+      }
     },
     async leaveEvent(url, eventId, userId) {
       await executeStatement(url, POSTGRES_LEAVE_EVENT_QUERY, [Number(eventId), userId]);
@@ -122,6 +133,22 @@ export function createPostgresEventWriter({ createClient = createPostgresClient 
       return {
         affectedRows: result.rowCount,
       };
+    },
+    async approveEvent(url, eventId, adminUserId) {
+      const result = await executeStatement(url, POSTGRES_APPROVE_EVENT_QUERY, [
+        Number(eventId),
+        adminUserId,
+      ]);
+
+      return { affectedRows: result.rowCount };
+    },
+    async rejectEvent(url, eventId, adminUserId) {
+      const result = await executeStatement(url, POSTGRES_REJECT_EVENT_QUERY, [
+        Number(eventId),
+        adminUserId,
+      ]);
+
+      return { affectedRows: result.rowCount };
     },
   };
 
@@ -159,6 +186,15 @@ function isMissingSchemaError(error) {
   );
 }
 
+function isCapacityError(error) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    String(error.message).includes("Event Full")
+  );
+}
+
 export const writePostgresEvents = createPostgresEventWriter();
 
 async function createPostgresClient(url) {
@@ -185,7 +221,14 @@ function getEventValues(input) {
 }
 
 function getCreateEventValues(input) {
-  return [...getEventValues(input), input.createdByUserId || null];
+  const approvalStatus = input.approvalStatus || "Pending";
+  return [
+    ...getEventValues(input),
+    input.createdByUserId || null,
+    approvalStatus,
+    input.approvedByUserId || null,
+    input.approvedAt || null,
+  ];
 }
 
 export function normalizePostgresEventRow(row) {
@@ -202,6 +245,11 @@ export function normalizePostgresEventRow(row) {
     event_image_paths: row.event_image_paths ?? [],
     contact_email: row.contact_email ?? "",
     contact_phone: row.contact_phone ?? "",
+    approval_status: row.approval_status ?? "Approved",
+    approved_by_user_id: row.approved_by_user_id ?? null,
+    approved_at: row.approved_at ? normalizeDateTime(row.approved_at) : null,
+    rejected_by_user_id: row.rejected_by_user_id ?? null,
+    rejected_at: row.rejected_at ? normalizeDateTime(row.rejected_at) : null,
   };
 }
 

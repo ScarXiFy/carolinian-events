@@ -50,6 +50,11 @@ test("mapLegacyEventRow converts legacy database fields to app event fields", ()
     contactEmail: "",
     contactPhone: "",
     createdByUserId: "usr_1",
+    approvalStatus: "Approved",
+    approvedByUserId: null,
+    approvedAt: null,
+    rejectedByUserId: null,
+    rejectedAt: null,
   });
 });
 
@@ -107,6 +112,11 @@ test("getEventByRouteId returns complete normalized event detail data from datab
     contactEmail: "cpe@usc.edu.ph",
     contactPhone: "09171234567",
     createdByUserId: "usr_organizer",
+    approvalStatus: "Approved",
+    approvedByUserId: null,
+    approvedAt: null,
+    rejectedByUserId: null,
+    rejectedAt: null,
   });
 });
 
@@ -288,6 +298,47 @@ test("updateEvent writes to MySQL when DATABASE_URL is configured", async () => 
   assert.deepEqual(updated, { mode: "database", affectedRows: 1 });
 });
 
+test("updateEvent rejects actor-scoped writes when actor cannot manage event", async () => {
+  await assert.rejects(
+    () =>
+      updateEvent(
+        12,
+        {
+          eventName: "Updated Colloquium",
+          organizer: "CPE Department",
+          description: "Updated details.",
+          eventDate: "2026-07-01",
+          eventTime: "09:30",
+          eventEndTime: "11:30",
+          location: "Bunzel Building",
+          category: "Academic",
+          status: "Upcoming",
+        },
+        {
+          env: { DATABASE_URL: "mysql://root@localhost:3306/carolinian_events_db" },
+          actor: { role: "Organizer", userId: "usr_other" },
+          readDatabaseEvents: async () => [
+            {
+              id: 12,
+              event_name: "Owned Event",
+              organizer: "CPE Department",
+              description: "Original.",
+              event_date: "2026-07-01",
+              event_time: "09:30:00",
+              event_end_time: "11:30:00",
+              location: "Bunzel Building",
+              category: "Academic",
+              status: "Upcoming",
+              created_at: "2026-06-01T08:00:00.000Z",
+              created_by_user_id: "usr_owner",
+            },
+          ],
+        },
+      ),
+    /You do not have permission to manage this event/,
+  );
+});
+
 test("updateEvent stays in preview mode when DATABASE_URL is missing", async () => {
   const updated = await updateEvent(
     12,
@@ -323,10 +374,54 @@ test("deleteEvent deletes from MySQL when DATABASE_URL is configured", async () 
   assert.deepEqual(deleted, { mode: "database", affectedRows: 1 });
 });
 
+test("deleteEvent rejects actor-scoped deletes when actor cannot manage event", async () => {
+  await assert.rejects(
+    () =>
+      deleteEvent(12, {
+        env: { DATABASE_URL: "mysql://root@localhost:3306/carolinian_events_db" },
+        actor: { role: "Student", userId: "usr_student" },
+        readDatabaseEvents: async () => [
+          {
+            id: 12,
+            event_name: "Owned Event",
+            organizer: "CPE Department",
+            description: "Original.",
+            event_date: "2026-07-01",
+            event_time: "09:30:00",
+            event_end_time: "11:30:00",
+            location: "Bunzel Building",
+            category: "Academic",
+            status: "Upcoming",
+            created_at: "2026-06-01T08:00:00.000Z",
+            created_by_user_id: "usr_owner",
+          },
+        ],
+      }),
+    /You do not have permission to manage this event/,
+  );
+});
+
 test("deleteEvent stays in preview mode when DATABASE_URL is missing", async () => {
   const deleted = await deleteEvent(12, { env: {} });
 
   assert.deepEqual(deleted, { mode: "sample", affectedRows: 0 });
+});
+
+test("approveEvent updates approval status through the active writer", async () => {
+  const { approveEvent } = await import("./event-store.mjs");
+  const result = await approveEvent(12, "usr_admin", {
+    env: { DATABASE_URL: "postgresql://postgres.example:secret@localhost:5432/postgres" },
+    writeDatabaseEvents: {
+      approveEvent: async (url, id, adminUserId) => {
+        assert.equal(url, "postgresql://postgres.example:secret@localhost:5432/postgres");
+        assert.equal(id, 12);
+        assert.equal(adminUserId, "usr_admin");
+        return { affectedRows: 1 };
+      },
+    },
+  });
+
+  assert.deepEqual(result, { mode: "database", affectedRows: 1 });
 });
 
 test("event store reports read-only sample mode without database config", () => {

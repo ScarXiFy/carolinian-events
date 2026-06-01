@@ -17,6 +17,11 @@ create table if not exists events (
   contact_email text,
   contact_phone text,
   created_by_user_id text,
+  approval_status text not null default 'Approved' check (approval_status in ('Pending', 'Approved', 'Rejected')),
+  approved_by_user_id text,
+  approved_at timestamptz,
+  rejected_by_user_id text,
+  rejected_at timestamptz,
   created_at timestamptz default now()
 );
 
@@ -35,6 +40,14 @@ create table if not exists users (
 alter table events add column if not exists created_by_user_id text;
 alter table events add column if not exists contact_email text;
 alter table events add column if not exists contact_phone text;
+alter table events add column if not exists approval_status text not null default 'Approved';
+alter table events add column if not exists approved_by_user_id text;
+alter table events add column if not exists approved_at timestamptz;
+alter table events add column if not exists rejected_by_user_id text;
+alter table events add column if not exists rejected_at timestamptz;
+alter table events drop constraint if exists events_approval_status_check;
+alter table events add constraint events_approval_status_check check (approval_status in ('Pending', 'Approved', 'Rejected'));
+update events set approval_status = 'Approved' where approval_status is null;
 alter table users add column if not exists google_id text unique;
 alter table users add column if not exists github_id text unique;
 alter table users add column if not exists email_verified_at timestamptz;
@@ -82,6 +95,9 @@ create table if not exists event_images (
 create index if not exists event_images_event_sort
   on event_images(event_id, sort_order, id);
 
+create index if not exists events_approval_status_created
+  on events(approval_status, created_at, id);
+
 create table if not exists notifications (
   id bigserial primary key,
   recipient_user_id text not null references users(id) on delete cascade,
@@ -99,6 +115,47 @@ create index if not exists notifications_recipient_read_created
 
 create index if not exists notifications_event_type
   on notifications(event_id, type);
+
+create table if not exists rate_limits (
+  rate_key text primary key,
+  count integer not null default 0,
+  reset_at timestamptz not null,
+  updated_at timestamptz default now()
+);
+
+create index if not exists rate_limits_reset_at
+  on rate_limits(reset_at);
+
+create or replace function enforce_event_capacity()
+returns trigger as $$
+declare
+  current_count integer;
+  max_count integer;
+begin
+  select participant_limit into max_count
+  from events
+  where id = new.event_id;
+
+  if max_count is null then
+    return new;
+  end if;
+
+  select count(*) into current_count
+  from event_participants
+  where event_id = new.event_id;
+
+  if current_count >= max_count then
+    raise exception 'Event Full';
+  end if;
+
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists event_capacity_before_insert on event_participants;
+create trigger event_capacity_before_insert
+before insert on event_participants
+for each row execute function enforce_event_capacity();
 
 insert into events (
   event_name,

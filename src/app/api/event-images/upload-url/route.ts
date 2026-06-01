@@ -4,6 +4,7 @@ import {
   validateEventImageUploadMetadata,
 } from "@/lib/event-image-upload.mjs";
 import { canCreateEvents } from "@/lib/permissions.mjs";
+import { getRateLimitKey, RATE_LIMITS, RateLimitError, requireRateLimit } from "@/lib/rate-limit.mjs";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -18,6 +19,18 @@ export async function POST(request: Request) {
 
   if (!canCreateEvents(session.user.role)) {
     return Response.json({ error: "You do not have permission to upload event images." }, { status: 403 });
+  }
+
+  try {
+    await requireRateLimit({
+      key: getRateLimitKey("upload-url", session.user.id),
+      ...RATE_LIMITS.uploadUrl,
+    });
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      return Response.json({ error: error.message }, { status: 429 });
+    }
+    throw error;
   }
 
   const body = await request.json();

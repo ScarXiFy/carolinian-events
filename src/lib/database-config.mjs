@@ -2,9 +2,13 @@ const MYSQL_PROTOCOLS = new Set(["mysql:", "mysql2:", "mariadb:"]);
 const POSTGRES_PROTOCOLS = new Set(["postgres:", "postgresql:"]);
 
 export function getDatabaseConfig(env = process.env) {
-  let url = (env.DATABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+  let url = (env.DATABASE_URL ?? "").trim();
 
   if (!url) {
+    if (env.NODE_ENV === "production") {
+      throw new Error("DATABASE_URL is required in production.");
+    }
+
     return {
       isConfigured: false,
       provider: "sample",

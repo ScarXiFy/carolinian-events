@@ -16,6 +16,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { EVENTS_PATH, LOGIN_PATH } from "@/lib/auth-navigation";
 import { canManageEvent } from "@/lib/permissions.mjs";
+import { getRateLimitKey, RATE_LIMITS, RateLimitError, requireRateLimit } from "@/lib/rate-limit.mjs";
 
 type EventForNotifications = {
   id: number;
@@ -33,6 +34,18 @@ export async function joinEvent(eventId: number) {
 
   if (!session.user.isEmailVerified) {
     return { error: "Please verify your email before joining events." };
+  }
+
+  try {
+    await requireRateLimit({
+      key: getRateLimitKey("event:join", session.user.id),
+      ...RATE_LIMITS.writeAction,
+    });
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      return { error: error.message };
+    }
+    throw error;
   }
 
   const config = getDatabaseConfig();
@@ -69,6 +82,9 @@ export async function joinEvent(eventId: number) {
     return { success: true };
   } catch (error) {
     console.error(error);
+    if (error instanceof Error && error.message === "Event Full") {
+      return { error: "Event Full" };
+    }
     return { error: "Failed to join event" };
   }
 }
@@ -77,6 +93,18 @@ export async function leaveEvent(eventId: number) {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "You must be logged in to leave." };
+  }
+
+  try {
+    await requireRateLimit({
+      key: getRateLimitKey("event:leave", session.user.id),
+      ...RATE_LIMITS.writeAction,
+    });
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      return { error: error.message };
+    }
+    throw error;
   }
 
   const config = getDatabaseConfig();
@@ -109,17 +137,31 @@ export async function cancelEvent(eventId: number) {
     redirect(EVENTS_PATH);
   }
 
+  await requireRateLimit({
+    key: getRateLimitKey("event:cancel", session.user.id),
+    ...RATE_LIMITS.writeAction,
+  });
+
   const eventForUpdate = event as typeof event & {
     eventImagePath?: string | null;
     eventImagePaths?: string[];
   };
   const attendees = await getEventParticipants(eventId);
-  const result = await updateEvent(eventId, {
-    ...eventForUpdate,
-    status: "Cancelled",
-    eventImagePath: eventForUpdate.eventImagePath ?? null,
-    eventImagePaths: eventForUpdate.eventImagePaths ?? [],
-  });
+  const result = await updateEvent(
+    eventId,
+    {
+      ...eventForUpdate,
+      status: "Cancelled",
+      eventImagePath: eventForUpdate.eventImagePath ?? null,
+      eventImagePaths: eventForUpdate.eventImagePaths ?? [],
+    },
+    {
+      actor: {
+        role: session.user.role,
+        userId: session.user.id,
+      },
+    },
+  );
 
   await notifyEventOwner(event, {
     type: "event_cancelled_by_manager",

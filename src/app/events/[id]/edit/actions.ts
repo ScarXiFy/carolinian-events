@@ -10,6 +10,7 @@ import { getEventByRouteId, updateEvent } from "@/lib/event-store.mjs";
 import { EVENTS_PATH, LOGIN_PATH } from "@/lib/auth-navigation";
 import { canManageEvent, ROLES } from "@/lib/permissions.mjs";
 import { notifyEventOwner } from "@/lib/notifications.mjs";
+import { getRateLimitKey, RATE_LIMITS, requireRateLimit } from "@/lib/rate-limit.mjs";
 
 export async function updateEventAction(id: number, formData: FormData) {
   const session = await auth();
@@ -28,15 +29,29 @@ export async function updateEventAction(id: number, formData: FormData) {
     redirect(EVENTS_PATH);
   }
 
+  await requireRateLimit({
+    key: getRateLimitKey("event:update", session.user.id),
+    ...RATE_LIMITS.writeAction,
+  });
+
   const input = parseEventFormData(formData, new Date(), {
     requireParticipantLimit: true,
   });
   const eventImagePaths = validateStoredEventImageUrls(input.eventImagePaths);
-  const result = await updateEvent(id, {
-    ...input,
-    eventImagePath: eventImagePaths[0] ?? null,
-    eventImagePaths,
-  });
+  const result = await updateEvent(
+    id,
+    {
+      ...input,
+      eventImagePath: eventImagePaths[0] ?? null,
+      eventImagePaths,
+    },
+    {
+      actor: {
+        role: session.user.role,
+        userId: session.user.id,
+      },
+    },
+  );
 
   if (session.user.role === ROLES.ADMIN) {
     await notifyEventOwner(event, {

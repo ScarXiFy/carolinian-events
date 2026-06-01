@@ -141,6 +141,25 @@ export async function notifyEventCancelledToAttendees(event, attendeeUserIds = [
   );
 }
 
+export async function notifyEventApprovalReviewed(event, status, actorUserId, options = {}) {
+  if (!event?.createdByUserId) return null;
+  const approved = status === "Approved";
+
+  return createNotification(
+    {
+      recipientUserId: event.createdByUserId,
+      type: approved ? "event_approved" : "event_rejected",
+      title: approved ? "Event approved" : "Event rejected",
+      message: approved
+        ? `${event.eventName} was approved and is now visible to students.`
+        : `${event.eventName} was rejected and will not be visible to students.`,
+      eventId: event.id,
+      actorUserId: actorUserId || null,
+    },
+    options,
+  );
+}
+
 function getNotificationStore(options = {}) {
   if (options.store) return options.store;
 

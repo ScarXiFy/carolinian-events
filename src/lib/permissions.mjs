@@ -38,3 +38,8 @@ export function canManageEvent(role, userId, event) {
 
   return Boolean(userId && event?.createdByUserId && event.createdByUserId === userId);
 }
+
+export function canViewEvent(role, userId, event) {
+  if ((event?.approvalStatus ?? "Approved") === "Approved") return true;
+  return canManageEvent(role, userId, event);
+}

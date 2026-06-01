@@ -1,11 +1,11 @@
 const EVENTS_QUERY =
-  "SELECT e.id, e.event_name, e.organizer, e.description, e.event_date, e.event_time, e.event_end_time, e.location, e.category, e.status, e.created_at, e.participant_limit, e.event_image_path, e.contact_email, e.contact_phone, e.created_by_user_id, (SELECT GROUP_CONCAT(image_url ORDER BY sort_order ASC, id ASC SEPARATOR '\\n') FROM event_images WHERE event_id = e.id) as event_image_paths, (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) as participant_count FROM events e ORDER BY e.created_at DESC, e.id DESC";
+  "SELECT e.id, e.event_name, e.organizer, e.description, e.event_date, e.event_time, e.event_end_time, e.location, e.category, e.status, e.created_at, e.participant_limit, e.event_image_path, e.contact_email, e.contact_phone, e.created_by_user_id, e.approval_status, e.approved_by_user_id, e.approved_at, e.rejected_by_user_id, e.rejected_at, (SELECT GROUP_CONCAT(image_url ORDER BY sort_order ASC, id ASC SEPARATOR '\\n') FROM event_images WHERE event_id = e.id) as event_image_paths, (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) as participant_count FROM events e ORDER BY e.created_at DESC, e.id DESC";
 const COMPAT_EVENTS_QUERY =
   "SELECT e.id, e.event_name, e.organizer, e.description, e.event_date, e.event_time, e.event_end_time, e.location, e.category, e.status, e.created_at, e.participant_limit, e.event_image_path, e.created_by_user_id, (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) as participant_count FROM events e ORDER BY e.created_at DESC, e.id DESC";
 const LEGACY_EVENTS_QUERY =
   "SELECT id, event_name, organizer, description, event_date, event_time, location, category, status, created_at FROM events ORDER BY created_at DESC, id DESC";
 const CREATE_EVENT_QUERY =
-  "INSERT INTO events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path, contact_email, contact_phone, created_by_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+  "INSERT INTO events (event_name, organizer, description, event_date, event_time, event_end_time, location, category, status, participant_limit, event_image_path, contact_email, contact_phone, created_by_user_id, approval_status, approved_by_user_id, approved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 const LEGACY_CREATE_EVENT_QUERY =
   "INSERT INTO events (event_name, organizer, description, event_date, event_time, location, category, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 const UPDATE_EVENT_QUERY =
@@ -33,6 +33,11 @@ export function normalizeMysqlEventRow(row) {
     event_image_paths: row.event_image_paths ?? "",
     contact_email: row.contact_email ?? "",
     contact_phone: row.contact_phone ?? "",
+    approval_status: row.approval_status ?? "Approved",
+    approved_by_user_id: row.approved_by_user_id ?? null,
+    approved_at: row.approved_at ? normalizeDateTime(row.approved_at) : null,
+    rejected_by_user_id: row.rejected_by_user_id ?? null,
+    rejected_at: row.rejected_at ? normalizeDateTime(row.rejected_at) : null,
   };
 }
 
@@ -178,6 +183,7 @@ export function createMysqlEventWriter({ createConnection = createMysqlConnectio
         await connection.execute("INSERT INTO event_participants (event_id, user_id) VALUES (?, ?)", [eventId, userId]);
       } catch(e) {
         if (e.code === 'ER_DUP_ENTRY') return; // already joined
+        if (String(e.message || "").includes("Event Full")) throw new Error("Event Full");
         throw e;
       } finally {
         await connection.end();
@@ -190,7 +196,21 @@ export function createMysqlEventWriter({ createConnection = createMysqlConnectio
       } finally {
         await connection.end();
       }
-    }
+    },
+    async approveEvent(url, eventId, adminUserId) {
+      const result = await executeStatement(url, {
+        sql: "UPDATE events SET approval_status = 'Approved', approved_by_user_id = ?, approved_at = CURRENT_TIMESTAMP, rejected_by_user_id = NULL, rejected_at = NULL WHERE id = ? AND approval_status = 'Pending'",
+        values: [adminUserId, Number(eventId)],
+      });
+      return { affectedRows: result.affectedRows };
+    },
+    async rejectEvent(url, eventId, adminUserId) {
+      const result = await executeStatement(url, {
+        sql: "UPDATE events SET approval_status = 'Rejected', rejected_by_user_id = ?, rejected_at = CURRENT_TIMESTAMP WHERE id = ? AND approval_status = 'Pending'",
+        values: [adminUserId, Number(eventId)],
+      });
+      return { affectedRows: result.affectedRows };
+    },
   };
 
   async function replaceEventImages(url, eventId, imagePaths) {
@@ -279,7 +299,14 @@ function getEventValues(input) {
 }
 
 function getCreateEventValues(input) {
-  return [...getEventValues(input), input.createdByUserId || null];
+  const approvalStatus = input.approvalStatus || "Pending";
+  return [
+    ...getEventValues(input),
+    input.createdByUserId || null,
+    approvalStatus,
+    input.approvedByUserId || null,
+    input.approvedAt || null,
+  ];
 }
 
 function getInputImagePaths(input) {

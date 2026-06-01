@@ -25,9 +25,10 @@ const fieldClass =
 
 export function LoginForm({
   callbackUrl = "/events",
+  showGithubLogin = false,
   className,
   ...props
-}: React.ComponentProps<"div"> & { callbackUrl?: string }) {
+}: React.ComponentProps<"div"> & { callbackUrl?: string; showGithubLogin?: boolean }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, action, isPending] = useActionState<AuthActionState, FormData>(
     async (_prevState, formData) => login(formData),
@@ -41,28 +42,32 @@ export function LoginForm({
           <form action={action}>
             <input type="hidden" name="callbackUrl" value={callbackUrl} />
             <FieldGroup className="gap-5">
-              <button
-                type="button"
-                onClick={() => githubLogin(callbackUrl)}
-                disabled={isPending}
-                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] px-4 py-3 text-sm font-bold text-white transition hover:border-[#2a8c4f]/70 hover:bg-[#2a8c4f]/18 hover:text-[#b9f5cc] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#2a8c4f]/25 disabled:pointer-events-none disabled:opacity-60"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  className="size-4"
-                  aria-hidden="true"
-                >
-                  <path
-                    fill="currentColor"
-                    d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.21 11.39.6.11.79-.26.79-.58v-2.23c-3.34.72-4.03-1.42-4.03-1.42-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.49 1 .11-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23.96-.27 1.98-.4 3-.4s2.05.13 3 .4c2.29-1.55 3.3-1.23 3.3-1.23.65 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.62-5.48 5.92.43.37.82 1.1.82 2.22v3.29c0 .32.19.69.8.58C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12Z"
-                  />
-                </svg>
-                Login with GitHub
-              </button>
+              {showGithubLogin ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => githubLogin(callbackUrl)}
+                    disabled={isPending}
+                    className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] px-4 py-3 text-sm font-bold text-white transition hover:border-[#2a8c4f]/70 hover:bg-[#2a8c4f]/18 hover:text-[#b9f5cc] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#2a8c4f]/25 disabled:pointer-events-none disabled:opacity-60"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="size-4"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.21 11.39.6.11.79-.26.79-.58v-2.23c-3.34.72-4.03-1.42-4.03-1.42-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.49 1 .11-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23.96-.27 1.98-.4 3-.4s2.05.13 3 .4c2.29-1.55 3.3-1.23 3.3-1.23.65 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.62-5.48 5.92.43.37.82 1.1.82 2.22v3.29c0 .32.19.69.8.58C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12Z"
+                      />
+                    </svg>
+                    Login with GitHub
+                  </button>
 
-              <FieldSeparator className="-my-1 text-white/42 *:data-[slot=field-separator-content]:bg-[#0d1110]">
-                Or continue with email
-              </FieldSeparator>
+                  <FieldSeparator className="-my-1 text-white/42 *:data-[slot=field-separator-content]:bg-[#0d1110]">
+                    Or continue with email
+                  </FieldSeparator>
+                </>
+              ) : null}
 
               {error?.error ? (
                 <div
